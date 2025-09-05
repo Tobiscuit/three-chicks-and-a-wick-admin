@@ -54,9 +54,12 @@ export const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
         setAuthCheckInProgress(true);
         try {
           const result = await checkAuthorization(idToken);
+          if (!result.isAuthorized) {
+            console.warn("[Client] Authorization denied:", result.error);
+          }
           setIsAuthorized(result.isAuthorized);
-        } catch (error) {
-          console.error("Authorization check failed", error);
+        } catch (error: any) {
+          console.error("[Client] Authorization check failed:", error?.message || error);
           setIsAuthorized(false);
         } finally {
             setAuthCheckInProgress(false);

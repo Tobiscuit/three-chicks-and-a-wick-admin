@@ -25,7 +25,9 @@ export async function checkAuthorization(idToken: string | null) {
   let decodedToken;
   try {
     // adminAuth is already initialized from the central file
+    console.log('[Auth Check] Verifying ID token...');
     decodedToken = await adminAuth.verifyIdToken(idToken);
+    console.log('[Auth Check] ID token verified. UID:', decodedToken.uid, 'Email:', decodedToken.email);
   } catch (error) {
     console.error("[Auth Check] Error verifying ID token:", error);
     return { isAuthorized: false, error: "Invalid or expired ID token." };
