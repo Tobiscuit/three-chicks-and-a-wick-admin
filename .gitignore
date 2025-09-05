@@ -72,6 +72,7 @@ firebase-debug.log*
 /hosting
 /candlecraft-studio-yz6sc/hosting
 /public
+apphosting.yaml
 
 # Logs and OS/IDE clutter
 Thumbs.db
