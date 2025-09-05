@@ -164,6 +164,7 @@ type GalleryActionResult = {
     success: boolean;
     images?: { name: string; url: string }[];
     error?: string;
+    bucketName?: string;
 };
 
 
@@ -204,12 +205,12 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
         
         console.log("[getGalleryImagesAction] END: Operation complete.");
         console.log("--------------------------------------------------");
-        return { success: true, images: signedUrls.filter(img => img.url !== 'error') };
+        return { success: true, images: signedUrls.filter(img => img.url !== 'error'), bucketName: bucket.name };
 
     } catch (error: any) {
         console.error("[getGalleryImagesAction] FATAL: An uncaught error occurred:", error);
         console.log("[getGalleryImagesAction] END: Operation failed.");
         console.log("--------------------------------------------------");
-        return { success: false, error: error.message || "An unknown error occurred." };
+        return { success: false, error: error.message || "An unknown error occurred.", bucketName: (adminStorage as any)?._bucket?.name };
     }
 }
