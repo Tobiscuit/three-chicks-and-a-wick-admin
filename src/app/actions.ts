@@ -38,37 +38,35 @@ export async function checkAuthorization(idToken: string | null) {
   }
 
   const secretName = "AUTHORIZED_EMAILS";
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-
-  if (!projectId) {
-      console.error("[Auth Check] CRITICAL: NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set. Cannot fetch secrets.");
-      return { isAuthorized: false, error: "Server configuration error." };
-  }
-
   let rawAuthorizedEmails: string | undefined;
 
-  try {
-    console.log("[Auth Check] Attempting to create SecretManagerServiceClient...");
-    const client = new SecretManagerServiceClient();
-    const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
-    console.log(`[Auth Check] Fetching secret: ${name}`);
-    
-    const [version] = await client.accessSecretVersion({ name });
-    
-    rawAuthorizedEmails = version.payload?.data?.toString();
-    console.log("[Auth Check] Successfully fetched secret payload from Secret Manager.");
-
-
-    if (!rawAuthorizedEmails) {
-        console.error(`[Auth Check] CRITICAL: Secret '${secretName}' was fetched but is empty.`);
-        return { isAuthorized: false, error: "Authorization list is empty." };
+  // 1) Prefer environment variable (works on Vercel): AUTHORIZED_EMAILS="a@x.com,b@y.com"
+  const envAuthorized = process.env.AUTHORIZED_EMAILS;
+  if (envAuthorized && envAuthorized.trim().length > 0) {
+    console.log("[Auth Check] Using AUTHORIZED_EMAILS from environment variables.");
+    rawAuthorizedEmails = envAuthorized;
+  } else {
+    // 2) Fallback to Secret Manager (for Firebase App Hosting)
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!projectId) {
+      console.error("[Auth Check] Project ID not set and AUTHORIZED_EMAILS env missing. Cannot fetch secrets.");
+      return { isAuthorized: false, error: "Server configuration error." };
     }
-  } catch (error: any) {
-      console.error(`[Auth Check] CRITICAL: Failed to fetch secret '${secretName}'.`);
-      console.error(`[Auth Check] Error Code: ${error.code}`);
-      console.error(`[Auth Check] Error Details: ${error.message}`);
-      console.error("[Auth Check] Ensure the secret exists in Secret Manager and that the App Hosting service agent has the 'Secret Manager Secret Accessor' role.");
+
+    try {
+      console.log("[Auth Check] AUTHORIZED_EMAILS env missing; fetching from Secret Manager...");
+      const client = new SecretManagerServiceClient();
+      const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+      const [version] = await client.accessSecretVersion({ name });
+      rawAuthorizedEmails = version.payload?.data?.toString();
+      if (!rawAuthorizedEmails) {
+        console.error(`[Auth Check] Secret '${secretName}' is empty.`);
+        return { isAuthorized: false, error: "Authorization list is empty." };
+      }
+    } catch (error: any) {
+      console.error(`[Auth Check] Failed to fetch secret '${secretName}' from Secret Manager:`, error?.message || error);
       return { isAuthorized: false, error: "Could not retrieve authorization list." };
+    }
   }
 
   const authorizedEmails = rawAuthorizedEmails.split(',').map(email => email.trim().toLowerCase());
