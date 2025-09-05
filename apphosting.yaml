@@ -1,0 +1,40 @@
+# Settings to manage and configure a Firebase App Hosting backend.
+# https://firebase.google.com/docs/app-hosting/configure
+
+# When granting access to secrets in Google Secret Manager,
+# you MUST use the following service account principal. This is the App Hosting
+# Service Agent for THIS specific project, NOT the Firebase Admin SDK service account.
+# The correct Principal to grant access to is:
+# firebase-app-hosting-compute@candlecraft-studio-yz6sc.iam.gserviceaccount.com
+# This service account needs the "Secret Manager Secret Accessor" role.
+
+runConfig:
+  # Increase this value if you'd like to automatically spin up
+  # more instances in response to increased traffic.
+  maxInstances: 2
+
+# Environment variables that are not sensitive and can be stored in source control.
+# These will be available to your app at runtime.
+environmentVariables:
+  NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyBTGXQDpbzlEs9NfrhKHpb55W7_b3e7zfI"
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "candlecraft-studio-yz6sc.firebaseapp.com"
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: "candlecraft-studio-yz6sc"
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "candlecraft-studio-yz6sc.firebasestorage.app"
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "948160544419"
+  NEXT_PUBLIC_FIREBASE_APP_ID: "1:948160544419:web:30540ead3fb6f117eec916"
+  # The URL for your Shopify store's API. This is not a secret.
+  SHOPIFY_STORE_URL: "https://threechicksandawick.myshopify.com/api/2025-07/graphql.json"
+
+# To deploy securely, you will need to create secrets in Google Secret Manager
+# within your OWN project and reference them here.
+#
+# NOTE: This section was temporarily commented out for the initial deployment
+# to create the service account needed for permissions. It is now restored.
+#
+secretEnvironmentVariables:
+ - key: SHOPIFY_ADMIN_ACCESS_TOKEN
+   secret: SHOPIFY_ADMIN_ACCESS_TOKEN
+ - key: GEMINI_API_KEY
+   secret: GEMINI_API_KEY
+ - key: AUTHORIZED_EMAILS
+   secret: AUTHORIZED_EMAILS

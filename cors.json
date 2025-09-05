@@ -1,0 +1,19 @@
+
+[
+  {
+    "origin": [
+      "https://admin.threechicksandawick.com",
+      "https://candlecraft-studio-yz6sc.web.app",
+      "https://candlecraft-studio-yz6sc.firebaseapp.com"
+    ],
+    "method": [
+      "GET",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
