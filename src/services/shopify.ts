@@ -501,7 +501,7 @@ const INVENTORY_ITEM_UPDATE_MUTATION = `
             inventoryItem {
                 id
                 sku
-                cost
+                unitCost { amount currencyCode }
             }
             userErrors {
                 field
