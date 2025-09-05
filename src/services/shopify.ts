@@ -584,3 +584,47 @@ export async function getBusinessSnapshot(orderCount = 50, productCount = 50) {
     ]);
     return { orders, products };
 }
+
+// --- Inventory quantity updates (2025-07) ---
+const INVENTORY_SET_QUANTITIES_MUTATION = `
+  mutation InventorySetQuantities($input: InventorySetQuantitiesInput!) {
+    inventorySetQuantities(input: $input) {
+      inventoryAdjustmentGroup {
+        createdAt
+        reason
+        referenceDocumentUri
+        changes { name delta }
+      }
+      userErrors { field message }
+    }
+  }
+`;
+
+type InventorySetQuantitiesResponse = {
+  inventorySetQuantities: {
+    inventoryAdjustmentGroup: {
+      createdAt: string;
+      reason: string | null;
+      referenceDocumentUri: string | null;
+      changes: { name: string; delta: number }[];
+    } | null;
+    userErrors: { field?: string[]; message: string }[];
+  };
+};
+
+export async function setInventoryQuantity(params: { inventoryItemId: string; locationId: string; quantity: number; }): Promise<InventorySetQuantitiesResponse> {
+  const variables = {
+    input: {
+      name: "available",
+      reason: "correction",
+      quantities: [
+        {
+          inventoryItemId: params.inventoryItemId,
+          locationId: params.locationId,
+          quantity: params.quantity,
+        },
+      ],
+    },
+  };
+  return fetchShopify<InventorySetQuantitiesResponse>(INVENTORY_SET_QUANTITIES_MUTATION, variables);
+}

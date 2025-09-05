@@ -1,7 +1,7 @@
 
 "use server";
 
-import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk } from "@/services/shopify";
+import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity } from "@/services/shopify";
 import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, CreateMediaInput, NewProductVariantInput } from "@/services/shopify";
 import { adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
@@ -197,23 +197,28 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
             id: variantId,
             price,
             inventoryItem: { tracked: true },
-            inventoryQuantities: [{
-                availableQuantity: inventory,
-                locationId: locationId,
-            }]
+            // inventoryQuantities cannot be used on update; handled via inventorySetQuantities
         };
 
-        // Execute all updates in parallel
+        // Execute product + variant + sku updates in parallel (no inventory quantities here)
         const [productResult, variantResult, skuResult] = await Promise.all([
             updateProduct(productInput),
             updateProductVariant(id, variantInput),
             updateInventoryItem({ id: inventoryItemId, sku }),
         ]);
 
+        // After product/variant/sku, set inventory to desired absolute quantity
+        const invSet = await setInventoryQuantity({
+            inventoryItemId: inventoryItemId,
+            locationId: locationId,
+            quantity: inventory,
+        });
+
         const productErrors = productResult.productUpdate?.userErrors || [];
         const variantErrors = variantResult.productVariantsBulkUpdate?.userErrors || [];
         const skuErrors = skuResult.inventoryItemUpdate?.userErrors || [];
-        const allErrors = [...productErrors, ...variantErrors, ...skuErrors];
+        const invErrors = invSet.inventorySetQuantities?.userErrors || [];
+        const allErrors = [...productErrors, ...variantErrors, ...skuErrors, ...invErrors];
 
         if (allErrors.length > 0) {
             const errorMessages = allErrors.map(e => e.message).join(', ');
