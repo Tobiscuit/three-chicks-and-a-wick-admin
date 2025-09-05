@@ -496,11 +496,12 @@ export async function updateProductVariant(productId: string, variantInput: Prod
 
 
 const INVENTORY_ITEM_UPDATE_MUTATION = `
-    mutation inventoryItemUpdate($input: InventoryItemInput!) {
-        inventoryItemUpdate(input: $input) {
+    mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+        inventoryItemUpdate(id: $id, input: $input) {
             inventoryItem {
                 id
                 sku
+                cost
             }
             userErrors {
                 field
@@ -525,7 +526,7 @@ type InventoryItemUpdateResponse = {
 
 export async function updateInventoryItem(input: {id: string; sku?: string | null; cost?: number;}): Promise<InventoryItemUpdateResponse> {
     const { id, sku, cost } = input;
-    const variables = { input: { id, ...(sku !== undefined ? { sku } : {}), ...(typeof cost === 'number' ? { cost } : {}) } };
+    const variables = { id, input: { ...(sku !== undefined ? { sku } : {}), ...(typeof cost === 'number' ? { cost } : {}) } };
     return fetchShopify<InventoryItemUpdateResponse>(INVENTORY_ITEM_UPDATE_MUTATION, variables);
 }
 
