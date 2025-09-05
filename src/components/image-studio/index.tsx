@@ -262,7 +262,7 @@ export function ImageStudio() {
                 <CardTitle>2. Choose Background</CardTitle>
                 <CardDescription>Select a pre-made background or generate a new one.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <FormField
                   control={form.control}
                   name="backgroundType"
@@ -272,11 +272,11 @@ export function ImageStudio() {
                       onValueChange={(value) => field.onChange(value as 'gallery' | 'generate')}
                       className="w-full"
                     >
-                      <TabsList>
-                        <TabsTrigger value="gallery"><ImageIcon className="mr-2"/>Gallery</TabsTrigger>
-                        <TabsTrigger value="generate"><Wand2 className="mr-2"/>Generate</TabsTrigger>
+                      <TabsList className="h-9 gap-1 p-0">
+                        <TabsTrigger value="gallery" className="px-3 py-1 text-sm"><ImageIcon className="mr-2"/>Gallery</TabsTrigger>
+                        <TabsTrigger value="generate" className="px-3 py-1 text-sm"><Wand2 className="mr-2"/>Generate</TabsTrigger>
                       </TabsList>
-                      <TabsContent value="generate" className="mt-4">
+                      <TabsContent value="generate" className="mt-2">
                         <FormField
                           control={form.control}
                           name="backgroundPrompt"
@@ -295,9 +295,9 @@ export function ImageStudio() {
                           )}
                         />
                       </TabsContent>
-                      <TabsContent value="gallery" className="mt-4">
+                      <TabsContent value="gallery" className="mt-2">
                          {galleryLoading ? (
-                            <div className="grid grid-cols-2 gap-2 h-48">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 h-[40vh] md:h-[45vh] lg:h-[50vh]">
                                 <Skeleton className="w-full h-full rounded-md" />
                                 <Skeleton className="w-full h-full rounded-md" />
                                 <Skeleton className="w-full h-full rounded-md" />
@@ -316,8 +316,8 @@ export function ImageStudio() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <ScrollArea className="h-48 w-full rounded-md border p-2">
-                                            <div className="grid grid-cols-2 gap-2">
+                                        <ScrollArea className="h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 md:p-3">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
                                                 {galleryImages.map((bg) => (
                                                     <div key={bg.name} className="relative cursor-pointer group" onClick={() => field.onChange(bg.url)}>
                                                         <Image
@@ -325,7 +325,7 @@ export function ImageStudio() {
                                                             alt={bg.name}
                                                             width={200}
                                                             height={200}
-                                                            className={`object-cover w-full h-full rounded-md transition-all aspect-square ${field.value === bg.url ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'group-hover:opacity-80'}`}
+                                                            className={`object-cover w-full h-full rounded-md transition-all aspect-square ${field.value === bg.url ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'group-hover:opacity-90'}`}
                                                         />
                                                         {field.value === bg.url && <div className="absolute inset-0 bg-primary/30 rounded-md"/>}
                                                     </div>
