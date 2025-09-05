@@ -34,49 +34,31 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "../ui/scroll-area";
 
 
-// Client-side image conversion to WebP to keep payloads small
-async function toWebp(file: File, maxDim: number = 1600, quality: number = 0.8): Promise<File> {
-  // Decode
+// Client-side image conversion to WebP (no resizing)
+async function toWebp(file: File, quality: number = 0.8): Promise<File> {
   let bitmap: ImageBitmap | null = null;
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    // Fallback via HTMLImageElement
+    // Fallback: read -> blob -> createImageBitmap (avoids new Image())
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    await new Promise<void>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const off = document.createElement("canvas");
-        off.width = img.width;
-        off.height = img.height;
-        const ctx = off.getContext("2d");
-        if (!ctx) return reject(new Error("Canvas context not available"));
-        ctx.drawImage(img, 0, 0);
-        createImageBitmap(off).then(b => { bitmap = b; resolve(); }).catch(reject);
-      };
-      img.onerror = reject;
-      img.src = dataUrl;
-    });
+    const blobFromDataUrl = await fetch(dataUrl).then(r => r.blob());
+    bitmap = await createImageBitmap(blobFromDataUrl);
   }
 
   if (!bitmap) throw new Error("Failed to decode image");
 
-  // Resize if needed
-  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-  const w = Math.max(1, Math.round(bitmap.width * scale));
-  const h = Math.max(1, Math.round(bitmap.height * scale));
-
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas context not available");
-  ctx.drawImage(bitmap, 0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
 
   const blob: Blob = await new Promise((res, rej) =>
     canvas.toBlob(b => (b ? res(b) : rej(new Error("toBlob failed"))), "image/webp", quality)
