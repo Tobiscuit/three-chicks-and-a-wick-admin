@@ -612,16 +612,20 @@ type InventorySetQuantitiesResponse = {
   };
 };
 
-export async function setInventoryQuantity(params: { inventoryItemId: string; locationId: string; quantity: number; }): Promise<InventorySetQuantitiesResponse> {
+export async function setInventoryQuantity(params: { inventoryItemId: string; locationId: string; quantity: number; compareQuantity?: number; }): Promise<InventorySetQuantitiesResponse> {
+  const { inventoryItemId, locationId, quantity, compareQuantity } = params;
+  const useCompare = typeof compareQuantity === 'number';
   const variables = {
     input: {
       name: "available",
       reason: "correction",
+      ...(useCompare ? {} : { ignoreCompareQuantity: true }),
       quantities: [
         {
-          inventoryItemId: params.inventoryItemId,
-          locationId: params.locationId,
-          quantity: params.quantity,
+          inventoryItemId,
+          locationId,
+          quantity,
+          ...(useCompare ? { compareQuantity } : {}),
         },
       ],
     },
