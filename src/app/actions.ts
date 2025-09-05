@@ -172,15 +172,14 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
     console.log("[getGalleryImagesAction] START: Using central Firebase Admin SDK.");
 
     try {
-        const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-        if (!bucketName) {
-            console.error("[getGalleryImagesAction] CRITICAL: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is not set or empty.");
-            throw new Error("Server configuration error: Storage bucket not specified.");
+        // Use the Admin SDK's configured default bucket (appspot.com) preference
+        const bucket = adminStorage.bucket();
+        console.log('[getGalleryImagesAction] Bucket diagnostics:', {
+            bucketName: bucket.name,
+        });
+        if (!bucket.name) {
+            throw new Error("Admin bucket name is empty. Ensure FIREBASE_STORAGE_BUCKET_ADMIN or projectId is set.");
         }
-
-        // adminStorage is already initialized and configured from the central file.
-        const bucket = adminStorage.bucket(bucketName);
-        console.log(`[getGalleryImagesAction] Using bucket: ${bucket.name}`);
 
         const prefix = 'gallery-backgrounds/';
         const [files] = await bucket.getFiles({ prefix });
