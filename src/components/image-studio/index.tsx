@@ -34,6 +34,58 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "../ui/scroll-area";
 
 
+// Client-side image conversion to WebP to keep payloads small
+async function toWebp(file: File, maxDim: number = 1600, quality: number = 0.8): Promise<File> {
+  // Decode
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    // Fallback via HTMLImageElement
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const off = document.createElement("canvas");
+        off.width = img.width;
+        off.height = img.height;
+        const ctx = off.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas context not available"));
+        ctx.drawImage(img, 0, 0);
+        createImageBitmap(off).then(b => { bitmap = b; resolve(); }).catch(reject);
+      };
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+  }
+
+  if (!bitmap) throw new Error("Failed to decode image");
+
+  // Resize if needed
+  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas context not available");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+
+  const blob: Blob = await new Promise((res, rej) =>
+    canvas.toBlob(b => (b ? res(b) : rej(new Error("toBlob failed"))), "image/webp", quality)
+  );
+
+  const safeName = file.name.replace(/\.[^.]+$/, ".webp");
+  return new File([blob], safeName, { type: "image/webp" });
+}
+
 const formSchema = z.object({
   primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
   secondaryProductImage: z.any().optional(),
@@ -187,8 +239,13 @@ export function ImageStudio() {
     setGeneratedImage(null);
 
     const formData = new FormData();
-    formData.append('primaryProductImage', values.primaryProductImage);
-    if(values.secondaryProductImage) formData.append('secondaryProductImage', values.secondaryProductImage);
+    // Convert to WebP client-side to shrink payloads
+    const primaryWebp = await toWebp(values.primaryProductImage);
+    formData.append('primaryProductImage', primaryWebp);
+    if(values.secondaryProductImage) {
+      const secondaryWebp = await toWebp(values.secondaryProductImage);
+      formData.append('secondaryProductImage', secondaryWebp);
+    }
     formData.append('backgroundType', values.backgroundType);
     if(values.backgroundPrompt) formData.append('backgroundPrompt', values.backgroundPrompt);
     if(values.selectedBackgroundUrl) formData.append('selectedBackgroundUrl', values.selectedBackgroundUrl);
