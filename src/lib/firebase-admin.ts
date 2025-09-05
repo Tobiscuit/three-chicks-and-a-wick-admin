@@ -9,15 +9,26 @@ let app: App;
 if (getApps().length === 0) {
   console.log("[Firebase Admin] Initializing Firebase Admin SDK...");
 
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  const publicBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const adminBucketEnv = process.env.FIREBASE_STORAGE_BUCKET_ADMIN;
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
 
   try {
-    const options: any = {
-      projectId,
-      storageBucket,
-    };
+    // Determine admin bucket: prefer explicit admin bucket (appspot.com),
+    // else derive from projectId, else fall back to public bucket if provided.
+    const derivedAdminBucket = projectId ? `${projectId}.appspot.com` : undefined;
+    const storageBucket = adminBucketEnv || derivedAdminBucket || publicBucket;
+
+    console.log('[Firebase Admin] Bucket selection diagnostics:', {
+      projectIdCandidate: projectId || 'unset',
+      adminBucketEnv: adminBucketEnv || 'unset',
+      publicBucket,
+      derivedAdminBucket: derivedAdminBucket || 'unset',
+      chosenBucket: storageBucket || 'unset',
+    });
+
+    const options: any = { projectId, storageBucket };
 
     if (serviceAccountJson && serviceAccountJson.trim().length > 0) {
       console.log("[Firebase Admin] Using credentials from FIREBASE_SERVICE_ACCOUNT env var.");
@@ -43,8 +54,8 @@ if (getApps().length === 0) {
     if (!projectId) {
       console.warn('[Firebase Admin] WARNING: projectId is not set. Set NEXT_PUBLIC_FIREBASE_PROJECT_ID.');
     }
-    if (!storageBucket) {
-      console.warn('[Firebase Admin] WARNING: storageBucket is not set. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET.');
+    if (!options.storageBucket) {
+      console.warn('[Firebase Admin] WARNING: storageBucket is not set. Prefer FIREBASE_STORAGE_BUCKET_ADMIN or set projectId.');
     }
   } catch (e: any) {
     console.error("[Firebase Admin] Failed to initialize Admin SDK:", e?.message || e);
