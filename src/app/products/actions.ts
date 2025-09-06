@@ -1,7 +1,7 @@
 
 "use server";
 
-import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity } from "@/services/shopify";
+import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity, getProductById } from "@/services/shopify";
 import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, CreateMediaInput, NewProductVariantInput } from "@/services/shopify";
 import { adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +18,13 @@ type ActionResult = {
 async function uploadImageToFirebase(file: File): Promise<string> {
     // adminStorage is pre-initialized from our central file
     const bucket = adminStorage.bucket();
-    const fileName = `product-images/${uuidv4()}-${file.name}`;
+    // Sanitize the original file name to avoid spaces or unsafe URL chars
+    const sanitized = file.name
+        .toLowerCase()
+        .replace(/[^a-z0-9.]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    const fileName = `product-images/${uuidv4()}-${sanitized}`;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     const blob = bucket.file(fileName);
@@ -37,7 +43,7 @@ async function uploadImageToFirebase(file: File): Promise<string> {
         blobStream.on('finish', async () => {
             try {
                 await blob.makePublic();
-                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${encodeURIComponent(fileName)}`;
                 resolve(publicUrl);
             } catch (error) {
                  console.error("[Firebase Make Public Error]", error);
@@ -79,7 +85,17 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
         
         let imageUrl: string | null = null;
         if (imageFile && imageFile.size > 0) {
-            imageUrl = await uploadImageToFirebase(imageFile);
+            const candidateUrl = await uploadImageToFirebase(imageFile);
+            try {
+                const head = await fetch(candidateUrl, { method: 'HEAD' });
+                if (head.ok) {
+                    imageUrl = candidateUrl;
+                } else {
+                    console.warn("[Image HEAD check failed]", candidateUrl, head.status, head.statusText);
+                }
+            } catch (e) {
+                console.warn("[Image HEAD check error]", e);
+            }
         }
         
         const descriptionHtml = description 
@@ -121,7 +137,7 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
         // Step 2: Add the variant to the newly created product
         const variants: ProductVariantInput[] = [{
             price,
-            sku,
+            // sku must be set via inventoryItemUpdate after creation; not allowed on ProductVariantsBulkInput
             inventoryItem: { tracked: true },
             inventoryQuantities: [{
                 availableQuantity: inventory,
@@ -139,7 +155,17 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
              // For now, we'll just report the error.
              throw new Error(`Product was created, but variant creation failed: ${errorMessages}`);
         }
-        
+        // Set SKU after variant creation using the inventory item id
+        try {
+            const productAfter = await getProductById(productId);
+            const invItemId = productAfter?.variants.edges[0]?.node.inventoryItem.id;
+            if (invItemId) {
+                await updateInventoryItem({ id: invItemId, sku });
+            }
+        } catch (e) {
+            console.warn("[Post-create SKU update warning]", e);
+        }
+
         return { success: true, productId };
 
     } catch (e: any) {
