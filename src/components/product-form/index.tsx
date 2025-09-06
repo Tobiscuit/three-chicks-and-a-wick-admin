@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import CurrencyInput from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -280,12 +281,23 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 <Card>
                 <CardHeader><CardTitle>Pricing &amp; Inventory</CardTitle></CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
-                    <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Price</FormLabel><FormControl><div className="relative"><span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">$</span><Input type="text" inputMode="decimal" className="pl-7" placeholder="25.00" {...field} onBlur={(e) => {
-                        const value = parseFloat(e.target.value);
-                        if (!isNaN(value)) {
-                            field.onChange(value.toFixed(2));
-                        }
-                    }}/></div></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Price</FormLabel>
+                                <FormControl>
+                                    <CurrencyInput
+                                        placeholder="25.00"
+                                        value={field.value}
+                                        onChange={(val) => field.onChange(val)}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU (Stock Keeping Unit)</FormLabel><FormControl><Input placeholder="Auto-generated if left empty" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="inventory" render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>Available Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </CardContent>
