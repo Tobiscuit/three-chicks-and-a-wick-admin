@@ -12,6 +12,19 @@ type CurrencyInputProps = Omit<NumericFormatProps, "onValueChange" | "value" | "
     className?: string;
 };
 
+const ShadcnInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+    ({ className, ...props }, ref) => (
+        <input
+            ref={ref}
+            type="text"
+            inputMode="decimal"
+            className={cn("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className)}
+            {...props}
+        />
+    )
+);
+ShadcnInput.displayName = "ShadcnInput";
+
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
     ({ value, onChange, className, onBlur, ...rest }, ref) => {
         const lastRaw = useRef<string>(typeof value === "string" ? value : String(value ?? ""));
@@ -26,14 +39,8 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
                 allowNegative={false}
                 allowLeadingZeros={false}
                 prefix="$"
-                customInput={(props: any) => (
-                    <input
-                        {...props}
-                        type="text"
-                        inputMode="decimal"
-                        className={cn("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className)}
-                    />
-                )}
+                customInput={ShadcnInput}
+                className={className}
                 onValueChange={(values) => {
                     const raw = values.value || ""; // numeric string without formatting
                     lastRaw.current = raw;
