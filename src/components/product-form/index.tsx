@@ -79,8 +79,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const isEditMode = !!initialData;
   
   const rawPriceString = initialData?.priceRange.minVariantPrice.amount;
-  const priceAsNumber = rawPriceString ? parseFloat(rawPriceString) : 0;
-  const priceString = isNaN(priceAsNumber) ? "" : priceAsNumber.toFixed(2);
+  const priceString = rawPriceString !== undefined
+    ? (() => {
+        const num = parseFloat(rawPriceString);
+        return isNaN(num) ? "" : num.toFixed(2);
+      })()
+    : "";
   
   const defaultValues: Partial<ProductFormValues> = {
       title: initialData?.title || "",
