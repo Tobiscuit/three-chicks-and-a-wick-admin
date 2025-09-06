@@ -64,9 +64,12 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
 
         const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
             const raw = e.target.value;
-            // If user typed a decimal explicitly, respect it up to 2 places
-            if (raw.includes(".")) {
-                const cleaned = raw.replace(/[^0-9.]/g, "");
+            // Treat trailing/inserted ".00" as our own formatting to allow appending digits to dollars
+            const rawWithoutFormattingZeros = raw.replace(/\.00(?![0-9])/g, "").replace(".00", "");
+
+            if (rawWithoutFormattingZeros.includes(".")) {
+                // If user typed a decimal explicitly, respect it up to 2 places
+                const cleaned = rawWithoutFormattingZeros.replace(/[^0-9.]/g, "");
                 const [dollars, centsRaw] = cleaned.split(".");
                 const dollarsDigits = stripToDigits(dollars);
                 const dollarsNum = dollarsDigits ? Number(dollarsDigits) : 0;
@@ -79,7 +82,7 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
             }
 
             // Digits-only typing case
-            const digits = stripToDigits(raw);
+            const digits = stripToDigits(rawWithoutFormattingZeros);
             const formatted = formatDollarsFromDigits(digits);
             if (!isControlled) setInternal(formatted);
             onChange?.(digits.length <= 2 ? String(Number(digits || "0")) : `${Number(digits.slice(0, -2))}.${digits.slice(-2)}`);
