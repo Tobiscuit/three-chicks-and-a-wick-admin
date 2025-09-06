@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { NumericFormat, NumericFormatProps } from "react-number-format";
+import { normalizeMoneyFromNumericString } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type CurrencyInputProps = Omit<NumericFormatProps, "onValueChange" | "value" | "defaultValue"> & {
@@ -12,7 +13,8 @@ type CurrencyInputProps = Omit<NumericFormatProps, "onValueChange" | "value" | "
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-    ({ value, onChange, className, ...rest }, ref) => {
+    ({ value, onChange, className, onBlur, ...rest }, ref) => {
+        const lastRaw = useRef<string>(typeof value === "string" ? value : String(value ?? ""));
         return (
             <NumericFormat
                 getInputRef={ref}
@@ -33,7 +35,13 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
                     />
                 )}
                 onValueChange={(values) => {
-                    onChange?.(values.value || "");
+                    const raw = values.value || ""; // numeric string without formatting
+                    lastRaw.current = raw;
+                    onChange?.(raw);
+                }}
+                onBlur={(e) => {
+                    onChange?.(normalizeMoneyFromNumericString(lastRaw.current));
+                    onBlur?.(e as any);
                 }}
                 {...rest}
             />
