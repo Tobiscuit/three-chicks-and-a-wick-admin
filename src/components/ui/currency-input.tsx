@@ -12,14 +12,13 @@ type CurrencyInputProps = Omit<NumericFormatProps, "onValueChange" | "value" | "
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-    ({ value, defaultValue, onChange, className, ...rest }, ref) => {
+    ({ value, onChange, className, ...rest }, ref) => {
         return (
             <NumericFormat
                 getInputRef={ref}
                 value={value as any}
-                defaultValue={defaultValue as any}
-                thousandSeparator="," 
-                decimalSeparator="."
+                valueIsNumericString
+                thousandSeparator
                 decimalScale={2}
                 fixedDecimalScale
                 allowNegative={false}
@@ -34,7 +33,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
                     />
                 )}
                 onValueChange={(values) => {
-                    onChange?.(values.value ? (Number(values.value) / 100).toFixed(2) : "");
+                    onChange?.(values.value || "");
                 }}
                 {...rest}
             />
