@@ -109,6 +109,10 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
             status,
             tags: tags ? tags.split(',').map(tag => tag.trim()) : undefined,
             collectionsToJoin: collections.length > 0 ? collections : undefined,
+            // Explicitly define default option name so variant options map cleanly
+            // Shopify auto-creates "Title" if omitted, but we set it for clarity
+            // @ts-expect-error: Our local type may not declare options, but Shopify accepts it
+            options: ["Title"],
         };
         
         let mediaInput: CreateMediaInput[] | undefined = undefined;
@@ -136,6 +140,10 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
         
         // Step 2: Add the variant to the newly created product
         const variants: ProductVariantInput[] = [{
+            // For single-variant products, Shopify expects option values matching the product's options
+            // Default option is "Title" with value "Default Title"
+            // @ts-expect-error: options exists on ProductVariantsBulkInput
+            options: ["Default Title"],
             price,
             // sku must be set via inventoryItemUpdate after creation; not allowed on ProductVariantsBulkInput
             inventoryItem: { tracked: true },
