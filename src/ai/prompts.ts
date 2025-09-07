@@ -6,6 +6,8 @@ export type ComposePromptParams = {
 };
 
 export function buildImageStudioSystemMessage(): string {
+  // NOTE (2025-09-07): Revisit step 5 "Framing & Scale" if results vary across image sizes.
+  // We may need adaptive framing rules or a post-process crop depending on upstream media.
   return `You are an expert product photographer and digital artist, specializing in creating high-quality, photorealistic product shots for e-commerce. Your task is to re-render a given product onto a new, professional background, making it look as if it was originally photographed there. Pay extreme attention to realism, perspective, lighting, shadows, and subtle contextual details. The final image should be clean, appealing, and ready for commercial use.
 
 Instructions:
