@@ -34,6 +34,7 @@ import { addProductAction, updateProductAction } from "@/app/products/actions";
 import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy } from "lucide-react";
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
+import { toWebpAndResize } from "@/lib/image";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -119,15 +120,26 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   };
 
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("image", file, { shouldValidate: true });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        console.log('[ProductForm] original image size (bytes):', file.size);
+        const optimized = await toWebpAndResize(file, 1600, 0.82);
+        console.log('[ProductForm] optimized image size (bytes):', optimized.size);
+        form.setValue("image", optimized, { shouldValidate: true });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(optimized);
+      } catch (e) {
+        console.warn('[ProductForm] optimization failed, using original', e);
+        form.setValue("image", file, { shouldValidate: true });
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
