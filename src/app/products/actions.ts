@@ -1,7 +1,7 @@
 
 "use server";
 
-import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity, getProductById } from "@/services/shopify";
+import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity, getProductById, deleteProduct } from "@/services/shopify";
 import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, CreateMediaInput, NewProductVariantInput } from "@/services/shopify";
 import { adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
@@ -265,5 +265,22 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
     } catch (e: any) {
         console.error("[updateProductAction Error]", e);
         return { success: false, error: e.message || "An unexpected error occurred while updating the product." };
+    }
+}
+
+export async function deleteProductAction(productId: string): Promise<ActionResult> {
+    try {
+        const resp = await deleteProduct(productId);
+        const errors = resp.productDelete.userErrors || [];
+        if (errors.length > 0) {
+            const msgs = errors.map(e => e.message).join(', ');
+            return { success: false, error: `Shopify errors: ${msgs}` };
+        }
+        if (!resp.productDelete.deletedProductId) {
+            return { success: false, error: "Product delete did not return an id." };
+        }
+        return { success: true, productId: resp.productDelete.deletedProductId };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Unexpected error while deleting product.' };
     }
 }

@@ -494,6 +494,28 @@ export async function updateProductVariant(productId: string, variantInput: Prod
     return fetchShopify<ProductVariantUpdateResponse>(PRODUCT_VARIANTS_BULK_UPDATE_MUTATION, variables);
 }
 
+// --- Delete Product ---
+const PRODUCT_DELETE_MUTATION = `
+  mutation productDelete($input: ProductDeleteInput!) {
+    productDelete(input: $input) {
+      deletedProductId
+      userErrors { field message }
+    }
+  }
+`;
+
+type ProductDeleteResponse = {
+  productDelete: {
+    deletedProductId: string | null;
+    userErrors: { field?: string[]; message: string }[];
+  };
+};
+
+export async function deleteProduct(productId: string): Promise<ProductDeleteResponse> {
+  const variables = { input: { id: productId } };
+  return fetchShopify<ProductDeleteResponse>(PRODUCT_DELETE_MUTATION, variables);
+}
+
 
 const INVENTORY_ITEM_UPDATE_MUTATION = `
     mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {

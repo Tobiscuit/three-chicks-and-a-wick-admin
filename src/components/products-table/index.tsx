@@ -18,7 +18,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { ShopifyProduct } from "@/services/shopify"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
-import { Search, PlusCircle } from "lucide-react"
+import { Search, PlusCircle, Trash } from "lucide-react"
+import { deleteProductAction } from "@/app/products/actions";
 
 type ProductsTableProps = {
   products: ShopifyProduct[];
@@ -30,6 +31,18 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
   const handleRowClick = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`);
+  };
+
+  const handleDelete = async (e: React.MouseEvent, productId: string, title: string) => {
+    e.stopPropagation();
+    const confirmDelete = confirm(`Delete "${title}"? This cannot be undone.`);
+    if (!confirmDelete) return;
+    const res = await deleteProductAction(productId);
+    if (res.success) {
+      router.refresh();
+    } else {
+      alert(res.error || "Failed to delete product.");
+    }
   };
 
   const filteredProducts = products.filter((product) => {
@@ -73,6 +86,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
               <TableHead className="hidden md:table-cell">
                 Inventory
               </TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -108,6 +122,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {product.totalInventory ?? 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="destructive" size="sm" onClick={(e)=>handleDelete(e, product.id, product.title)}>
+                    <Trash className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
