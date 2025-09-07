@@ -513,8 +513,8 @@ export async function getPublicationIds(limit: number = 10): Promise<{ id: strin
 }
 
 const PUBLISHABLE_PUBLISH_MUTATION = `
-  mutation publishablePublish($input: PublishablePublishInput!) {
-    publishablePublish(input: $input) {
+  mutation publishablePublish($id: ID!, $publicationIds: [ID!]!) {
+    publishablePublish(id: $id, publicationIds: $publicationIds) {
       publishable { ... on Product { id } }
       userErrors { field message }
     }
@@ -529,8 +529,7 @@ type PublishablePublishResponse = {
 }
 
 export async function publishProductToPublications(productId: string, publicationIds: string[]): Promise<PublishablePublishResponse> {
-  const variables = { input: { id: productId, publicationIds } };
-  return fetchShopify<PublishablePublishResponse>(PUBLISHABLE_PUBLISH_MUTATION, variables);
+  return fetchShopify<PublishablePublishResponse>(PUBLISHABLE_PUBLISH_MUTATION, { id: productId, publicationIds });
 }
 
 // --- Delete Product ---
