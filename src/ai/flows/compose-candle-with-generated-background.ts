@@ -52,6 +52,12 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
     outputSchema: ComposeCandleWithGeneratedBackgroundOutputSchema,
   },
   async input => {
+    console.log("[Compose Flow] start", {
+      bgLength: input.generatedBackground?.length ?? 0,
+      angle1Length: input.primaryCandleImage?.length ?? 0,
+      angle2Length: input.secondaryCandleImage?.length ?? 0,
+      hasContext: Boolean(input.contextualDetails),
+    });
 
     const system = buildImageStudioSystemMessage();
     const user = buildImageStudioUserMessage({
@@ -68,6 +74,12 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
         { media: { url: input.primaryCandleImage } },
         ...(input.secondaryCandleImage ? [{ media: { url: input.secondaryCandleImage } }] as Part[] : []),
     ];
+
+    console.log("[Compose Flow] prompt parts", {
+      textChars: system.length + user.length,
+      mediaCount: promptParts.filter(p => 'media' in p).length,
+      totalParts: promptParts.length,
+    });
 
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-image-preview',

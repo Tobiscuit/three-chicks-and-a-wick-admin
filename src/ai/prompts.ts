@@ -18,8 +18,8 @@ Instructions:
 }
 
 export function buildImageStudioUserMessage(params: ComposePromptParams): string {
-  const { selectedBackgroundUrl, candleAngle1Url, candleAngle2Url, contextualDetails } = params;
-  return `Input Product Images:\nImage of candle from Angle 1: ${candleAngle1Url}\n${candleAngle2Url ? `Image of candle from Angle 2: ${candleAngle2Url}\n` : ''}\nSelected Professional Background: ${selectedBackgroundUrl}\n\nContextual Details (Optional): "${contextualDetails ?? ''}"\n\nGenerate the final, professional product shot of the candle.`;
+  const { contextualDetails } = params;
+  return `Input Assets:\n- The SELECTED_BACKGROUND_IMAGE is attached as a media input.\n- The product images (ANGLE_1 and optional ANGLE_2) are attached as media inputs.\n- Do not echo or transcribe any binary or data URI content.\n\nContextual Details (Optional): "${contextualDetails ?? ''}"\n\nGenerate the final, professional product shot of the candle.`;
 }
 
 
