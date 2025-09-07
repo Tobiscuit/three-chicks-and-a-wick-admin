@@ -362,7 +362,7 @@ export function ImageStudio() {
                                                     return (
                                                         <div
                                                             key={bg.name}
-                                                            className={`relative cursor-pointer group rounded-md p-1.5 ${selected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                                                            className="relative cursor-pointer group rounded-md p-1 bg-background"
                                                             onClick={() => field.onChange(bg.url)}
                                                         >
                                                             <Image
@@ -372,7 +372,12 @@ export function ImageStudio() {
                                                                 height={200}
                                                                 className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
                                                             />
-                                                            {selected && <div className="pointer-events-none absolute inset-0 bg-primary/30 rounded-md"/>}
+                                                            {selected && (
+                                                                <>
+                                                                    <div className="pointer-events-none absolute inset-1 rounded-md outline outline-2 outline-primary" />
+                                                                    <div className="pointer-events-none absolute inset-1 rounded-md bg-primary/20" />
+                                                                </>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
