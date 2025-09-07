@@ -24,6 +24,7 @@ import CurrencyInput from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -49,6 +50,7 @@ const productFormSchema = z.object({
   productType: z.string().optional(),
   collections: z.array(z.string()).optional(),
   tags: z.string().optional(),
+  featured: z.boolean().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -87,6 +89,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       })()
     : "";
   
+  const featuredCollection = collections.find(c => c.handle?.toLowerCase?.() === 'featured' || c.title.toLowerCase() === 'featured');
+
   const defaultValues: Partial<ProductFormValues> = {
       title: initialData?.title || "",
       description: initialData?.description || "",
@@ -98,6 +102,10 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       productType: initialData?.productType || "Candle",
       collections: initialData?.collections?.edges.map(e => e.node.id) || [],
       tags: initialData?.tags.join(', ') || "",
+      featured: (() => {
+        const ids = initialData?.collections?.edges.map(e => e.node.id) || [];
+        return featuredCollection ? ids.includes(featuredCollection.id) : false;
+      })(),
   };
 
   const form = useForm<ProductFormValues>({
@@ -178,6 +186,14 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     if (data.tags) formData.append('tags', data.tags);
     if (data.collections) {
         data.collections.forEach(id => formData.append('collections', id));
+    }
+    // When editing, compute collections to leave (so toggling featured off is reflected)
+    if (isEditMode && initialData) {
+        const original = new Set((initialData.collections?.edges || []).map(e => e.node.id));
+        const current = new Set(data.collections || []);
+        const toLeave: string[] = [];
+        original.forEach(id => { if (!current.has(id)) toLeave.push(id); });
+        toLeave.forEach(id => formData.append('collectionsToLeave', id));
     }
 
 
@@ -370,6 +386,33 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {featuredCollection && (
+                          <FormField
+                            control={form.control}
+                            name="featured"
+                            render={({ field }) => (
+                              <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                                <div>
+                                  <FormLabel>Featured on Homepage</FormLabel>
+                                  <FormDescription>Add this product to the Featured collection used on the storefront home page.</FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={(checked) => {
+                                      field.onChange(checked);
+                                      const current = new Set(form.getValues('collections') || []);
+                                      if (checked) current.add(featuredCollection.id);
+                                      else current.delete(featuredCollection.id);
+                                      form.setValue('collections', Array.from(current), { shouldDirty: true });
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                         <FormField control={form.control} name="productType" render={({ field }) => (
                             <FormItem>
                             <FormLabel>Product Type</FormLabel>

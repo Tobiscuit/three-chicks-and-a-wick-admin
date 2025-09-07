@@ -67,6 +67,7 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
     const productType = formData.get('productType') as string | undefined;
     const tags = formData.get('tags') as string | undefined;
     const collections = formData.getAll('collections') as string[];
+    const collectionsToLeave = formData.getAll('collectionsToLeave') as string[];
 
     if (!title || !price || !sku || !status || !inventoryStr) {
         return { success: false, error: "Missing required product fields." };
@@ -234,6 +235,7 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
             status,
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
             collectionsToJoin: collections,
+            collectionsToLeave: collectionsToLeave,
         };
 
         const variantInput: ProductVariantInput = {
