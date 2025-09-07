@@ -134,39 +134,38 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
             throw new Error("Product was created but its ID could not be retrieved.");
         }
         
-        // Step 2: Add the variant to the newly created product
-        const variants: ProductVariantInput[] = [{
-            // Set the variant's option values for the default "Title" option (2025-07)
-            // @ts-expect-error: optionValues exists on ProductVariantsBulkInput in 2025-07
-            optionValues: [{ name: "Default Title", optionName: "Title" }],
-            price,
-            // sku must be set via inventoryItemUpdate after creation; not allowed on ProductVariantsBulkInput
-            inventoryItem: { tracked: true },
-            inventoryQuantities: [{
-                availableQuantity: inventory,
-                locationId: locationId,
-            }],
-        }];
-
-        const variantResult = await createProductVariantsBulk(productId, variants);
-        const variantErrors = variantResult.productVariantsBulkCreate.userErrors;
-
-        if (variantErrors.length > 0) {
-             const errorMessages = variantErrors.map(e => e.message).join(', ');
-             // Note: Here we have a product that was created but the variant failed.
-             // A real-world app might need logic to delete the orphaned product.
-             // For now, we'll just report the error.
-             throw new Error(`Product was created, but variant creation failed: ${errorMessages}`);
+        // Step 2: Single-variant flow — update the default variant Shopify created for us
+        const productAfter = await getProductById(productId);
+        const defaultVariant = productAfter?.variants.edges[0]?.node;
+        if (!defaultVariant) {
+            throw new Error("Product created but default variant not found.");
         }
-        // Set SKU after variant creation using the inventory item id
-        try {
-            const productAfter = await getProductById(productId);
-            const invItemId = productAfter?.variants.edges[0]?.node.inventoryItem.id;
-            if (invItemId) {
-                await updateInventoryItem({ id: invItemId, sku });
-            }
-        } catch (e) {
-            console.warn("[Post-create SKU update warning]", e);
+
+        // Update price and SKU
+        const variantUpdateInput: ProductVariantInput = { id: defaultVariant.id, price };
+        const [variantUpdateResp, skuUpdateResp] = await Promise.all([
+            updateProductVariant(productId, variantUpdateInput),
+            updateInventoryItem({ id: defaultVariant.inventoryItem.id, sku }),
+        ]);
+
+        const vErrs = variantUpdateResp.productVariantsBulkUpdate?.userErrors || [];
+        const sErrs = skuUpdateResp.inventoryItemUpdate?.userErrors || [];
+        const combinedErrs = [...vErrs, ...sErrs];
+        if (combinedErrs.length > 0) {
+            const msgs = combinedErrs.map(e => e.message).join(', ');
+            throw new Error(`Variant/SKU update errors: ${msgs}`);
+        }
+
+        // Set absolute inventory quantity
+        const invSet = await setInventoryQuantity({
+            inventoryItemId: defaultVariant.inventoryItem.id,
+            locationId: locationId,
+            quantity: inventory,
+        });
+        const invErrors = invSet.inventorySetQuantities?.userErrors || [];
+        if (invErrors.length > 0) {
+            const msgs = invErrors.map(e => e.message).join(', ');
+            throw new Error(`Inventory set errors: ${msgs}`);
         }
 
         return { success: true, productId };
