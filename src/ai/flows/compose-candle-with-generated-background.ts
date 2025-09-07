@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { buildImageStudioSystemMessage, buildImageStudioUserMessage } from '@/ai/prompts';
 import {z} from 'genkit';
 import type { Part } from 'genkit';
 
@@ -52,27 +53,21 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
   },
   async input => {
 
-    let promptText: string;
-    const promptParts: Part[] = [];
+    const system = buildImageStudioSystemMessage();
+    const user = buildImageStudioUserMessage({
+        selectedBackgroundUrl: input.generatedBackground,
+        candleAngle1Url: input.primaryCandleImage,
+        candleAngle2Url: input.secondaryCandleImage,
+        contextualDetails: input.contextualDetails,
+    });
 
-    if (input.secondaryCandleImage) {
-        promptText = `Use the second image as the primary subject (a candle). Use the third image as a reference for the candle's shape, texture, and lighting. Isolate the candle from its original background. Now, realistically place that isolated candle onto a surface within the first image (the new background), as if it were a professional product photograph. Do not make the candle float; it must be sitting on something.`;
-        promptParts.push({media: {url: input.generatedBackground}}); // Background
-        promptParts.push({media: {url: input.primaryCandleImage}}); // Primary Candle
-        promptParts.push({media: {url: input.secondaryCandleImage}}); // Secondary Candle
-    } else {
-        promptText = `Analyze the second image to identify the primary product, which is a candle. Isolate this candle, including its container and wick, from its original background. Discard any other items or clutter. Now, realistically place that isolated candle onto a surface within the first image (the new background), as if it were a professional product photograph. Do not make the candle float; it must be sitting on something.`;
-        promptParts.push({media: {url: input.generatedBackground}}); // Background
-        promptParts.push({media: {url: input.primaryCandleImage}}); // Primary Candle
-    }
-    
-    if (input.contextualDetails) {
-        promptText += ` Additionally, modify the new background to subtly incorporate the following detail: '${input.contextualDetails}'.`;
-    }
-    promptText += ` Ensure the final composite image is photorealistic, with seamless lighting and shadows that match the new background's environment. The final output image must be in image/webp format.`;
-    
-    promptParts.unshift({ text: promptText });
-
+    const promptParts: Part[] = [
+        { text: system },
+        { text: user },
+        { media: { url: input.generatedBackground } },
+        { media: { url: input.primaryCandleImage } },
+        ...(input.secondaryCandleImage ? [{ media: { url: input.secondaryCandleImage } }] as Part[] : []),
+    ];
 
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-image-preview',
