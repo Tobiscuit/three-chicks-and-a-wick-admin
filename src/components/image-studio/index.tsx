@@ -362,7 +362,7 @@ export function ImageStudio() {
                                                     return (
                                                         <div
                                                             key={bg.name}
-                                                            className={`relative cursor-pointer group rounded-md ${selected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                                                            className={`relative cursor-pointer group rounded-md p-1.5 ${selected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                                                             onClick={() => field.onChange(bg.url)}
                                                         >
                                                             <Image
