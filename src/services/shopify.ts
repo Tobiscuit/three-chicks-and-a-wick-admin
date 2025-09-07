@@ -494,6 +494,44 @@ export async function updateProductVariant(productId: string, variantInput: Prod
     return fetchShopify<ProductVariantUpdateResponse>(PRODUCT_VARIANTS_BULK_UPDATE_MUTATION, variables);
 }
 
+// --- Publications (Sales Channels) ---
+const GET_PUBLICATIONS_QUERY = `
+  query getPublications($first: Int!) {
+    publications(first: $first) {
+      edges { node { id name } }
+    }
+  }
+`;
+
+type GetPublicationsResponse = {
+  publications: { edges: { node: { id: string; name: string } }[] }
+}
+
+export async function getPublicationIds(limit: number = 10): Promise<{ id: string; name: string }[]> {
+  const res = await fetchShopify<GetPublicationsResponse>(GET_PUBLICATIONS_QUERY, { first: limit });
+  return res.publications.edges.map(e => e.node);
+}
+
+const PUBLISHABLE_PUBLISH_MUTATION = `
+  mutation publishablePublish($id: ID!, $publicationIds: [ID!]!) {
+    publishablePublish(id: $id, publicationIds: $publicationIds) {
+      publishable { id }
+      userErrors { field message }
+    }
+  }
+`;
+
+type PublishablePublishResponse = {
+  publishablePublish: {
+    publishable: { id: string } | null;
+    userErrors: { field?: string[]; message: string }[];
+  }
+}
+
+export async function publishProductToPublications(productId: string, publicationIds: string[]): Promise<PublishablePublishResponse> {
+  return fetchShopify<PublishablePublishResponse>(PUBLISHABLE_PUBLISH_MUTATION, { id: productId, publicationIds });
+}
+
 // --- Delete Product ---
 const PRODUCT_DELETE_MUTATION = `
   mutation productDelete($input: ProductDeleteInput!) {

@@ -1,7 +1,7 @@
 
 "use server";
 
-import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity, getProductById, deleteProduct } from "@/services/shopify";
+import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity, getProductById, deleteProduct, getPublicationIds, publishProductToPublications } from "@/services/shopify";
 import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, CreateMediaInput, NewProductVariantInput } from "@/services/shopify";
 import { adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
@@ -166,6 +166,21 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
         if (invErrors.length > 0) {
             const msgs = invErrors.map(e => e.message).join(', ');
             throw new Error(`Inventory set errors: ${msgs}`);
+        }
+
+        // Step 3: Publish to all available publications (sales channels)
+        try {
+            const pubs = await getPublicationIds();
+            const ids = pubs.map(p => p.id);
+            if (ids.length > 0) {
+                const pubResp = await publishProductToPublications(productId, ids);
+                const pubErrors = pubResp.publishablePublish.userErrors || [];
+                if (pubErrors.length > 0) {
+                    console.warn('[Publish Warning]', pubErrors.map(e => e.message).join(', '));
+                }
+            }
+        } catch (e) {
+            console.warn('[Publish Error]', e);
         }
 
         return { success: true, productId };
