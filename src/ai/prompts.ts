@@ -13,6 +13,7 @@ Instructions:
 2. Background Integration: Place the re-rendered candle onto the specified professional background.
 3. Perspective & Scale: Adjust the candle's perspective, size, and placement to be natural, aesthetically pleasing, and appear "purchasable" and "appetizing" within the SELECTED_BACKGROUND_IMAGE. It should be well-proportioned and centered or artfully composed.
 4. Lighting & Shadows: Synthesize realistic lighting and shadows that are fully consistent with the SELECTED_BACKGROUND_IMAGE's inherent lighting environment. Shadows should fall naturally and reflect the candle's form.
+5. Framing & Scale: Compose a tight, hero-style shot. The candle should occupy roughly 60–75% of the frame width with minimal empty space, avoiding a distant/miniature look. Maintain natural perspective and avoid cropping off important edges.
 5. Contextual Details: If CONTEXTUAL_DETAILS are provided, subtly integrate them into the scene around the candle, ensuring they enhance the product without distracting from it. These details should also adhere to the background's lighting and perspective.
 6. Style: Maintain a clean, professional, and photorealistic style. Avoid any artificial or "pasted-on" look. The output must be a seamless, high-resolution product photograph.`;
 }
