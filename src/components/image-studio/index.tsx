@@ -357,18 +357,25 @@ export function ImageStudio() {
                                     <FormControl>
                                         <ScrollArea className="h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 md:p-3">
                                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-                                                {galleryImages.map((bg) => (
-                                                    <div key={bg.name} className="relative cursor-pointer group" onClick={() => field.onChange(bg.url)}>
-                                                        <Image
-                                                            src={bg.url}
-                                                            alt={bg.name}
-                                                            width={200}
-                                                            height={200}
-                                                            className={`object-cover w-full h-full rounded-md transition-all aspect-square ${field.value === bg.url ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'group-hover:opacity-90'}`}
-                                                        />
-                                                        {field.value === bg.url && <div className="absolute inset-0 bg-primary/30 rounded-md"/>}
-                                                    </div>
-                                                ))}
+                                                {galleryImages.map((bg) => {
+                                                    const selected = field.value === bg.url;
+                                                    return (
+                                                        <div
+                                                            key={bg.name}
+                                                            className={`relative cursor-pointer group rounded-md ${selected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                                                            onClick={() => field.onChange(bg.url)}
+                                                        >
+                                                            <Image
+                                                                src={bg.url}
+                                                                alt={bg.name}
+                                                                width={200}
+                                                                height={200}
+                                                                className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
+                                                            />
+                                                            {selected && <div className="pointer-events-none absolute inset-0 bg-primary/30 rounded-md"/>}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </ScrollArea>
                                     </FormControl>
