@@ -546,9 +546,9 @@ type InventoryItemUpdateResponse = {
     }
 }
 
-export async function updateInventoryItem(input: {id: string; sku?: string | null; cost?: number;}): Promise<InventoryItemUpdateResponse> {
-    const { id, sku, cost } = input;
-    const variables = { id, input: { ...(sku !== undefined ? { sku } : {}), ...(typeof cost === 'number' ? { cost } : {}) } };
+export async function updateInventoryItem(input: {id: string; sku?: string | null; cost?: number; tracked?: boolean;}): Promise<InventoryItemUpdateResponse> {
+    const { id, sku, cost, tracked } = input;
+    const variables = { id, input: { ...(sku !== undefined ? { sku } : {}), ...(typeof cost === 'number' ? { cost } : {}), ...(typeof tracked === 'boolean' ? { tracked } : {}) } };
     return fetchShopify<InventoryItemUpdateResponse>(INVENTORY_ITEM_UPDATE_MUTATION, variables);
 }
 

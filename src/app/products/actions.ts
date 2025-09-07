@@ -141,11 +141,11 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
             throw new Error("Product created but default variant not found.");
         }
 
-        // Update price and SKU
+        // Update price and SKU; enable tracking before quantity set
         const variantUpdateInput: ProductVariantInput = { id: defaultVariant.id, price };
         const [variantUpdateResp, skuUpdateResp] = await Promise.all([
             updateProductVariant(productId, variantUpdateInput),
-            updateInventoryItem({ id: defaultVariant.inventoryItem.id, sku }),
+            updateInventoryItem({ id: defaultVariant.inventoryItem.id, sku, tracked: true }),
         ]);
 
         const vErrs = variantUpdateResp.productVariantsBulkUpdate?.userErrors || [];
