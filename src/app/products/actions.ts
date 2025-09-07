@@ -235,7 +235,7 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
             status,
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
             collectionsToJoin: collections,
-            collectionsToLeave: collectionsToLeave,
+            ...(collectionsToLeave && collectionsToLeave.length > 0 ? { collectionsToLeave } : {}),
         };
 
         const variantInput: ProductVariantInput = {
