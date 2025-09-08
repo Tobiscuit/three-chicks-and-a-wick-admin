@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle } from "lucide-react";
-import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage } from "@/app/actions";
+import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage, createPrefillUploadUrl } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "../ui/scroll-area";
@@ -446,9 +446,13 @@ export function ImageStudio() {
                   <div className="flex gap-2 pt-2">
                     <Button type="button" onClick={async ()=>{
                       try {
-                        const res = await stashProductPrefillImage(generatedImage);
-                        if (!res.success || !res.token) throw new Error(res.error || 'Failed to stash image');
-                        window.location.href = `/products/new?token=${encodeURIComponent(res.token)}`;
+                        // Prefer signed upload to avoid large body payload in server action
+                        const contentType = 'image/webp';
+                        const { success, token, uploadUrl, error } = await createPrefillUploadUrl(contentType);
+                        if (!success || !token || !uploadUrl) throw new Error(error || 'Failed to prepare upload');
+                        const blob = await (await fetch(generatedImage)).blob();
+                        await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: blob });
+                        window.location.href = `/products/new?token=${encodeURIComponent(token)}`;
                       } catch (e:any) {
                         console.error('[Add as Product] failed', e);
                         toast({ variant: 'destructive', title: 'Could not prefill product', description: e.message || 'Please try again.'});
