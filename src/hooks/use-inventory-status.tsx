@@ -12,7 +12,8 @@ export function useInventoryStatus(inventoryItemId?: string) {
 
   useEffect(() => {
     if (!inventoryItemId) return;
-    const ref = doc(db, 'inventoryStatus', String(inventoryItemId));
+    const id = String(inventoryItemId).split('/').pop() as string; // ensure no slashes
+    const ref = doc(db, 'inventoryStatus', id);
     const unsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
         const data = snap.data() as any;

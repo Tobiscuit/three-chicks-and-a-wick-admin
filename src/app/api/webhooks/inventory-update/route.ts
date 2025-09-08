@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   try {
     const payload = JSON.parse(raw.toString('utf8'));
     // inventory_levels/update payload fields
-    const inventoryItemId = String(payload?.inventory_item_id || payload?.inventory_item?.id || '');
+    const inventoryItemIdRaw = String(payload?.inventory_item_id || payload?.inventory_item?.id || '');
+    const inventoryItemId = inventoryItemIdRaw.split('/').pop() || inventoryItemIdRaw; // Firestore-safe id
     const available = Number(payload?.available ?? payload?.available_quantity ?? 0);
     if (!inventoryItemId) return NextResponse.json({ ok: true });
 
