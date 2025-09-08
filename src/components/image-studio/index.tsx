@@ -29,7 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage, createPrefillUploadUrl } from "@/app/actions";
-import { storage } from "@/lib/firebase";
+import { storage, auth } from "@/lib/firebase";
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { ref as storageRef, uploadString } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
@@ -449,6 +450,14 @@ export function ImageStudio() {
                   <div className="flex gap-2 pt-2">
                     <Button type="button" onClick={async ()=>{
                       try {
+                        // Ensure Firebase auth (anonymous) so Storage rules allow write
+                        await new Promise<void>((resolve, reject) => {
+                          const unsub = onAuthStateChanged(auth, async (user) => {
+                            unsub();
+                            if (user) return resolve();
+                            try { await signInAnonymously(auth); resolve(); } catch (e) { reject(e); }
+                          });
+                        });
                         // Upload via Firebase client SDK to avoid CORS on signed PUT
                         const token = uuidv4();
                         const path = `prefill-product-images/${token}.webp`;
