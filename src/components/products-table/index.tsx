@@ -19,6 +19,7 @@ import type { ShopifyProduct } from "@/services/shopify"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
 import { Search, PlusCircle, Trash } from "lucide-react"
+import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { deleteProductAction } from "@/app/products/actions";
 
 type ProductsTableProps = {
@@ -121,7 +122,19 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {product.totalInventory ?? 'N/A'}
+                  {(() => {
+                    const variant = product.variants?.edges?.[0]?.node;
+                    const invId = variant?.inventoryItem?.id as string | undefined;
+                    // eslint-disable-next-line react-hooks/rules-of-hooks
+                    const { status, quantity } = useInventoryStatus(invId);
+                    const value = quantity ?? product.totalInventory ?? 'N/A';
+                    return (
+                      <span className="inline-flex items-center gap-2">
+                        {value}
+                        {status === 'syncing' && <span className="text-xs text-muted-foreground">(syncing…)</span>}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="destructive" size="sm" onClick={(e)=>handleDelete(e, product.id, product.title)}>

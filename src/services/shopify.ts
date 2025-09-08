@@ -164,6 +164,13 @@ const GET_PRODUCTS_QUERY = `
               currencyCode
             }
           }
+          variants(first: 1) {
+            edges {
+              node {
+                inventoryItem { id }
+              }
+            }
+          }
         }
       }
     }
