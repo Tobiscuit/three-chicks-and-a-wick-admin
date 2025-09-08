@@ -163,7 +163,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         console.log('[ProductForm] original image size (bytes):', file.size);
         const optimized = await toWebpAndResize(file, 1600, 0.82);
         console.log('[ProductForm] optimized image size (bytes):', optimized.size);
-        form.setValue("image", optimized, { shouldValidate: true });
+        form.setValue("image", optimized, { shouldValidate: true, shouldDirty: true });
         const reader = new FileReader();
         reader.onloadend = () => {
           setImagePreview(reader.result as string);
@@ -171,7 +171,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         reader.readAsDataURL(optimized);
       } catch (e) {
         console.warn('[ProductForm] optimization failed, using original', e);
-        form.setValue("image", file, { shouldValidate: true });
+        form.setValue("image", file, { shouldValidate: true, shouldDirty: true });
         const reader = new FileReader();
         reader.onloadend = () => setImagePreview(reader.result as string);
         reader.readAsDataURL(file);
