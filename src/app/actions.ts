@@ -225,6 +225,23 @@ export async function createPrefillUploadUrl(contentType: string): Promise<Creat
     const token = uuidv4();
     const fileName = `prefill-product-images/${token}.${ext}`;
     const bucket = adminStorage.bucket();
+
+    // Ensure CORS allows browser PUTs from our admin app origin
+    try {
+      const meta = await bucket.getMetadata();
+      const currentCors = meta[0].cors || [];
+      const origin = process.env.NEXT_PUBLIC_APP_ORIGIN || 'https://three-chicks-and-a-wick-admin.vercel.app';
+      const needRule = !currentCors.some((r:any)=> (r.origin || []).includes(origin) && (r.method || []).includes('PUT'));
+      if (needRule) {
+        const updated = [
+          ...currentCors,
+          { origin: [origin, 'http://localhost:3000'], method: ['PUT','GET','HEAD','OPTIONS'], responseHeader: ['Content-Type','x-goog-resumable'], maxAgeSeconds: 3600 },
+        ];
+        await bucket.setCors(updated);
+      }
+    } catch (e) {
+      console.warn('[createPrefillUploadUrl] CORS ensure warning:', (e as any)?.message || e);
+    }
     const file = bucket.file(fileName);
     const [url] = await file.getSignedUrl({
       action: 'write',
