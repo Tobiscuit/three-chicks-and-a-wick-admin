@@ -131,11 +131,14 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         if (!res.success || !res.url) return;
         const response = await fetch(res.url);
         const blob = await response.blob();
-        const file = new File([blob], `prefill-${Date.now()}.webp`, { type: blob.type || 'image/webp' });
-        setValue('image', file, { shouldValidate: true, shouldDirty: true });
+        const rawFile = new File([blob], `prefill-${Date.now()}.webp`, { type: blob.type || 'image/webp' });
+        console.log('[ProductForm prefill] original bytes:', rawFile.size);
+        const optimized = await toWebpAndResize(rawFile, 1600, 0.82);
+        console.log('[ProductForm prefill] optimized bytes:', optimized.size);
+        setValue('image', optimized, { shouldValidate: true, shouldDirty: true });
         const reader = new FileReader();
         reader.onloadend = () => setImagePreview(reader.result as string);
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(optimized);
       } catch {}
     })();
   }, [isEditMode, setValue]);
