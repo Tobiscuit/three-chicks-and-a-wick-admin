@@ -89,7 +89,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       })()
     : "";
   
-  const featuredCollection = collections.find(c => c.handle?.toLowerCase?.() === 'featured' || c.title.toLowerCase() === 'featured');
+  const FEATURED_ALIASES = ['featured','home-page','homepage','home','home page'];
+  const featuredCollection = collections.find(c => {
+    const handle = (c.handle || '').toLowerCase();
+    const title = (c.title || '').toLowerCase();
+    return FEATURED_ALIASES.includes(handle) || FEATURED_ALIASES.includes(title);
+  });
 
   const defaultValues: Partial<ProductFormValues> = {
       title: initialData?.title || "",
@@ -394,7 +399,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                               <FormItem className="flex items-center justify-between rounded-lg border p-3">
                                 <div>
                                   <FormLabel>Featured on Homepage</FormLabel>
-                                  <FormDescription>Add this product to the Featured collection used on the storefront home page.</FormDescription>
+                                  <FormDescription>Toggle to add/remove from the "{featuredCollection.title}" collection used on the storefront home page.</FormDescription>
                                 </div>
                                 <FormControl>
                                   <Switch
