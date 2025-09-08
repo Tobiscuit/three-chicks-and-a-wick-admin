@@ -157,6 +157,11 @@ export async function addProductAction(formData: FormData): Promise<ActionResult
             throw new Error(`Variant/SKU update errors: ${msgs}`);
         }
 
+        // Mark syncing for realtime UI (optional)
+        try {
+            await (await import('@/lib/firebase-admin')).adminDb.collection('inventoryStatus').doc(defaultVariant.inventoryItem.id).set({ status: 'syncing', updatedAt: Date.now() }, { merge: true });
+        } catch {}
+
         // Set absolute inventory quantity
         const invSet = await setInventoryQuantity({
             inventoryItemId: defaultVariant.inventoryItem.id,

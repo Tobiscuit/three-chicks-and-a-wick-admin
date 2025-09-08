@@ -2,6 +2,7 @@
 import { initializeApp, getApps, App, cert, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
+import { getFirestore } from 'firebase-admin/firestore';
 
 let app: App;
 
@@ -67,6 +68,7 @@ if (getApps().length === 0) {
 
 const adminAuth = getAuth(app);
 const adminStorage = getStorage(app);
+const adminDb = getFirestore(app);
 
 // Export the initialized services
-export { app as adminApp, adminAuth, adminStorage };
+export { app as adminApp, adminAuth, adminStorage, adminDb };
