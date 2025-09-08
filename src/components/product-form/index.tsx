@@ -36,6 +36,7 @@ import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy }
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
+import { resolveProductPrefillImage } from "@/app/actions";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -119,6 +120,25 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   });
   
   const { setValue, getValues, formState } = form;
+  // Prefill image by token (from Image Studio)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (!token || isEditMode) return;
+    (async () => {
+      try {
+        const res = await resolveProductPrefillImage(token);
+        if (!res.success || !res.url) return;
+        const response = await fetch(res.url);
+        const blob = await response.blob();
+        const file = new File([blob], `prefill-${Date.now()}.webp`, { type: blob.type || 'image/webp' });
+        setValue('image', file, { shouldValidate: true, shouldDirty: true });
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      } catch {}
+    })();
+  }, [isEditMode, setValue]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {

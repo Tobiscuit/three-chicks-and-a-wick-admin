@@ -160,6 +160,57 @@ export async function generateImageAction(formData: FormData): Promise<ActionRes
   }
 }
 
+type PrefillTokenResult = {
+  success: boolean;
+  token?: string;
+  error?: string;
+}
+
+export async function stashProductPrefillImage(dataUri: string): Promise<PrefillTokenResult> {
+  try {
+    if (!dataUri?.startsWith('data:')) {
+      return { success: false, error: 'Invalid image data.' };
+    }
+    const [meta, base64] = dataUri.split(',');
+    const mimeMatch = /data:(.*?);base64/.exec(meta || '');
+    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const ext = mimeType.split('/')[1] || 'webp';
+    const token = uuidv4();
+    const fileName = `prefill-product-images/${token}.${ext}`;
+    const buffer = Buffer.from(base64, 'base64');
+
+    const bucket = adminStorage.bucket();
+    const file = bucket.file(fileName);
+    await file.save(buffer, { contentType: mimeType, resumable: false, public: false });
+
+    // Auto-expire via lifecycle rules is ideal; for now we rely on periodic cleanup
+    return { success: true, token };
+  } catch (e: any) {
+    console.error('[stashProductPrefillImage Error]', e);
+    return { success: false, error: e.message || 'Failed to stash prefill image.' };
+  }
+}
+
+type ResolvePrefillResult = {
+  success: boolean;
+  url?: string;
+  error?: string;
+}
+
+export async function resolveProductPrefillImage(token: string): Promise<ResolvePrefillResult> {
+  try {
+    if (!token) return { success: false, error: 'Missing token.' };
+    const bucket = adminStorage.bucket();
+    const [files] = await bucket.getFiles({ prefix: `prefill-product-images/${token}` });
+    const file = files[0];
+    if (!file) return { success: false, error: 'Token not found or expired.' };
+    const [url] = await file.getSignedUrl({ action: 'read', expires: Date.now() + 15 * 60 * 1000 });
+    return { success: true, url };
+  } catch (e: any) {
+    console.error('[resolveProductPrefillImage Error]', e);
+    return { success: false, error: e.message || 'Failed to resolve prefill image.' };
+  }
+}
 type GalleryActionResult = {
     success: boolean;
     images?: { name: string; url: string }[];
