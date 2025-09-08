@@ -200,6 +200,7 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
     const productType = formData.get('productType') as string | undefined;
     const tags = formData.get('tags') as string | undefined;
     const collections = formData.getAll('collections') as string[];
+    const collectionsToLeave = formData.getAll('collectionsToLeave') as string[];
 
     // Variant-specific fields
     const price = formData.get('price') as string;
