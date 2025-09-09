@@ -32,7 +32,8 @@ import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast";
 import { addProductAction, updateProductAction } from "@/app/products/actions";
-import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy } from "lucide-react";
+import { uploadImageAction } from "@/app/actions";
+import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy, Plus } from "lucide-react";
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
@@ -77,7 +78,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.featuredImage?.url || null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images?.edges.map(e => e.node.url) || []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasFetchedAiData = useRef(false);
 
@@ -138,7 +139,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         console.log('[ProductForm prefill] optimized bytes:', optimized.size);
         setValue('image', optimized, { shouldValidate: true, shouldDirty: true });
         const reader = new FileReader();
-        reader.onloadend = () => setImagePreview(reader.result as string);
+        reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result as string]);
         reader.readAsDataURL(optimized);
       } catch {}
     })();
@@ -166,7 +167,9 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     sku: data.sku,
                     tags: data.tags,
                 });
-                setImagePreview(data.publicImageUrl);
+                if (data.publicImageUrl) {
+                    setImagePreviews([data.publicImageUrl]);
+                }
                 toast({ title: "AI Content Loaded!" });
                 // Clean the URL
                 const newUrl = window.location.pathname;
@@ -187,7 +190,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             });
         }
     })();
-  }, [isEditMode, setValue, toast, form, defaultValues]);
+  }, [form, isEditMode, toast]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -203,26 +206,70 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        console.log('[ProductForm] original image size (bytes):', file.size);
-        const optimized = await toWebpAndResize(file, 1600, 0.82);
-        console.log('[ProductForm] optimized image size (bytes):', optimized.size);
-        form.setValue("image", optimized, { shouldValidate: true, shouldDirty: true });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreview(reader.result as string);
-        };
-        reader.readAsDataURL(optimized);
-      } catch (e) {
-        console.warn('[ProductForm] optimization failed, using original', e);
-        form.setValue("image", file, { shouldValidate: true, shouldDirty: true });
-        const reader = new FileReader();
-        reader.onloadend = () => setImagePreview(reader.result as string);
-        reader.readAsDataURL(file);
-      }
+    const files = event.target.files;
+    if (!files) return;
+
+    try {
+        const newPreviews = await Promise.all(
+            Array.from(files).map(file => {
+                return new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            })
+        );
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+    } catch (error) {
+        console.error("Error reading files:", error);
+        toast({
+            title: "Error",
+            description: "Could not preview images.",
+            variant: "destructive"
+        });
     }
+  };
+
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+
+        setIsSubmitting(true);
+        toast({ title: 'Uploading images...' });
+
+        try {
+            const uploadPromises = Array.from(files).map(async file => {
+                const imageDataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                return await uploadImageAction(imageDataUrl);
+            });
+
+            const uploadedUrls = await Promise.all(uploadPromises);
+            setImagePreviews(prev => [...prev, ...uploadedUrls.filter(Boolean) as string[]]);
+            toast({ title: 'Upload complete!' });
+        } catch (error) {
+            console.error("Error uploading files:", error);
+            toast({
+                title: "Upload Error",
+                description: "Could not upload images.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSubmitting(false);
+            // Clear the file input
+            if(fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+  const removeImage = (index: number) => {
+      setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   async function onSubmit(data: ProductFormValues) {
@@ -252,8 +299,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     formData.append('status', data.status);
     formData.append('inventory', String(data.inventory));
     
-    if (data.image && typeof data.image !== 'string') {
-      formData.append('image', data.image);
+    if (imagePreviews.length > 0) {
+        formData.append('imageUrls', JSON.stringify(imagePreviews)); // Send all image previews
     }
 
     if (data.productType) formData.append('productType', data.productType);
@@ -276,7 +323,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       const result = await action({
         ...data,
         id: initialData?.id,
-        imageUrl: imagePreview,
+        imageUrls: imagePreviews, // Pass the entire imagePreviews array
       });
       
       if (result.success) {
@@ -371,17 +418,46 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <FormField control={form.control} name="image" render={({ field }) => (
                             <FormItem>
                             <FormControl>
-                                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50 transition-colors" onClick={() => fileInputRef.current?.click()} >
-                                {imagePreview ? (
-                                    <Image src={imagePreview} alt="Product image preview" width={400} height={400} className="object-contain w-full h-full rounded-md" />
-                                ) : (
-                                    <div className="text-center">
-                                    <UploadCloud className="w-12 h-12 mx-auto text-muted-foreground" />
-                                    <p className="mt-2 text-sm text-muted-foreground">Click to upload product image</p>
-                                    </div>
-                                )}
-                                <Input {...field} type="file" className="hidden" ref={fileInputRef} accept="image/png, image/jpeg, image/gif, image/webp" onChange={handleFileChange} value={undefined} />
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                    {imagePreviews.map((src, index) => (
+                                        <div key={index} className="relative aspect-square group">
+                                            <Image
+                                                src={src}
+                                                alt={`Product image ${index + 1}`}
+                                                fill
+                                                className="object-cover rounded-md"
+                                            />
+                                            <div className="absolute top-1 right-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => removeImage(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <Card
+                                        className="aspect-square flex items-center justify-center border-2 border-dashed cursor-pointer hover:border-primary transition-colors"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <div className="text-center">
+                                            <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
+                                            <p className="text-sm text-muted-foreground mt-1">Add Image</p>
+                                        </div>
+                                    </Card>
                                 </div>
+                                <Input
+                                    type="file"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    accept="image/*"
+                                    multiple
+                                />
                             </FormControl>
                             <FormMessage />
                             </FormItem>

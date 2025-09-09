@@ -22,7 +22,7 @@ const productSchema = z.object({
     price: z.string(),
     tags: z.string(),
     sku: z.string(),
-    imageUrl: z.string().url().optional().nullable(),
+    imageUrls: z.array(z.string().url()).optional().nullable(),
 });
 
 export async function addProductAction(formData: z.infer<typeof productSchema>) {
@@ -33,7 +33,7 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
             body_html: product.description,
             tags: product.tags,
             variants: [{ price: product.price, sku: product.sku }],
-            images: product.imageUrl ? [{ src: product.imageUrl }] : [],
+            images: product.imageUrls ? product.imageUrls.map(src => ({ src })) : [],
         });
         revalidatePath('/products');
         return { success: true, product: result };
@@ -55,7 +55,7 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
             body_html: product.description,
             tags: product.tags,
             variants: [{ price: product.price, sku: product.sku }],
-            images: product.imageUrl ? [{ src: product.imageUrl }] : [],
+            images: product.imageUrls ? product.imageUrls.map(src => ({ src })) : [],
         });
         revalidatePath('/products');
         return { success: true, product: result };

@@ -476,3 +476,30 @@ export async function resolveAiGeneratedProductAction(
         return { success: false, error: "Failed to resolve AI-generated product data." };
     }
 }
+
+export async function uploadImageAction(imageDataUrl: string): Promise<string | null> {
+    try {
+        const token = uuidv4();
+        const publicImageUrl = await uploadImageToFirebase(imageDataUrl, token);
+        return publicImageUrl;
+    } catch (error) {
+        console.error("[uploadImageAction Error]", error);
+        return null;
+    }
+}
+
+async function uploadImageToFirebase(imageDataUrl: string, token: string): Promise<string> {
+    const bucket = adminStorage.bucket();
+    const fileName = `product-images/${token}-upload.webp`;
+    const [meta, base64] = imageDataUrl.split(',');
+    const mimeMatch = /data:(.*?);base64/.exec(meta || '');
+    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const buffer = Buffer.from(base64, 'base64');
+
+    await bucket.file(fileName).save(buffer, {
+        contentType: mimeType,
+        resumable: false,
+        public: true,
+    });
+    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+}
