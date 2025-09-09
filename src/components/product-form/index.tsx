@@ -235,8 +235,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
           description: `"${data.title}" has been successfully saved.`,
         });
 
-        router.push('/products');
-        router.refresh();
+        // Use a full page reload to bypass the client-side router cache
+        window.location.href = '/products';
       } else {
         throw new Error(result.error || "An unknown error occurred.");
       }
