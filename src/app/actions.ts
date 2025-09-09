@@ -349,7 +349,10 @@ export async function generateProductFromImageAction(
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-pro",
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
         const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity.
         
@@ -371,7 +374,7 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             userMessage
         ]);
         const response = await result.response;
-        const text = response.text().replace(/^```json\n|```$/g, '');
+        const text = response.text();
 
         let creativeData;
         try {
