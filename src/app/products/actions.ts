@@ -6,6 +6,7 @@ import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, Creat
 import { adminStorage, adminDb } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from "next/cache";
+import { encodeShopifyId } from "@/lib/utils";
 
 
 type ActionResult = {
@@ -283,7 +284,8 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
         // 🎯 CRITICAL: Update Firestore for real-time updates
         console.log(`[updateProductAction] Updating Firestore inventoryStatus for ${inventoryItemId} with quantity: ${inventory}`);
         try {
-            const docRef = adminDb.collection('inventoryStatus').doc(inventoryItemId);
+            const docId = encodeShopifyId(inventoryItemId);
+            const docRef = adminDb.collection('inventoryStatus').doc(docId);
             await docRef.set({
                 quantity: inventory,
                 status: 'confirmed',
@@ -349,7 +351,8 @@ export async function quickUpdateInventoryAction(inventoryItemId: string, newQua
         }
         
         // Update Firestore for real-time UI
-        await adminDb.collection('inventoryStatus').doc(inventoryItemId).set({
+        const docId = encodeShopifyId(inventoryItemId);
+        await adminDb.collection('inventoryStatus').doc(docId).set({
             quantity: newQuantity,
             status: 'confirmed',
             updatedAt: Date.now(),

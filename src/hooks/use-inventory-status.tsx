@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { encodeShopifyId } from '@/lib/utils';
 
 export function useInventoryStatus(inventoryItemId?: string) {
   const [status, setStatus] = useState<'idle'|'syncing'|'confirmed'|'error'>('idle');
@@ -16,13 +17,12 @@ export function useInventoryStatus(inventoryItemId?: string) {
       return;
     }
 
-    // Extract the numeric ID from Shopify GID format: gid://shopify/InventoryItem/123 -> 123
-    const id = String(inventoryItemId).split('/').pop() as string;
-    console.log('[useInventoryStatus] ===== STARTING HOOK FOR:', id, '=====');
+    const docId = encodeShopifyId(inventoryItemId);
+    console.log('[useInventoryStatus] ===== STARTING HOOK FOR:', docId, '=====');
     console.log('[useInventoryStatus] Full inventory item ID:', inventoryItemId);
 
-    const ref = doc(db, 'inventoryStatus', id);
-    console.log('[useInventoryStatus] Created document reference for:', id);
+    const ref = doc(db, 'inventoryStatus', docId);
+    console.log('[useInventoryStatus] Created document reference for:', docId);
 
     // Set to syncing when we start listening
     console.log('[useInventoryStatus] Setting status to syncing');
