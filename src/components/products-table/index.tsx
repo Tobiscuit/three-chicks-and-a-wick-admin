@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
 import { Search, PlusCircle, Trash } from "lucide-react"
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
+import { useServerSentEvents } from "@/hooks/use-server-sent-events";
 import { deleteProductAction } from "@/app/products/actions";
 
 function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inventoryItemId?: string }) {
@@ -52,6 +53,14 @@ type ProductsTableProps = {
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Collect all inventory item IDs for SSE connection
+  const inventoryItemIds = products
+    .map(product => product.variants?.edges?.[0]?.node?.inventoryItem?.id)
+    .filter(Boolean) as string[];
+
+  // Connect to SSE for real-time updates
+  const { isConnected: sseConnected } = useServerSentEvents(inventoryItemIds);
 
   const handleRowClick = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`);
@@ -89,12 +98,20 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-             <Button asChild>
-                <Link href="/products/new">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Product
-                </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs">
+                <div className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-muted-foreground">
+                  {sseConnected ? 'Live' : 'Offline'}
+                </span>
+              </div>
+              <Button asChild>
+                  <Link href="/products/new">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Product
+                  </Link>
+              </Button>
+            </div>
         </div>
       </CardHeader>
       <CardContent>
