@@ -53,6 +53,12 @@ export function useInventoryStatus(inventoryItemId?: string) {
           console.log('[useInventoryStatus] Found document with quantity:', newQuantity, 'status:', newStatus);
           setQuantity(newQuantity);
           setStatus(newStatus);
+
+          if (newStatus === 'confirmed') {
+            setTimeout(() => {
+              setStatus('idle');
+            }, 3000); // Hide checkmark after 3 seconds
+          }
         } else {
           console.log('[useInventoryStatus] Document does not exist, setting to idle');
           setQuantity(null);
