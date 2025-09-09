@@ -35,30 +35,25 @@ export async function POST(req: NextRequest) {
     const payload = JSON.parse(raw.toString('utf8'));
     console.log('[Webhook inventory-update] Received payload:', payload);
 
+    // DEBUG: Log all payload properties
+    console.log('[Webhook inventory-update] ALL PAYLOAD PROPERTIES:');
+    Object.keys(payload).forEach(key => {
+      console.log(`[Webhook inventory-update] ${key}:`, payload[key]);
+    });
+
     // Handle both real Shopify webhooks and test webhooks
     let inventoryItemIdRaw = '';
-    console.log('[Webhook inventory-update] Checking payload fields:');
-    console.log('[Webhook inventory-update] inventory_item_id:', payload?.inventory_item_id);
-    console.log('[Webhook inventory-update] admin_graphql_api_id:', payload?.admin_graphql_api_id);
-    console.log('[Webhook inventory-update] inventory_item?.id:', payload?.inventory_item?.id);
 
-    // Real inventory_levels/update webhook format
-    if (payload?.inventory_item_id) {
-      console.log('[Webhook inventory-update] Using inventory_item_id branch');
-      inventoryItemIdRaw = String(payload.inventory_item_id);
-    }
-    // Shopify test webhook format
-    else if (payload?.admin_graphql_api_id) {
-      console.log('[Webhook inventory-update] Using admin_graphql_api_id branch');
+    // SIMPLIFIED: Just try the admin_graphql_api_id field that we know exists
+    console.log('[Webhook inventory-update] Checking admin_graphql_api_id exists:', 'admin_graphql_api_id' in payload);
+    console.log('[Webhook inventory-update] admin_graphql_api_id value:', payload.admin_graphql_api_id);
+    console.log('[Webhook inventory-update] payload type:', typeof payload);
+
+    if (payload && 'admin_graphql_api_id' in payload) {
+      console.log('[Webhook inventory-update] FOUND admin_graphql_api_id!');
       inventoryItemIdRaw = String(payload.admin_graphql_api_id);
-    }
-    // Alternative format
-    else if (payload?.inventory_item?.id) {
-      console.log('[Webhook inventory-update] Using inventory_item.id branch');
-      inventoryItemIdRaw = String(payload.inventory_item.id);
-    }
-    else {
-      console.log('[Webhook inventory-update] No matching ID field found');
+    } else {
+      console.log('[Webhook inventory-update] admin_graphql_api_id NOT FOUND');
     }
 
     console.log('[Webhook inventory-update] inventoryItemIdRaw before processing:', inventoryItemIdRaw);
