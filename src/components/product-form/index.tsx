@@ -79,6 +79,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.featuredImage?.url || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasFetchedAiData = useRef(false);
 
   const isEditMode = !!initialData;
   
@@ -148,6 +149,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     const params = new URLSearchParams(window.location.search);
     const token = params.get('ai-token');
     if (!token || isEditMode) return;
+
+    if (hasFetchedAiData.current) return; // Prevent multiple fetches
 
     (async () => {
         try {
