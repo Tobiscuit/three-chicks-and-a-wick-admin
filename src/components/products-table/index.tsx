@@ -37,15 +37,16 @@ function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inv
     );
   }
 
-  // Show normal Shopify product status
-  return (
-    <Badge
-      variant={product.status === "ACTIVE" ? "default" : "secondary"}
-      className={product.status === "ACTIVE" ? "bg-green-700/20 text-green-500 border-green-700/30" : ""}
-    >
-      {product.status.charAt(0) + product.status.slice(1).toLowerCase()}
-    </Badge>
-  );
+  // Only show a badge for non-active statuses
+  if (product.status !== "ACTIVE") {
+    return (
+      <Badge variant="secondary">
+        {product.status.charAt(0) + product.status.slice(1).toLowerCase()}
+      </Badge>
+    );
+  }
+
+  return null; // Don't render anything for "ACTIVE" status
 }
 
 type ProductsTableProps = {
@@ -126,7 +127,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden md:table-cell">Price</TableHead>
-                  <TableHead className="hidden md:table-cell">
+                  <TableHead>
                     Inventory
                   </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -161,17 +162,27 @@ export function ProductsTable({ products }: ProductsTableProps) {
                             currency: product.priceRange.minVariantPrice.currencyCode 
                         }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell>
                       <InventoryCell
                         inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
                         fallback={product.totalInventory}
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="destructive" size="sm" onClick={(e)=>handleDelete(e, product.id, product.title)}>
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                                  <MoreVertical className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => handleDelete(e, product.id, product.title)}>
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete
+                              </DropdownMenuItem>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
