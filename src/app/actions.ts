@@ -409,13 +409,25 @@ export async function stashAiGeneratedProductAction(
     price: string
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
+        // Step 1: Upload the image to Firebase Storage to get a public URL
+        const bucket = adminStorage.bucket();
+        const fileName = `product-images/ai-generated/${uuidv4()}.webp`;
+        const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
+        
+        await bucket.file(fileName).save(imageBuffer, {
+            metadata: { contentType: 'image/webp' },
+            public: true,
+        });
+        const publicImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+        // Step 2: Stash the creative data and the public image URL in Firestore
         const token = uuidv4();
         const docRef = adminDb.collection('aiProductDrafts').doc(token);
 
         await docRef.set({
             ...creativeData,
             price,
-            imageDataUrl,
+            publicImageUrl, // Stash the short URL, not the raw data
             createdAt: new Date(),
         });
 
