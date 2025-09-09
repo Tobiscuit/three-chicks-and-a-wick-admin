@@ -349,7 +349,7 @@ export async function generateProductFromImageAction(
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
         const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity. Your task is to transform raw data into a complete, on-brand Shopify product listing. You must generate a single, valid JSON object that strictly adheres to the provided output structure, ready for an API call.`;
 
@@ -361,10 +361,8 @@ export async function generateProductFromImageAction(
 
             Please generate the complete Shopify product JSON for me.
         `;
-
-        const prompt = `${systemPrompt}\n\n**Output Structure:**\n\`\`\`json\n{\n  "product": {\n    "title": "A creative and joyful title (5-7 words max)",\n    "body_html": "A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>). Start with an engaging paragraph, then list the scent notes.",\n    "vendor": "Three Chicks and a Wick",\n    "product_type": "Handmade Soy Candle",\n    "tags": "A string of 5-7 relevant, SEO-friendly tags, separated by commas.",\n    "status": "draft",\n    "variants": [\n      {\n        "option1": "Standard",\n        "price": "${price}",\n        "sku": "Generate a simple, unique SKU based on the title (e.g., AHC-01 for Autumn Hearth Candle).",\n        "inventory_management": "shopify"\n      }\n    ]\n  }\n}\n\`\`\`\n\n**User Request:**\n${userMessage}`;
         
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent([systemPrompt, userMessage]);
         const response = await result.response;
         const text = response.text().replace(/^```json\n|```$/g, '');
 
