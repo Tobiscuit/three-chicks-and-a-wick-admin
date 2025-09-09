@@ -264,8 +264,8 @@ export async function getPrimaryLocationId(): Promise<string | null> {
 }
 
 const CREATE_PRODUCT_MUTATION = `
-  mutation productCreate($input: ProductInput!, $media: [CreateMediaInput!]) {
-    productCreate(input: $input, media: $media) {
+  mutation productCreate($input: ProductInput!) {
+    productCreate(input: $input) {
       product {
         id
       }
@@ -276,21 +276,6 @@ const CREATE_PRODUCT_MUTATION = `
     }
   }
 `;
-
-export type CreateMediaInput = {
-    alt: string;
-    mediaContentType: 'IMAGE';
-    originalSource: string;
-};
-
-export type CreateProductInput = {
-    title: string;
-    descriptionHtml?: string;
-    productType?: string;
-    status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
-    tags?: string[];
-    collectionsToJoin?: string[];
-};
 
 type ProductCreateResponse = {
     productCreate: {
@@ -304,10 +289,9 @@ type ProductCreateResponse = {
     };
 };
 
-export async function createProduct(productInput: CreateProductInput, mediaInput?: CreateMediaInput[]): Promise<ProductCreateResponse> {
+export async function createProduct(productInput: any): Promise<ProductCreateResponse> {
     const variables = {
         input: productInput,
-        ...(mediaInput && { media: mediaInput }),
     };
     const data = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, variables);
     return data;
@@ -385,9 +369,12 @@ type ProductUpdateResponse = {
     };
 };
 
-export async function updateProduct(productInput: ProductUpdateInput): Promise<ProductUpdateResponse> {
+export async function updateProduct(productId: string, productInput: any): Promise<ProductUpdateResponse> {
     const variables = {
-        input: productInput,
+        input: {
+            id: productId,
+            ...productInput
+        },
     };
     const data = await fetchShopify<ProductUpdateResponse>(UPDATE_PRODUCT_MUTATION, variables);
     return data;
