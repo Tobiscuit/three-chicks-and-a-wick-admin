@@ -149,11 +149,22 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
 function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string; fallback: number | null }) {
   const { status, quantity } = useInventoryStatus(inventoryItemId);
-  const value = (typeof quantity === 'number') ? quantity : (fallback ?? 'N/A');
+  const displayValue = (typeof quantity === 'number') ? quantity : (fallback ?? 'N/A');
+
   return (
     <span className="inline-flex items-center gap-2">
-      {value}
-      {status === 'syncing' && <span className="text-xs text-muted-foreground">(syncing…)</span>}
+      <span className={status === 'syncing' ? 'text-orange-600 font-medium' : ''}>
+        {displayValue}
+      </span>
+      {status === 'syncing' && (
+        <span className="text-xs text-orange-600 animate-pulse">(syncing…)</span>
+      )}
+      {status === 'error' && (
+        <span className="text-xs text-red-600">(error)</span>
+      )}
+      {status === 'confirmed' && quantity !== null && (
+        <span className="text-xs text-green-600">✓</span>
+      )}
     </span>
   );
 }

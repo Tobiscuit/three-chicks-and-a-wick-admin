@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to inventoryStatus collection
+    // This allows your webhook to update inventory data
+    match /inventoryStatus/{document=**} {
+      allow read, write: if true;  // Allow all operations for now to test webhook
+    }
+
+    // Allow read/write to all other collections for authenticated users
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

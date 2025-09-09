@@ -74,6 +74,10 @@ firebase-debug.log*
 /public
 apphosting.yaml
 
+# Test scripts
+test-inventory-webhook.ps1
+*.ps1
+
 # Logs and OS/IDE clutter
 Thumbs.db
 .DS_Store

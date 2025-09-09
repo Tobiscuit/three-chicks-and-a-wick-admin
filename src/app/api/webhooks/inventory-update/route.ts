@@ -27,22 +27,70 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
+  // Check if Firebase is properly configured
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  console.log('[Webhook inventory-update] Firebase project ID:', projectId ? 'set' : 'NOT SET');
+
   try {
     const payload = JSON.parse(raw.toString('utf8'));
+    console.log('[Webhook inventory-update] Received payload:', payload);
+
     // inventory_levels/update payload fields
     const inventoryItemIdRaw = String(payload?.inventory_item_id || payload?.inventory_item?.id || '');
     const inventoryItemId = inventoryItemIdRaw.split('/').pop() || inventoryItemIdRaw; // Firestore-safe id
     const available = Number(payload?.available ?? payload?.available_quantity ?? 0);
-    if (!inventoryItemId) return NextResponse.json({ ok: true });
 
-    await adminDb
-      .collection('inventoryStatus')
-      .doc(inventoryItemId)
-      .set({ quantity: available, status: 'confirmed', updatedAt: Date.now() }, { merge: true });
+    console.log('[Webhook inventory-update] Processing:', { inventoryItemId, available });
+
+    if (!inventoryItemId) {
+      console.log('[Webhook inventory-update] No inventory item ID found, skipping');
+      return NextResponse.json({ ok: true });
+    }
+
+    console.log('[Webhook inventory-update] Updating Firestore...');
+    try {
+      const docRef = adminDb.collection('inventoryStatus').doc(inventoryItemId);
+      const data = { quantity: available, status: 'confirmed', updatedAt: Date.now() };
+      console.log('[Webhook inventory-update] Writing data:', data);
+
+      await docRef.set(data, { merge: true });
+
+      // Verify the write actually happened
+      const doc = await docRef.get();
+      if (doc.exists) {
+        const savedData = doc.data();
+        console.log('[Webhook inventory-update] Firestore update successful:', savedData);
+
+        // Also try to read the collection to verify
+        const collectionSnapshot = await adminDb.collection('inventoryStatus').limit(5).get();
+        console.log('[Webhook inventory-update] Collection has', collectionSnapshot.size, 'documents');
+        collectionSnapshot.forEach((doc) => {
+          console.log('[Webhook inventory-update] Doc:', doc.id, doc.data());
+        });
+
+      } else {
+        throw new Error('Document was not created');
+      }
+    } catch (firestoreError: any) {
+      console.error('[Webhook inventory-update] Firestore error:', firestoreError?.message || firestoreError);
+      console.error('[Webhook inventory-update] Error details:', {
+        code: firestoreError?.code,
+        details: firestoreError?.details,
+        stack: firestoreError?.stack
+      });
+      throw firestoreError; // Re-throw to be caught by outer try-catch
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error('[Webhook inventory-update] error', e?.message || e);
+    console.error('[Webhook inventory-update] stack trace:', e?.stack);
+
+    // If it's a Firebase error, return a more specific status
+    if (e?.message?.includes('Firebase') || e?.message?.includes('firestore') || e?.code) {
+      return new NextResponse(`Firebase Error: ${e?.message || 'Unknown Firebase error'}`, { status: 500 });
+    }
+
     return new NextResponse('Bad Request', { status: 400 });
   }
 }
