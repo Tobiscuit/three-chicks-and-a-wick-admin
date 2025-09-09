@@ -6,7 +6,7 @@ import { generateCustomCandleBackground } from "@/ai/flows/generate-custom-candl
 import { adminApp, adminAuth, adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
-import { adminDb } from './lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
 
