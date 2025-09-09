@@ -157,7 +157,7 @@ const GET_PRODUCTS_QUERY = `
           totalInventory
           tags
           featuredImage {
-            url(transform: {maxWidth: 128, maxHeight: 128})
+            url(transform: {maxWidth: 512, maxHeight: 512})
           }
           priceRange: priceRangeV2 {
             minVariantPrice {
