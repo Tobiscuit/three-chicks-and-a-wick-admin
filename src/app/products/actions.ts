@@ -7,6 +7,26 @@ import { adminStorage, adminDb } from "@/lib/firebase-admin"; // USE CENTRAL ADM
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from "next/cache";
 import { encodeShopifyId } from "@/lib/utils";
+import { z } from 'zod';
+import {
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    quickUpdateInventory,
+} from '@/services/shopify';
+import { adminDb } from '@/lib/firebase-admin';
+import { encodeShopifyId } from '@/lib/utils';
+import { FieldValue } from 'firebase-admin/firestore';
+
+const productSchema = z.object({
+    id: z.string().optional(),
+    title: z.string(),
+    description: z.string(),
+    price: z.string(),
+    tags: z.string(),
+    sku: z.string(),
+    imageUrl: z.string().url().optional().nullable(),
+});
 
 
 type ActionResult = {
@@ -58,255 +78,44 @@ async function uploadImageToFirebase(file: File): Promise<string> {
 }
 
 
-export async function addProductAction(formData: FormData): Promise<ActionResult> {
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string | null;
-    const price = formData.get('price') as string;
-    const sku = formData.get('sku') as string;
-    const status = formData.get('status') as "ACTIVE" | "DRAFT" | "ARCHIVED";
-    const inventoryStr = formData.get('inventory') as string;
-    const imageFile = formData.get('image') as File | null;
-    const productType = formData.get('productType') as string | undefined;
-    const tags = formData.get('tags') as string | undefined;
-    const collections = formData.getAll('collections') as string[];
-    const collectionsToLeave = formData.getAll('collectionsToLeave') as string[];
-
-    if (!title || !price || !sku || !status || !inventoryStr) {
-        return { success: false, error: "Missing required product fields." };
-    }
-    
+export async function addProductAction(formData: z.infer<typeof productSchema>) {
     try {
-        const inventory = parseInt(inventoryStr, 10);
-        if (isNaN(inventory) || inventory < 0) {
-            return { success: false, error: "Inventory must be a non-negative number." };
-        }
-
-        const locationId = await getPrimaryLocationId();
-        if (!locationId) {
-            return { success: false, error: "Could not determine the primary store location for inventory." };
-        }
-        
-        let imageUrl: string | null = null;
-        if (imageFile && imageFile.size > 0) {
-            const candidateUrl = await uploadImageToFirebase(imageFile);
-            try {
-                const head = await fetch(candidateUrl, { method: 'HEAD' });
-                if (head.ok) {
-                    imageUrl = candidateUrl;
-                } else {
-                    console.warn("[Image HEAD check failed]", candidateUrl, head.status, head.statusText);
-                }
-            } catch (e) {
-                console.warn("[Image HEAD check error]", e);
-            }
-        }
-        
-        const descriptionHtml = description 
-            ? description.split('\n').filter(line => line.trim() !== '').map(line => `<p>${line}</p>`).join('')
-            : undefined;
-
-        const productInput: CreateProductInput = {
-            title,
-            ...(descriptionHtml && { descriptionHtml }),
-            productType,
-            status,
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : undefined,
-            collectionsToJoin: collections.length > 0 ? collections : undefined,
-        };
-        
-        let mediaInput: CreateMediaInput[] | undefined = undefined;
-        if (imageUrl) {
-            mediaInput = [{
-                alt: `${title} product image`,
-                mediaContentType: "IMAGE" as const, 
-                originalSource: imageUrl, 
-            }];
-        }
-
-        // Step 1: Create the product
-        const createResult = await createProduct(productInput, mediaInput);
-
-        const createErrors = createResult.productCreate.userErrors;
-        if (createErrors.length > 0) {
-            const errorMessages = createErrors.map(e => e.message).join(', ');
-            throw new Error(`Shopify returned errors on product creation: ${errorMessages}`);
-        }
-        
-        const productId = createResult.productCreate.product?.id;
-        if (!productId) {
-            throw new Error("Product was created but its ID could not be retrieved.");
-        }
-        
-        // Step 2: Single-variant flow — update the default variant Shopify created for us
-        const productAfter = await getProductById(productId);
-        const defaultVariant = productAfter?.variants.edges[0]?.node;
-        if (!defaultVariant) {
-            throw new Error("Product created but default variant not found.");
-        }
-
-        // Update price and SKU; enable tracking before quantity set
-        const variantUpdateInput: ProductVariantInput = { id: defaultVariant.id, price };
-        const [variantUpdateResp, skuUpdateResp] = await Promise.all([
-            updateProductVariant(productId, variantUpdateInput),
-            updateInventoryItem({ id: defaultVariant.inventoryItem.id, sku, tracked: true }),
-        ]);
-
-        const vErrs = variantUpdateResp.productVariantsBulkUpdate?.userErrors || [];
-        const sErrs = skuUpdateResp.inventoryItemUpdate?.userErrors || [];
-        const combinedErrs = [...vErrs, ...sErrs];
-        if (combinedErrs.length > 0) {
-            const msgs = combinedErrs.map(e => e.message).join(', ');
-            throw new Error(`Variant/SKU update errors: ${msgs}`);
-        }
-
-        // Mark syncing for realtime UI (optional)
-        try {
-            await (await import('@/lib/firebase-admin')).adminDb.collection('inventoryStatus').doc(defaultVariant.inventoryItem.id).set({ status: 'syncing', updatedAt: Date.now() }, { merge: true });
-        } catch {}
-
-        // Set absolute inventory quantity
-        const invSet = await setInventoryQuantity({
-            inventoryItemId: defaultVariant.inventoryItem.id,
-            locationId: locationId,
-            quantity: inventory,
+        const product = productSchema.parse(formData);
+        const result = await createProduct({
+            title: product.title,
+            body_html: product.description,
+            tags: product.tags,
+            variants: [{ price: product.price, sku: product.sku }],
+            images: product.imageUrl ? [{ src: product.imageUrl }] : [],
         });
-        const invErrors = invSet.inventorySetQuantities?.userErrors || [];
-        if (invErrors.length > 0) {
-            const msgs = invErrors.map(e => e.message).join(', ');
-            throw new Error(`Inventory set errors: ${msgs}`);
-        }
-
-        // Step 3: Publish to all available publications (sales channels)
-        try {
-            const pubs = await getPublicationIds();
-            const ids = pubs.map(p => p.id);
-            if (ids.length > 0) {
-                const pubResp = await publishProductToPublications(productId, ids);
-                const pubErrors = pubResp.publishablePublish.userErrors || [];
-                if (pubErrors.length > 0) {
-                    console.warn('[Publish Warning]', pubErrors.map(e => e.message).join(', '));
-                }
-            }
-        } catch (e) {
-            console.warn('[Publish Error]', e);
-        }
-
-        return { success: true, productId };
-
-    } catch (e: any) {
-        console.error("[addProductAction Error]", e);
-        return { success: false, error: e.message || "An unexpected error occurred while creating the product." };
+        revalidatePath('/products');
+        return { success: true, product: result };
+    } catch (error) {
+        console.error('Error adding product:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return { success: false, error: errorMessage };
     }
 }
 
-export async function updateProductAction(formData: FormData): Promise<ActionResult> {
-    const id = formData.get('id') as string;
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string | null;
-    const status = formData.get('status') as "ACTIVE" | "DRAFT" | "ARCHIVED";
-    const productType = formData.get('productType') as string | undefined;
-    const tags = formData.get('tags') as string | undefined;
-    const collections = formData.getAll('collections') as string[];
-    const collectionsToLeave = formData.getAll('collectionsToLeave') as string[];
-
-    // Variant-specific fields
-    const price = formData.get('price') as string;
-    const sku = formData.get('sku') as string;
-    const inventoryStr = formData.get('inventory') as string;
-    const variantId = formData.get('variantId') as string;
-    const inventoryItemId = formData.get('inventoryItemId') as string;
-
-    if (!id || !variantId || !inventoryItemId || !title || !price || !sku || !status || !inventoryStr) {
-        return { success: false, error: "Missing required fields for update." };
-    }
-    
+export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
-        const inventory = parseInt(inventoryStr, 10);
-         if (isNaN(inventory) || inventory < 0) {
-            return { success: false, error: "Inventory must be a non-negative number." };
+        const product = productSchema.parse(formData);
+        if (!product.id) {
+            throw new Error('Product ID is required for updates.');
         }
-
-        const locationId = await getPrimaryLocationId();
-        if (!locationId) {
-            throw new Error("Could not determine primary location for inventory update.");
-        }
-
-        const descriptionHtml = description 
-            ? description.split('\n').filter(line => line.trim() !== '').map(line => `<p>${line}</p>`).join('')
-            : "";
-
-        const productInput: ProductUpdateInput = {
-            id,
-            title,
-            descriptionHtml,
-            productType,
-            status,
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-            collectionsToJoin: collections,
-            ...(collectionsToLeave && collectionsToLeave.length > 0 ? { collectionsToLeave } : {}),
-        };
-
-        const variantInput: ProductVariantInput = {
-            id: variantId,
-            price,
-            inventoryItem: { tracked: true },
-            // inventoryQuantities cannot be used on update; handled via inventorySetQuantities
-        };
-
-        // Execute product + variant + sku updates in parallel (no inventory quantities here)
-        const [productResult, variantResult, skuResult] = await Promise.all([
-            updateProduct(productInput),
-            updateProductVariant(id, variantInput),
-            updateInventoryItem({ id: inventoryItemId, sku }),
-        ]);
-
-        // After product/variant/sku, set inventory to desired absolute quantity
-        const invSet = await setInventoryQuantity({
-            inventoryItemId: inventoryItemId,
-            locationId: locationId,
-            quantity: inventory,
+        const result = await updateProduct(product.id, {
+            title: product.title,
+            body_html: product.description,
+            tags: product.tags,
+            variants: [{ price: product.price, sku: product.sku }],
+            images: product.imageUrl ? [{ src: product.imageUrl }] : [],
         });
-
-        const productErrors = productResult.productUpdate?.userErrors || [];
-        const variantErrors = variantResult.productVariantsBulkUpdate?.userErrors || [];
-        const skuErrors = skuResult.inventoryItemUpdate?.userErrors || [];
-        const invErrors = invSet.inventorySetQuantities?.userErrors || [];
-        const allErrors = [...productErrors, ...variantErrors, ...skuErrors, ...invErrors];
-
-        if (allErrors.length > 0) {
-            const errorMessages = allErrors.map(e => e.message).join(', ');
-            const errorFields = allErrors.map(e => e.field?.join('.')).filter(Boolean) as string[];
-            return { success: false, error: `Shopify errors: ${errorMessages}`, errorFields };
-        }
-
         revalidatePath('/products');
-
-        // 🎯 CRITICAL: Update Firestore for real-time updates
-        console.log(`[updateProductAction] Updating Firestore inventoryStatus for ${inventoryItemId} with quantity: ${inventory}`);
-        try {
-            const docId = encodeShopifyId(inventoryItemId);
-            const docRef = adminDb.collection('inventoryStatus').doc(docId);
-            await docRef.set({
-                quantity: inventory,
-                status: 'confirmed',
-                updatedAt: Date.now(),
-                source: 'product_update' // Track the source of the update
-            }, { merge: true });
-
-            // Verify the update
-            const doc = await docRef.get();
-            const data = doc.data();
-            console.log(`[updateProductAction] Firestore updated successfully for ${inventoryItemId}:`, data);
-        } catch (firestoreError) {
-            console.error(`[updateProductAction] Firestore update failed:`, firestoreError);
-            // Don't fail the entire operation if Firestore fails, but log it
-        }
-
-        return { success: true, productId: productResult.productUpdate?.product?.id };
-
-    } catch (e: any) {
-        console.error("[updateProductAction Error]", e);
-        return { success: false, error: e.message || "An unexpected error occurred while updating the product." };
+        return { success: true, product: result };
+    } catch (error) {
+        console.error('Error updating product:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return { success: false, error: errorMessage };
     }
 }
 

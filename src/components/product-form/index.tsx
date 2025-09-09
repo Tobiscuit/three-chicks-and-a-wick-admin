@@ -273,7 +273,11 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
     try {
       const action = isEditMode ? updateProductAction : addProductAction;
-      const result = await action(formData);
+      const result = await action({
+        ...data,
+        id: initialData?.id,
+        imageUrl: imagePreview,
+      });
       
       if (result.success) {
         toast({
