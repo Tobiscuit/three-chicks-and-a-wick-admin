@@ -36,7 +36,7 @@ import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy }
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
-import { resolveProductPrefillImage } from "@/app/actions";
+import { resolveProductPrefillImage, resolveAiGeneratedProductAction } from "@/app/actions";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -142,6 +142,47 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       } catch {}
     })();
   }, [isEditMode, setValue]);
+
+  // Prefill form with AI generated data
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('ai-token');
+    if (!token || isEditMode) return;
+
+    (async () => {
+        try {
+            toast({ title: "Loading AI Content..." });
+            const res = await resolveAiGeneratedProductAction(token);
+            if (res.success && res.data) {
+                const { title, body_html, tags, sku, price, imageDataUrl } = res.data;
+                form.reset({
+                    ...defaultValues,
+                    title,
+                    description: body_html.replace(/<[^>]+>/g, '\n').replace(/\n\n/g, '\n'), // Basic HTML to text
+                    tags,
+                    sku,
+                    price,
+                });
+                
+                // Handle image prefill from data URL
+                const response = await fetch(imageDataUrl);
+                const blob = await response.blob();
+                const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
+                const optimized = await toWebpAndResize(file, 1600, 0.82);
+                setValue('image', optimized, { shouldValidate: true, shouldDirty: true });
+                const reader = new FileReader();
+                reader.onloadend = () => setImagePreview(reader.result as string);
+                reader.readAsDataURL(optimized);
+
+                toast({ title: "Success!", description: "AI content has been pre-filled." });
+            } else {
+                throw new Error(res.error || "Could not load AI content.");
+            }
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Error", description: error.message });
+        }
+    })();
+  }, [isEditMode, setValue, toast, form, defaultValues]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {

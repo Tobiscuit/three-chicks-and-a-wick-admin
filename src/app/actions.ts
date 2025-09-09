@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from './lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
+import { generateCustomCandleBackground, composeCandleWithGeneratedBackground } from '@/ai/flows';
 
 
 type ActionResult = {
@@ -388,35 +389,64 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
-        // Sanitize and assemble the final product object
-        const shopifyProductInput = {
-            title: creativeData.title,
-            bodyHtml: creativeData.body_html,
-            productType: "Handmade Soy Candle",
-            status: 'DRAFT',
-            tags: creativeData.tags ? creativeData.tags.split(',').map((t: string) => t.trim()) : ['Handmade'],
-            variants: [{
-                price: price,
-                sku: creativeData.sku,
-                inventoryManagement: 'SHOPIFY'
-            }],
-            images: [
-                { src: imageDataUrl, alt: creativeData.image_alt || creativeData.title }
-            ]
-        };
+        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price);
 
-        const createResult = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, { input: shopifyProductInput });
-
-        const newProductId = createResult.productCreate?.product?.id;
-        if (!newProductId) {
-            const errorMessages = createResult.productCreate.userErrors.map(e => e.message).join(', ');
-            throw new Error(`Shopify API error: ${errorMessages}`);
+        if (!stashResult.success || !stashResult.token) {
+            throw new Error(stashResult.error || "Failed to stash AI-generated data.");
         }
 
-        return { success: true, productId: newProductId };
+        return { success: true, token: stashResult.token };
 
     } catch (error: any) {
         console.error("[generateProductFromImageAction Error]", error);
         return { success: false, error: error.message || "An unexpected error occurred." };
+    }
+}
+
+
+export async function stashAiGeneratedProductAction(
+    creativeData: any,
+    imageDataUrl: string,
+    price: string
+): Promise<{ success: boolean; token?: string; error?: string }> {
+    try {
+        const token = uuidv4();
+        const docRef = adminDb.collection('aiProductDrafts').doc(token);
+
+        await docRef.set({
+            ...creativeData,
+            price,
+            imageDataUrl,
+            createdAt: new Date(),
+        });
+
+        return { success: true, token };
+
+    } catch (error: any) {
+        console.error("[stashAiGeneratedProductAction Error]", error);
+        return { success: false, error: "Failed to save AI-generated product data." };
+    }
+}
+
+export async function resolveAiGeneratedProductAction(
+    token: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        if (!token) return { success: false, error: "Missing token." };
+        const docRef = adminDb.collection('aiProductDrafts').doc(token);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            return { success: false, error: "Draft not found or expired." };
+        }
+
+        // Delete the draft after reading it to ensure one-time use
+        await docRef.delete();
+
+        return { success: true, data: doc.data() };
+
+    } catch (error: any) {
+        console.error("[resolveAiGeneratedProductAction Error]", error);
+        return { success: false, error: "Failed to resolve AI-generated product data." };
     }
 }
