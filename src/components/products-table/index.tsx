@@ -201,6 +201,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       />
                     </TableCell>
                     <TableCell className="text-right">
+                      <AlertDialog>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
@@ -231,14 +232,14 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               )}
                               <DropdownMenuSeparator />
                               <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600" onClick={(e) => e.stopPropagation()}>
                                     <Trash className="mr-2 h-4 w-4" />
                                     Delete
                                 </DropdownMenuItem>
                               </AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
-                       <AlertDialogContent>
+                      <AlertDialogContent>
                           <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
@@ -246,17 +247,18 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
                               <AlertDialogAction onClick={(e) => handleDelete(e, product.id, product.title)}>
                                   Continue
                               </AlertDialogAction>
                           </AlertDialogFooter>
                       </AlertDialogContent>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  </AlertDialog>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map(product => (
@@ -298,69 +300,87 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
   onQuickEdit: () => void;
 }) {
   return (
-    <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
-      <div className="relative">
-        <Image
-          alt={product.title}
-          className="aspect-square object-cover w-full transition-transform group-hover:scale-105"
-          height="300"
-          src={product.featuredImage?.url || 'https://placehold.co/300x300'}
-          width="300"
-        />
-         <div className="absolute top-2 right-2">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                        <MoreVertical className="h-4 w-4" />
-                        <span className="sr-only">More options</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQuickEdit(); }}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Quick Edit Inventory
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(product.id); }}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                    </DropdownMenuItem>
-                    {product.onlineStoreUrl && (
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(product.onlineStoreUrl!, '_blank'); }}>
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            View on Store
+    <AlertDialog>
+      <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
+        <div className="relative">
+          <Image
+            alt={product.title}
+            className="aspect-square object-cover w-full transition-transform group-hover:scale-105"
+            height="300"
+            src={product.featuredImage?.url || 'https://placehold.co/300x300'}
+            width="300"
+          />
+          <div className="absolute top-2 right-2">
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">More options</span>
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQuickEdit(); }}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Quick Edit Inventory
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(product.id); }}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                      </DropdownMenuItem>
+                      {product.onlineStoreUrl && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(product.onlineStoreUrl!, '_blank'); }}>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              View on Store
+                          </DropdownMenuItem>
+                      )}
+                      {product.onlineStoreUrl && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(product.onlineStoreUrl!); }}>
+                              <ClipboardCopy className="mr-2 h-4 w-4" />
+                              Copy Link
+                          </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600" onClick={(e) => e.stopPropagation()}>
+                            <Trash className="mr-2 h-4 w-4" />
+                            Delete
                         </DropdownMenuItem>
-                    )}
-                    {product.onlineStoreUrl && (
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(product.onlineStoreUrl!); }}>
-                            <ClipboardCopy className="mr-2 h-4 w-4" />
-                            Copy Link
-                        </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={(e) => onDelete(e, product.id, product.title)} className="text-red-600">
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                      </AlertDialogTrigger>
+                  </DropdownMenuContent>
+              </DropdownMenu>
+          </div>
         </div>
-      </div>
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-lg truncate">{product.title}</h3>
-        <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
-            <span>
-                {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: product.priceRange.minVariantPrice.currencyCode
-                }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
-            </span>
-             <InventoryCell
-                inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
-                fallback={product.totalInventory}
-            />
-        </div>
-      </CardContent>
-    </Card>
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-lg truncate">{product.title}</h3>
+          <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+              <span>
+                  {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: product.priceRange.minVariantPrice.currencyCode
+                  }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
+              </span>
+              <InventoryCell
+                  inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
+                  fallback={product.totalInventory}
+              />
+          </div>
+        </CardContent>
+      </Card>
+      <AlertDialogContent>
+          <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the product "{product.title}".
+              </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => onDelete(e, product.id, product.title)}>
+                  Continue
+              </AlertDialogAction>
+          </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
