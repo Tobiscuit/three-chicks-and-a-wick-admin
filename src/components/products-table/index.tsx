@@ -59,8 +59,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
     .map(product => product.variants?.edges?.[0]?.node?.inventoryItem?.id)
     .filter(Boolean) as string[];
 
-  // Connect to SSE for real-time updates
-  const { isConnected: sseConnected } = useServerSentEvents(inventoryItemIds);
+  // TEMPORARILY DISABLE SSE - focusing on core Firestore real-time updates
+  // const { isConnected: sseConnected } = useServerSentEvents(inventoryItemIds);
+  const sseConnected = true; // Fake it for now
 
   const handleRowClick = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`);

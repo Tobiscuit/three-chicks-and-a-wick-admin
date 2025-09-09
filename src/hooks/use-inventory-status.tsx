@@ -70,23 +70,22 @@ export function useInventoryStatus(inventoryItemId?: string) {
 
     console.log('[useInventoryStatus] onSnapshot listener set up successfully');
 
-    // Listen for SSE updates
-    const handleSSEUpdate = (event: CustomEvent) => {
-      const { inventoryItemId: updatedId, data } = event.detail;
-      if (updatedId === id) {
-        console.log('[useInventoryStatus] SSE update received for:', id, data);
-        setQuantity(data.quantity);
-        setStatus(data.status || 'confirmed');
-      }
-    };
-
-    window.addEventListener('inventoryUpdate', handleSSEUpdate as EventListener);
+    // TEMPORARILY DISABLE SSE - focusing on core Firestore real-time updates
+    // const handleSSEUpdate = (event: CustomEvent) => {
+    //   const { inventoryItemId: updatedId, data } = event.detail;
+    //   if (updatedId === id) {
+    //     console.log('[useInventoryStatus] SSE update received for:', id, data);
+    //     setQuantity(data.quantity);
+    //     setStatus(data.status || 'confirmed');
+    //   }
+    // };
+    // window.addEventListener('inventoryUpdate', handleSSEUpdate as EventListener);
 
     return () => {
       console.log('[useInventoryStatus] ===== CLEANUP: Unsubscribing =====');
       clearTimeout(timeoutId);
       unsub();
-      window.removeEventListener('inventoryUpdate', handleSSEUpdate as EventListener);
+      // window.removeEventListener('inventoryUpdate', handleSSEUpdate as EventListener);
     };
   }, [inventoryItemId]);
 
