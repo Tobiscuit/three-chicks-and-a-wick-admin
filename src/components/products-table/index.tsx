@@ -89,6 +89,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
 
   // Collect all inventory item IDs for SSE connection
   const inventoryItemIds = products
@@ -218,14 +219,18 @@ export function ProductsTable({ products }: ProductsTableProps) {
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${process.env.NEXT_PUBLIC_STOREFRONT_URL}/products/${product.handle}`, '_blank'); }}>
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  View on Store
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_STOREFRONT_URL}/products/${product.handle}`); }}>
-                                  <ClipboardCopy className="mr-2 h-4 w-4" />
-                                  Copy Link
-                              </DropdownMenuItem>
+                              {storefrontUrl && (
+                                <>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${storefrontUrl}/products/${product.handle}`, '_blank'); }}>
+                                      <ExternalLink className="mr-2 h-4 w-4" />
+                                      View on Store
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${storefrontUrl}/products/${product.handle}`); }}>
+                                      <ClipboardCopy className="mr-2 h-4 w-4" />
+                                      Copy Link
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                               <DropdownMenuSeparator />
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600" onClick={(e) => e.stopPropagation()}>
@@ -295,6 +300,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
   onDelete: (e: React.MouseEvent, id: string, title: string) => void; 
   onQuickEdit: () => void;
 }) {
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
   return (
     <AlertDialog>
       <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
@@ -323,14 +329,18 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${process.env.NEXT_PUBLIC_STOREFRONT_URL}/products/${product.handle}`, '_blank'); }}>
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View on Store
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_STOREFRONT_URL}/products/${product.handle}`); }}>
-                          <ClipboardCopy className="mr-2 h-4 w-4" />
-                          Copy Link
-                      </DropdownMenuItem>
+                      {storefrontUrl && (
+                          <>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${storefrontUrl}/products/${product.handle}`, '_blank'); }}>
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  View on Store
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${storefrontUrl}/products/${product.handle}`); }}>
+                                  <ClipboardCopy className="mr-2 h-4 w-4" />
+                                  Copy Link
+                              </DropdownMenuItem>
+                          </>
+                      )}
                       <DropdownMenuSeparator />
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600" onClick={(e) => e.stopPropagation()}>
