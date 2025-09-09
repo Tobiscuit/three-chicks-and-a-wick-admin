@@ -156,34 +156,35 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         try {
             hasFetchedAiData.current = true; // Set flag immediately
             toast({ title: "Loading AI Content..." });
-            const res = await resolveAiGeneratedProductAction(token);
-            if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, publicImageUrl } = res.data;
-                form.reset({
-                    ...defaultValues,
-                    title,
-                    description: body_html.replace(/<[^>]+>/g, '\n').replace(/\n\n/g, '\n'), // Basic HTML to text
-                    tags,
-                    sku,
-                    price,
-                });
-                
-                // Handle image prefill from the public URL
-                const response = await fetch(publicImageUrl);
-                const blob = await response.blob();
-                const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
-                const optimized = await toWebpAndResize(file, 1600, 0.82);
-                setValue('image', optimized, { shouldValidate: true, shouldDirty: true });
-                const reader = new FileReader();
-                reader.onloadend = () => setImagePreview(reader.result as string);
-                reader.readAsDataURL(optimized);
+            const data = await resolveAiGeneratedProductAction(token);
 
-                toast({ title: "Success!", description: "AI content has been pre-filled." });
+            if (data) {
+                form.reset({
+                    title: data.title,
+                    description: data.body_html,
+                    price: data.price,
+                    sku: data.sku,
+                    tags: data.tags,
+                });
+                setImagePreview(data.publicImageUrl);
+                toast({ title: "AI Content Loaded!" });
+                // Clean the URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
             } else {
-                throw new Error(res.error || "Could not load AI content.");
+                toast({
+                    title: "Error: Could not load AI content",
+                    description: "The AI-generated draft could not be found. It may have expired.",
+                    variant: "destructive",
+                });
             }
-        } catch (error: any) {
-            toast({ variant: "destructive", title: "Error", description: error.message });
+        } catch (error) {
+            console.error('Failed to resolve AI token', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not load AI content.",
+            });
         }
     })();
   }, [isEditMode, setValue, toast, form, defaultValues]);
