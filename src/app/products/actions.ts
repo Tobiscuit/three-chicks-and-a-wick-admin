@@ -3,7 +3,7 @@
 
 import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem, updateProductVariant, createProductVariantsBulk, setInventoryQuantity, getProductById, deleteProduct, getPublicationIds, publishProductToPublications } from "@/services/shopify";
 import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, CreateMediaInput, NewProductVariantInput } from "@/services/shopify";
-import { adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
+import { adminStorage, adminDb } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -275,6 +275,21 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
             const errorMessages = allErrors.map(e => e.message).join(', ');
             const errorFields = allErrors.map(e => e.field?.join('.')).filter(Boolean) as string[];
             return { success: false, error: `Shopify errors: ${errorMessages}`, errorFields };
+        }
+
+        // 🎯 CRITICAL: Update Firestore for real-time updates
+        console.log(`[updateProductAction] Updating Firestore inventoryStatus for ${inventoryItemId}`);
+        try {
+            await adminDb.collection('inventoryStatus').doc(inventoryItemId).set({
+                quantity: inventory,
+                status: 'confirmed',
+                updatedAt: Date.now(),
+                source: 'product_update' // Track the source of the update
+            }, { merge: true });
+            console.log(`[updateProductAction] Firestore updated successfully for ${inventoryItemId}`);
+        } catch (firestoreError) {
+            console.error(`[updateProductAction] Firestore update failed:`, firestoreError);
+            // Don't fail the entire operation if Firestore fails, but log it
         }
 
         return { success: true, productId: productResult.productUpdate?.product?.id };

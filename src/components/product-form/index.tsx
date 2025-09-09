@@ -235,7 +235,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
           description: `"${data.title}" has been successfully saved.`,
         });
         router.push('/products');
-        router.refresh(); 
+        // Removed router.refresh() - real-time updates will happen automatically
       } else {
         throw new Error(result.error || "An unknown error occurred.");
       }
