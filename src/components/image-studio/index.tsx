@@ -348,11 +348,11 @@ export function ImageStudio() {
                       </TabsContent>
                       <TabsContent value="gallery" className="mt-2">
                          {galleryLoading ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 h-[40vh] md:h-[45vh] lg:h-[50vh]">
-                                <Skeleton className="w-full h-full rounded-md" />
-                                <Skeleton className="w-full h-full rounded-md" />
-                                <Skeleton className="w-full h-full rounded-md" />
-                                <Skeleton className="w-full h-full rounded-md" />
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                                <Skeleton className="w-full aspect-square rounded-md" />
+                                <Skeleton className="w-full aspect-square rounded-md" />
+                                <Skeleton className="w-full aspect-square rounded-md" />
+                                <Skeleton className="w-full aspect-square rounded-md" />
                             </div>
                          ) : galleryError ? (
                             <Alert variant="destructive">

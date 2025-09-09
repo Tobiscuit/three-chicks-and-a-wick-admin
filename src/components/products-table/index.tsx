@@ -313,15 +313,8 @@ export function ProductsTableSkeleton() {
         <CardContent>
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
-              <Card key={i}>
-                <Skeleton className="aspect-square w-full" />
-                <CardContent className="p-4">
-                  <Skeleton className="h-6 w-3/4" />
-                  <div className="flex items-center justify-between mt-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-4 w-1/4" />
-                  </div>
-                </CardContent>
+              <Card key={i} className="aspect-square">
+                <Skeleton className="h-full w-full" />
               </Card>
             ))}
           </div>
