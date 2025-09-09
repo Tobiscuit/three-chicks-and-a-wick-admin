@@ -180,8 +180,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
 function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string; fallback: number | null }) {
   const { status, quantity } = useInventoryStatus(inventoryItemId);
-  // Always show the real Shopify inventory, use Firestore data only for status
-  const displayValue = fallback ?? 'N/A';
+  
+  const displayValue = status === 'confirmed' && quantity !== null ? quantity : (fallback ?? 'N/A');
 
   console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'firestore_quantity:', quantity, 'shopify_fallback:', fallback, 'displayValue:', displayValue);
 
