@@ -22,6 +22,29 @@ import { Search, PlusCircle, Trash } from "lucide-react"
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { deleteProductAction } from "@/app/products/actions";
 
+function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inventoryItemId?: string }) {
+  const { status: inventoryStatus } = useInventoryStatus(inventoryItemId);
+
+  // Show syncing status if inventory is syncing
+  if (inventoryStatus === 'syncing') {
+    return (
+      <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30 animate-pulse">
+        Syncing
+      </Badge>
+    );
+  }
+
+  // Show normal Shopify product status
+  return (
+    <Badge
+      variant={product.status === "ACTIVE" ? "default" : "secondary"}
+      className={product.status === "ACTIVE" ? "bg-green-700/20 text-green-500 border-green-700/30" : ""}
+    >
+      {product.status.charAt(0) + product.status.slice(1).toLowerCase()}
+    </Badge>
+  );
+}
+
 type ProductsTableProps = {
   products: ShopifyProduct[];
 };
@@ -108,12 +131,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 </TableCell>
                 <TableCell className="font-medium">{product.title}</TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={product.status === "ACTIVE" ? "default" : "secondary"}
-                    className={product.status === "ACTIVE" ? "bg-green-700/20 text-green-500 border-green-700/30" : ""}
-                  >
-                    {product.status.charAt(0) + product.status.slice(1).toLowerCase()}
-                  </Badge>
+                  <StatusCell
+                    product={product}
+                    inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
+                  />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                    {new Intl.NumberFormat('en-US', { 
@@ -155,15 +176,12 @@ function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string
   console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'firestore_quantity:', quantity, 'shopify_fallback:', fallback, 'displayValue:', displayValue);
 
   return (
-    <span className="inline-flex items-center gap-2">
-      <span className={status === 'syncing' ? 'text-orange-600 font-medium' : ''}>
+    <span className="inline-flex items-center gap-1">
+      <span>
         {displayValue}
       </span>
-      {status === 'syncing' && (
-        <span className="text-xs text-orange-600 animate-pulse">(syncing…)</span>
-      )}
       {status === 'error' && (
-        <span className="text-xs text-red-600">(error)</span>
+        <span className="text-xs text-red-600">⚠️</span>
       )}
       {status === 'confirmed' && quantity !== null && (
         <span className="text-xs text-green-600">✓</span>
