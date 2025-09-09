@@ -136,7 +136,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Price</TableHead>
                   <TableHead>
-                    Inventory
+                    #
                   </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
