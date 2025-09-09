@@ -17,7 +17,10 @@ export function useInventoryStatus(inventoryItemId?: string) {
       return;
     }
 
-    const id = String(inventoryItemId).split('/').pop() as string; // ensure no slashes
+    // Extract the numeric ID from Shopify GID format: gid://shopify/InventoryItem/123 -> 123
+    const id = String(inventoryItemId).split('/').pop() as string;
+    console.log('[useInventoryStatus] Listening to inventory item:', inventoryItemId, '-> document ID:', id);
+
     const ref = doc(db, 'inventoryStatus', id);
 
     console.log('[useInventoryStatus] Listening to:', id);
