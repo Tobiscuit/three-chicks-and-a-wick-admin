@@ -235,11 +235,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
           description: `"${data.title}" has been successfully saved.`,
         });
 
-        // Wait for Firestore updates to complete, then navigate
-        setTimeout(() => {
-          console.log('[ProductForm] Navigating back to products page after inventory update');
-          router.push('/products');
-        }, 2000); // 2 second delay to ensure updates are processed
+        router.push('/products');
       } else {
         throw new Error(result.error || "An unknown error occurred.");
       }

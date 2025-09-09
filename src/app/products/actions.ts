@@ -5,6 +5,7 @@ import { createProduct, updateProduct, getPrimaryLocationId, updateInventoryItem
 import type { CreateProductInput, ProductUpdateInput, ProductVariantInput, CreateMediaInput, NewProductVariantInput } from "@/services/shopify";
 import { adminStorage, adminDb } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { v4 as uuidv4 } from 'uuid';
+import { revalidatePath } from "next/cache";
 
 
 type ActionResult = {
@@ -276,6 +277,8 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
             const errorFields = allErrors.map(e => e.field?.join('.')).filter(Boolean) as string[];
             return { success: false, error: `Shopify errors: ${errorMessages}`, errorFields };
         }
+
+        revalidatePath('/products');
 
         // 🎯 CRITICAL: Update Firestore for real-time updates
         console.log(`[updateProductAction] Updating Firestore inventoryStatus for ${inventoryItemId} with quantity: ${inventory}`);

@@ -14,19 +14,24 @@ export function useServerSentEvents(inventoryItemIds: string[]) {
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttempts = useRef(0);
 
-  useEffect(() => {
-    if (!inventoryItemIds.length) return;
+  const connect = () => {
+    if (reconnectAttempts.current > 5) {
+      console.log('[SSE] Max reconnection attempts reached, giving up');
+      return;
+    }
 
     const clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    console.log('[SSE] Connecting to server...', clientId);
+    console.log('[SSE] Connecting to server...', clientId, `(attempt ${reconnectAttempts.current + 1})`);
 
     const eventSource = new EventSource(`/api/sse/inventory?clientId=${clientId}`);
 
     eventSource.onopen = () => {
-      console.log('[SSE] Connection opened');
+      console.log('[SSE] Connection opened successfully');
       setIsConnected(true);
+      reconnectAttempts.current = 0; // Reset on successful connection
     };
 
     eventSource.onmessage = (event) => {
@@ -59,13 +64,37 @@ export function useServerSentEvents(inventoryItemIds: string[]) {
     eventSource.onerror = (error) => {
       console.error('[SSE] Connection error:', error);
       setIsConnected(false);
+
+      // Attempt to reconnect after a delay
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+
+      reconnectAttempts.current++;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000); // Exponential backoff, max 30s
+
+      console.log(`[SSE] Scheduling reconnection in ${delay}ms`);
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connect();
+      }, delay);
     };
 
     eventSourceRef.current = eventSource;
+  };
+
+  useEffect(() => {
+    if (!inventoryItemIds.length) return;
+
+    connect();
 
     return () => {
-      console.log('[SSE] Cleaning up connection');
-      eventSource.close();
+      console.log('[SSE] Component unmounting, cleaning up');
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
       setIsConnected(false);
     };
   }, [inventoryItemIds]);

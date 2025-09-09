@@ -99,20 +99,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-xs">
-                <div className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-muted-foreground">
-                  {sseConnected ? 'Live' : 'Offline'}
-                </span>
-              </div>
-              <Button asChild>
-                  <Link href="/products/new">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Product
-                  </Link>
-              </Button>
-            </div>
+            <Button asChild>
+                <Link href="/products/new">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Product
+                </Link>
+            </Button>
         </div>
       </CardHeader>
       <CardContent>
