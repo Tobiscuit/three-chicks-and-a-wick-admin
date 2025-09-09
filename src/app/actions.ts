@@ -353,41 +353,49 @@ export async function generateProductFromImageAction(
 
         const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity.
         
-Your task is to transform raw data into a complete, on-brand Shopify product listing. You must generate a single, valid JSON object that strictly adheres to the provided output structure, ready for an API call. Do not add any extra fields or omit any of the required fields.`;
+Your task is to transform raw data into a partial Shopify product listing, focusing only on the creative text fields. You must generate a single, valid JSON object that strictly adheres to the provided output structure. The "tags" field is mandatory.`;
 
         const userMessage = `
             Here is the data for a new candle:
             - **Creator's Notes:** "${creatorNotes}"
             - **Price:** ${price}
+            - **Image URL:** ${imageDataUrl}
             - **Image Analysis (Placeholder):** "A beautifully rendered, professional product shot of a handcrafted candle. The container is a clean, white ceramic jar. The lighting is soft and warm, creating a cozy and inviting mood."
 
-            Please generate the complete Shopify product JSON for me, strictly following the output structure.
+            Please generate only the creative text fields for the Shopify product JSON, strictly following the output structure.
         `;
         
-        const result = await model.generateContent([systemPrompt, userMessage]);
+        const result = await model.generateContent([
+            systemPrompt,
+            "**Output Structure:**\n```json\n{\n  \"title\": \"A creative and joyful title (5-7 words max)\",\n  \"body_html\": \"A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).\",\n  \"tags\": \"A string of 5-7 relevant, SEO-friendly tags, separated by commas.\",\n  \"sku\": \"Generate a simple, unique SKU based on the title (e.g., AHC-01).\",\n  \"image_alt\": \"A descriptive and accessible alt-text for the product image.\"\n}\n```",
+            userMessage
+        ]);
         const response = await result.response;
         const text = response.text().replace(/^```json\n|```$/g, '');
 
-        let productData;
+        let creativeData;
         try {
-            productData = JSON.parse(text).product;
+            creativeData = JSON.parse(text);
         } catch (e) {
             console.error("Failed to parse AI response:", text);
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
-        // Sanitize the AI output to ensure we only use the fields we expect.
+        // Sanitize and assemble the final product object
         const shopifyProductInput = {
-            title: productData.title,
-            bodyHtml: productData.body_html,
-            productType: productData.product_type,
+            title: creativeData.title,
+            bodyHtml: creativeData.body_html,
+            productType: "Handmade Soy Candle",
             status: 'DRAFT',
-            tags: productData.tags ? productData.tags.split(',').map((t: string) => t.trim()) : [],
+            tags: creativeData.tags ? creativeData.tags.split(',').map((t: string) => t.trim()) : ['Handmade'],
             variants: [{
-                price: productData.variants[0].price,
-                sku: productData.variants[0].sku,
+                price: price,
+                sku: creativeData.sku,
                 inventoryManagement: 'SHOPIFY'
-            }]
+            }],
+            images: [
+                { src: imageDataUrl, alt: creativeData.image_alt || creativeData.title }
+            ]
         };
 
         const createResult = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, { input: shopifyProductInput });
