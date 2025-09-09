@@ -37,7 +37,7 @@ function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inv
     );
   }
 
-  // Only show a badge for non-active statuses
+  // For non-active statuses, always show the badge
   if (product.status !== "ACTIVE") {
     return (
       <Badge variant="secondary">
@@ -46,7 +46,15 @@ function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inv
     );
   }
 
-  return null; // Don't render anything for "ACTIVE" status
+  // For "ACTIVE" status, show it only on medium screens and up
+  return (
+    <Badge
+      variant="default"
+      className="hidden md:inline-flex bg-green-700/20 text-green-500 border-green-700/30"
+    >
+      Active
+    </Badge>
+  );
 }
 
 type ProductsTableProps = {
