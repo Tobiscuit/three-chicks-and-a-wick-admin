@@ -122,19 +122,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {(() => {
-                    const variant = product.variants?.edges?.[0]?.node;
-                    const invId = variant?.inventoryItem?.id as string | undefined;
-                    // eslint-disable-next-line react-hooks/rules-of-hooks
-                    const { status, quantity } = useInventoryStatus(invId);
-                    const value = quantity ?? product.totalInventory ?? 'N/A';
-                    return (
-                      <span className="inline-flex items-center gap-2">
-                        {value}
-                        {status === 'syncing' && <span className="text-xs text-muted-foreground">(syncing…)</span>}
-                      </span>
-                    );
-                  })()}
+                  <InventoryCell
+                    inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
+                    fallback={product.totalInventory}
+                  />
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="destructive" size="sm" onClick={(e)=>handleDelete(e, product.id, product.title)}>
@@ -154,4 +145,15 @@ export function ProductsTable({ products }: ProductsTableProps) {
       </CardContent>
     </Card>
   )
+}
+
+function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string; fallback: number | null }) {
+  const { status, quantity } = useInventoryStatus(inventoryItemId);
+  const value = (typeof quantity === 'number') ? quantity : (fallback ?? 'N/A');
+  return (
+    <span className="inline-flex items-center gap-2">
+      {value}
+      {status === 'syncing' && <span className="text-xs text-muted-foreground">(syncing…)</span>}
+    </span>
+  );
 }
