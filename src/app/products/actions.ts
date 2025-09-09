@@ -324,3 +324,42 @@ export async function deleteProductAction(productId: string): Promise<ActionResu
         return { success: false, error: e.message || 'Unexpected error while deleting product.' };
     }
 }
+
+export async function quickUpdateInventoryAction(inventoryItemId: string, newQuantity: number): Promise<ActionResult> {
+    if (!inventoryItemId || typeof newQuantity !== 'number' || newQuantity < 0) {
+        return { success: false, error: "Invalid input for inventory update." };
+    }
+
+    try {
+        const locationId = await getPrimaryLocationId();
+        if (!locationId) {
+            throw new Error("Could not determine primary location for inventory update.");
+        }
+
+        const invSet = await setInventoryQuantity({
+            inventoryItemId,
+            locationId,
+            quantity: newQuantity,
+        });
+
+        const invErrors = invSet.inventorySetQuantities?.userErrors || [];
+        if (invErrors.length > 0) {
+            const msgs = invErrors.map(e => e.message).join(', ');
+            throw new Error(`Inventory set errors: ${msgs}`);
+        }
+        
+        // Update Firestore for real-time UI
+        await adminDb.collection('inventoryStatus').doc(inventoryItemId).set({
+            quantity: newQuantity,
+            status: 'confirmed',
+            updatedAt: Date.now(),
+            source: 'quick_update'
+        }, { merge: true });
+
+        return { success: true };
+
+    } catch (e: any) {
+        console.error("[quickUpdateInventoryAction Error]", e);
+        return { success: false, error: e.message || "An unexpected error occurred." };
+    }
+}

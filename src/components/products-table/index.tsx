@@ -18,12 +18,35 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { ShopifyProduct } from "@/services/shopify"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
-import { Search, PlusCircle, Trash, LayoutGrid, List } from "lucide-react"
+import {
+  Search,
+  PlusCircle,
+  Trash,
+  LayoutGrid,
+  List,
+  MoreVertical,
+  Edit,
+  ExternalLink,
+  ClipboardCopy,
+  Pencil
+} from "lucide-react";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
-import { deleteProductAction } from "@/app/products/actions";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
+import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inventoryItemId?: string }) {
   const { status: inventoryStatus } = useInventoryStatus(inventoryItemId);
@@ -65,6 +88,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState<'list' | 'grid'>('list');
+  const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
 
   // Collect all inventory item IDs for SSE connection
   const inventoryItemIds = products
@@ -185,12 +209,49 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => handleDelete(e, product.id, product.title)}>
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Delete
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setQuickEditProduct(product); }}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Quick Edit Inventory
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/products/${product.id}`) }}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                              </DropdownMenuItem>
+                              {product.onlineStoreUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(product.onlineStoreUrl!, '_blank'); }}>
+                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                    View on Store
+                                </DropdownMenuItem>
+                              )}
+                               {product.onlineStoreUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(product.onlineStoreUrl!); }}>
+                                    <ClipboardCopy className="mr-2 h-4 w-4" />
+                                    Copy Link
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
+                       <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the product "{product.title}".
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={(e) => handleDelete(e, product.id, product.title)}>
+                                  Continue
+                              </AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -204,6 +265,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   product={product}
                   onRowClick={handleRowClick}
                   onDelete={handleDelete}
+                  onQuickEdit={() => setQuickEditProduct(product)}
                 />
               ))}
             </div>
@@ -215,6 +277,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
           )}
         </CardContent>
       </Card>
+      {quickEditProduct && (
+        <QuickEditModal
+          product={quickEditProduct}
+          onClose={() => setQuickEditProduct(null)}
+        />
+      )}
       <Link href="/products/new" className="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-50">
           <PlusCircle className="h-6 w-6" />
           <span className="sr-only">Add Product</span>
@@ -223,7 +291,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
   )
 }
 
-function ProductGridItem({ product, onRowClick, onDelete }: { product: ShopifyProduct; onRowClick: (id: string) => void; onDelete: (e: React.MouseEvent, id: string, title: string) => void; }) {
+function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: { 
+  product: ShopifyProduct; 
+  onRowClick: (id: string) => void; 
+  onDelete: (e: React.MouseEvent, id: string, title: string) => void; 
+  onQuickEdit: () => void;
+}) {
   return (
     <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
       <div className="relative">
@@ -243,7 +316,28 @@ function ProductGridItem({ product, onRowClick, onDelete }: { product: ShopifyPr
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => onDelete(e, product.id, product.title)}>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onQuickEdit(); }}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Quick Edit Inventory
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(product.id); }}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                    </DropdownMenuItem>
+                    {product.onlineStoreUrl && (
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(product.onlineStoreUrl!, '_blank'); }}>
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View on Store
+                        </DropdownMenuItem>
+                    )}
+                    {product.onlineStoreUrl && (
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(product.onlineStoreUrl!); }}>
+                            <ClipboardCopy className="mr-2 h-4 w-4" />
+                            Copy Link
+                        </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={(e) => onDelete(e, product.id, product.title)} className="text-red-600">
                         <Trash className="mr-2 h-4 w-4" />
                         Delete
                     </DropdownMenuItem>
@@ -268,6 +362,62 @@ function ProductGridItem({ product, onRowClick, onDelete }: { product: ShopifyPr
       </CardContent>
     </Card>
   )
+}
+
+function QuickEditModal({ product, onClose }: { product: ShopifyProduct; onClose: () => void; }) {
+  const { toast } = useToast();
+  const [quantity, setQuantity] = useState(product.totalInventory ?? 0);
+  const [isSaving, setIsSaving] = useState(false);
+  const inventoryItemId = product.variants?.edges?.[0]?.node?.inventoryItem?.id;
+
+  const handleSave = async () => {
+    if (!inventoryItemId) {
+      toast({ variant: "destructive", title: "Error", description: "Inventory item ID not found." });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await quickUpdateInventoryAction(inventoryItemId, quantity);
+      if (result.success) {
+        toast({ title: "Success", description: `Inventory for "${product.title}" updated.` });
+        onClose();
+      } else {
+        throw new Error(result.error || "Failed to update inventory.");
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Update Failed", description: error.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Quick Edit: {product.title}</DialogTitle>
+          <DialogDescription>
+            Update the available inventory count. This will be reflected on your Shopify store.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <Input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
+            className="text-lg"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving && <MoreVertical className="mr-2 h-4 w-4 animate-spin" />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 
