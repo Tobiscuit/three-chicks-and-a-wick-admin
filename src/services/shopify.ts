@@ -114,7 +114,8 @@ export async function fetchShopify<T>(query: string, variables?: Record<string, 
         'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN,
       },
       body: JSON.stringify({ query, variables }),
-      cache: 'no-store',
+      cache: 'no-store', // Disables caching for this fetch request
+      next: { revalidate: 0 } // Forces revalidation every time
     });
 
     const rawResponseText = await response.text();
