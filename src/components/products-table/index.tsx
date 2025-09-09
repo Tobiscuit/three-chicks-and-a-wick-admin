@@ -484,7 +484,7 @@ function QuickEditModal({ product, onClose }: { product: ShopifyProduct; onClose
 function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string; fallback: number | null }) {
   const { status, quantity } = useInventoryStatus(inventoryItemId);
   
-  const displayValue = status === 'confirmed' && quantity !== null ? quantity : (fallback ?? 'N/A');
+  const displayValue = quantity !== null ? quantity : (fallback ?? 'N/A');
 
   console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'firestore_quantity:', quantity, 'shopify_fallback:', fallback, 'displayValue:', displayValue);
 
@@ -495,9 +495,6 @@ function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string
       </span>
       {status === 'error' && (
         <span className="text-xs text-red-600">⚠️</span>
-      )}
-      {status === 'confirmed' && quantity !== null && (
-        <span className="text-xs text-green-600">✓</span>
       )}
     </span>
   );
