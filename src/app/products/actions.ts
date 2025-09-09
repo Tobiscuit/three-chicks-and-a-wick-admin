@@ -278,15 +278,20 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
         }
 
         // 🎯 CRITICAL: Update Firestore for real-time updates
-        console.log(`[updateProductAction] Updating Firestore inventoryStatus for ${inventoryItemId}`);
+        console.log(`[updateProductAction] Updating Firestore inventoryStatus for ${inventoryItemId} with quantity: ${inventory}`);
         try {
-            await adminDb.collection('inventoryStatus').doc(inventoryItemId).set({
+            const docRef = adminDb.collection('inventoryStatus').doc(inventoryItemId);
+            await docRef.set({
                 quantity: inventory,
                 status: 'confirmed',
                 updatedAt: Date.now(),
                 source: 'product_update' // Track the source of the update
             }, { merge: true });
-            console.log(`[updateProductAction] Firestore updated successfully for ${inventoryItemId}`);
+
+            // Verify the update
+            const doc = await docRef.get();
+            const data = doc.data();
+            console.log(`[updateProductAction] Firestore updated successfully for ${inventoryItemId}:`, data);
         } catch (firestoreError) {
             console.error(`[updateProductAction] Firestore update failed:`, firestoreError);
             // Don't fail the entire operation if Firestore fails, but log it
