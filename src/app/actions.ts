@@ -375,12 +375,16 @@ Your task is to transform raw data into a partial Shopify product listing, focus
         ]);
         const response = await result.response;
         const text = response.text();
+        console.log("===== AI RESPONSE TEXT =====", text);
 
         let creativeData;
         try {
             creativeData = JSON.parse(text);
-        } catch (e) {
-            console.error("Failed to parse AI response:", text);
+            console.log("===== PARSED CREATIVE DATA =====", creativeData);
+        } catch (e: any) {
+            console.error("===== FAILED TO PARSE AI RESPONSE =====");
+            console.error("Raw Text:", text);
+            console.error("Parsing Error:", e.message);
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
