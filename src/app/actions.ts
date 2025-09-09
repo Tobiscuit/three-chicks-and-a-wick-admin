@@ -376,12 +376,13 @@ Your task is to transform raw data into a complete, on-brand Shopify product lis
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
+        // Sanitize the AI output to ensure we only use the fields we expect.
         const shopifyProductInput = {
             title: productData.title,
             bodyHtml: productData.body_html,
             productType: productData.product_type,
             status: 'DRAFT',
-            tags: productData.tags.split(',').map((t: string) => t.trim()),
+            tags: productData.tags ? productData.tags.split(',').map((t: string) => t.trim()) : [],
             variants: [{
                 price: productData.variants[0].price,
                 sku: productData.variants[0].sku,
