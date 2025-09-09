@@ -454,14 +454,23 @@ export async function resolveAiGeneratedProductAction(
         const doc = await docRef.get();
 
         if (!doc.exists) {
-            return { success: false, error: "Draft not found or expired." };
+            throw new Error("Draft not found or already used.");
         }
 
-        // Delete the draft after reading it to ensure one-time use
+        const data = doc.data();
+
         await docRef.delete();
 
-        return { success: true, data: doc.data() };
+        if (!data) {
+            return null;
+        }
 
+        // Firestore `Timestamp` is a class, not a plain object.
+        // It cannot be passed from a Server Component to a Client Component.
+        // We destructure it out, since the form doesn't need it anyway.
+        const { createdAt, ...rest } = data;
+
+        return rest;
     } catch (error: any) {
         console.error("[resolveAiGeneratedProductAction Error]", error);
         return { success: false, error: "Failed to resolve AI-generated product data." };
