@@ -236,6 +236,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         });
 
         router.push('/products');
+        router.refresh();
       } else {
         throw new Error(result.error || "An unknown error occurred.");
       }
