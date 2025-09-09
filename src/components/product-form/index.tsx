@@ -154,6 +154,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
     (async () => {
         try {
+            hasFetchedAiData.current = true; // Set flag immediately
             toast({ title: "Loading AI Content..." });
             const res = await resolveAiGeneratedProductAction(token);
             if (res.success && res.data) {
