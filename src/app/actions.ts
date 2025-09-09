@@ -6,6 +6,9 @@ import { generateCustomCandleBackground } from "@/ai/flows/generate-custom-candl
 import { adminApp, adminAuth, adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
+import { adminDb } from './lib/firebase-admin';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createProduct as createShopifyProduct } from './services/shopify';
 
 
 type ActionResult = {
@@ -306,5 +309,70 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
         console.log("[getGalleryImagesAction] END: Operation failed.");
         console.log("--------------------------------------------------");
         return { success: false, error: error.message || "An unknown error occurred.", bucketName: (adminStorage as any)?._bucket?.name };
+    }
+}
+
+
+export async function generateProductFromImageAction(
+    { imageDataUrl, price, creatorNotes }: { imageDataUrl: string, price: string, creatorNotes: string }
+): Promise<{ success: boolean; productId?: string; error?: string }> {
+
+    if (!process.env.GEMINI_API_KEY) {
+        return { success: false, error: "Gemini API key is not configured." };
+    }
+
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+        const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity. Your task is to transform raw data into a complete, on-brand Shopify product listing. You must generate a single, valid JSON object that strictly adheres to the provided output structure, ready for an API call.`;
+
+        const userMessage = `
+            Here is the data for a new candle:
+            - **Creator's Notes:** "${creatorNotes}"
+            - **Price:** ${price}
+            - **Image Analysis (Placeholder):** "A beautifully rendered, professional product shot of a handcrafted candle. The container is a clean, white ceramic jar. The lighting is soft and warm, creating a cozy and inviting mood."
+
+            Please generate the complete Shopify product JSON for me.
+        `;
+
+        const prompt = `${systemPrompt}\n\n**Output Structure:**\n\`\`\`json\n{\n  "product": {\n    "title": "A creative and joyful title (5-7 words max)",\n    "body_html": "A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>). Start with an engaging paragraph, then list the scent notes.",\n    "vendor": "Three Chicks and a Wick",\n    "product_type": "Handmade Soy Candle",\n    "tags": "A string of 5-7 relevant, SEO-friendly tags, separated by commas.",\n    "status": "draft",\n    "variants": [\n      {\n        "option1": "Standard",\n        "price": "${price}",\n        "sku": "Generate a simple, unique SKU based on the title (e.g., AHC-01 for Autumn Hearth Candle).",\n        "inventory_management": "shopify"\n      }\n    ]\n  }\n}\n\`\`\`\n\n**User Request:**\n${userMessage}`;
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text().replace(/^```json\n|```$/g, '');
+
+        let productData;
+        try {
+            productData = JSON.parse(text).product;
+        } catch (e) {
+            console.error("Failed to parse AI response:", text);
+            throw new Error("The AI returned an invalid response. Please try again.");
+        }
+        
+        const createResult = await createShopifyProduct({
+            title: productData.title,
+            descriptionHtml: productData.body_html,
+            productType: productData.product_type,
+            status: 'DRAFT',
+            tags: productData.tags.split(',').map((t: string) => t.trim()),
+            variants: [{
+                price: productData.variants[0].price,
+                sku: productData.variants[0].sku,
+                inventoryManagement: 'SHOPIFY'
+            }]
+        });
+
+        const newProductId = createResult.productCreate?.product?.id;
+        if (!newProductId) {
+            const errorMessages = createResult.productCreate.userErrors.map(e => e.message).join(', ');
+            throw new Error(`Shopify API error: ${errorMessages}`);
+        }
+
+        return { success: true, productId: newProductId };
+
+    } catch (error: any) {
+        console.error("[generateProductFromImageAction Error]", error);
+        return { success: false, error: error.message || "An unexpected error occurred." };
     }
 }

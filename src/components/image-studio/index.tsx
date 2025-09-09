@@ -27,8 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle } from "lucide-react";
-import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage, createPrefillUploadUrl } from "@/app/actions";
+import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus } from "lucide-react";
+import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage, createPrefillUploadUrl, generateProductFromImageAction } from "@/app/actions";
 import { storage, auth } from "@/lib/firebase";
 import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { ref as storageRef, uploadString } from "firebase/storage";
@@ -36,6 +36,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "../ui/scroll-area";
+import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useInventoryStatus } from "@/hooks/use-inventory-status";
+import { ShopifyProduct } from "@/types/shopify";
+import CurrencyInput from "../ui/currency-input";
+import { useRouter } from "next/navigation";
 
 
 // Client-side image conversion to WebP (no resizing)
@@ -158,6 +165,7 @@ export function ImageStudio() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
   const [galleryError, setGalleryError] = useState<string | null>(null);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -496,11 +504,131 @@ export function ImageStudio() {
                 }}>
                   <Download className="mr-2"/> Download
                 </Button>
+                 <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:w-auto" onClick={() => setShowAddProductModal(true)}>
+                    <PackagePlus className="mr-2"/> Add as Product with AI
+                </Button>
               </CardFooter>
             </Card>
           </div>
         </div>
       </form>
+      {showAddProductModal && generatedImage && (
+        <AddProductModal
+          generatedImage={generatedImage}
+          onClose={() => setShowAddProductModal(false)}
+        />
+      )}
     </Form>
   );
+}
+
+const addProductModalSchema = z.object({
+    price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+        message: "Price must be a valid positive number.",
+    }),
+    creatorNotes: z.string().min(10, {
+        message: "Please provide some notes about the product (at least 10 characters).",
+    }),
+});
+
+type AddProductModalValues = z.infer<typeof addProductModalSchema>;
+
+function AddProductModal({ generatedImage, onClose }: { generatedImage: string; onClose: () => void; }) {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const form = useForm<AddProductModalValues>({
+        resolver: zodResolver(addProductModalSchema),
+    });
+
+    const onSubmit = async (values: AddProductModalValues) => {
+        setIsGenerating(true);
+        try {
+            const result = await generateProductFromImageAction({
+                imageDataUrl: generatedImage,
+                price: values.price,
+                creatorNotes: values.creatorNotes,
+            });
+
+            if (result.success && result.productId) {
+                toast({
+                    title: "Product Created!",
+                    description: "Your new product has been created as a draft.",
+                });
+                router.push(`/products/${result.productId}`);
+            } else {
+                throw new Error(result.error || "Failed to create product.");
+            }
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Generation Failed",
+                description: error.message,
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+    
+    return (
+        <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-[525px]">
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)}>
+                        <DialogHeader>
+                            <DialogTitle>Add as Product with AI</DialogTitle>
+                            <DialogDescription>
+                                Provide a few details, and we'll generate the product listing for you.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <Image src={generatedImage} alt="Generated product" width={525} height={400} className="rounded-lg object-contain w-full h-auto aspect-[4/3] border bg-muted" />
+                            <FormField
+                                control={form.control}
+                                name="price"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Price</FormLabel>
+                                        <FormControl>
+                                            <CurrencyInput
+                                                placeholder="25.00"
+                                                value={field.value}
+                                                onChange={(val) => field.onChange(val)}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="creatorNotes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Creator's Notes</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="e.g., smells like a cozy autumn evening, with notes of spiced pear and cinnamon. Has a crackling wood wick..."
+                                                className="min-h-24"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={onClose} type="button" disabled={isGenerating}>Cancel</Button>
+                            <Button type="submit" disabled={isGenerating}>
+                                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Generate Product
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
 }

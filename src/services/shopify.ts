@@ -1,6 +1,8 @@
 
 'use server';
 
+import { ShopifyProduct } from "@/types/shopify";
+
 // A service for interacting with the Shopify Admin GraphQL API.
 // Note: This service is intended for server-side use only.
 // Do not expose your Shopify Admin Access Token to the client.
@@ -8,54 +10,6 @@
 type ShopifyGraphQLResponse<T> = {
   data: T;
   errors?: { message: string, field?: string[] }[];
-};
-
-export type ShopifyProduct = {
-  id: string;
-  title: string;
-  handle: string;
-  status: 'ACTIVE' | 'ARCHIVED' | 'DRAFT';
-  totalInventory: number | null;
-  description: string;
-  productType: string;
-  tags: string[];
-  featuredImage: {
-    url:string;
-  } | null;
-  images: {
-    edges: {
-      node: {
-        url: string;
-        altText: string | null;
-      }
-    }[]
-  };
-  variants: {
-     edges: {
-        node: {
-            id: string;
-            sku: string | null;
-            inventoryItem: {
-                id: string;
-            };
-        }
-     }[]
-  };
-  priceRange: {
-    minVariantPrice: {
-      amount: string;
-      currencyCode: string;
-    };
-  };
-  onlineStoreUrl: string | null;
-  collections: {
-    edges: {
-        node: {
-            id: string;
-            title: string;
-        }
-    }[]
-  };
 };
 
 export type ShopifyCollection = {
