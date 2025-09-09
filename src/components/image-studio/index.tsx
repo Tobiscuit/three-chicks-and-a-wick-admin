@@ -551,12 +551,12 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
                 creatorNotes: values.creatorNotes,
             });
 
-            if (result.success && result.productId) {
+            if (result.success && result.token) {
                 toast({
-                    title: "Product Created!",
-                    description: "Your new product has been created as a draft.",
+                    title: "Content Generated!",
+                    description: "Redirecting you to the new product page to finalize...",
                 });
-                router.push(`/products/${result.productId}`);
+                router.push(`/products/new?ai-token=${result.token}`);
             } else {
                 throw new Error(result.error || "Failed to create product.");
             }
