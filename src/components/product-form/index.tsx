@@ -154,7 +154,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             toast({ title: "Loading AI Content..." });
             const res = await resolveAiGeneratedProductAction(token);
             if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, imageDataUrl } = res.data;
+                const { title, body_html, tags, sku, price, publicImageUrl } = res.data;
                 form.reset({
                     ...defaultValues,
                     title,
@@ -164,8 +164,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     price,
                 });
                 
-                // Handle image prefill from data URL
-                const response = await fetch(imageDataUrl);
+                // Handle image prefill from the public URL
+                const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
                 const optimized = await toWebpAndResize(file, 1600, 0.82);
