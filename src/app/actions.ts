@@ -8,7 +8,7 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from './lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createProduct as createShopifyProduct } from './services/shopify';
+import { fetchShopify } from '@/services/shopify';
 
 
 type ActionResult = {
@@ -312,6 +312,32 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
     }
 }
 
+const CREATE_PRODUCT_MUTATION = `
+  mutation productCreate($input: ProductInput!) {
+    productCreate(input: $input) {
+      product {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+type ProductCreateResponse = {
+    productCreate: {
+        product: { 
+            id: string;
+        } | null;
+        userErrors: {
+            field: string[];
+            message: string;
+        }[];
+    };
+};
+
 
 export async function generateProductFromImageAction(
     { imageDataUrl, price, creatorNotes }: { imageDataUrl: string, price: string, creatorNotes: string }
@@ -350,9 +376,9 @@ export async function generateProductFromImageAction(
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
-        const createResult = await createShopifyProduct({
+        const shopifyProductInput = {
             title: productData.title,
-            descriptionHtml: productData.body_html,
+            bodyHtml: productData.body_html,
             productType: productData.product_type,
             status: 'DRAFT',
             tags: productData.tags.split(',').map((t: string) => t.trim()),
@@ -361,7 +387,9 @@ export async function generateProductFromImageAction(
                 sku: productData.variants[0].sku,
                 inventoryManagement: 'SHOPIFY'
             }]
-        });
+        };
+
+        const createResult = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, { input: shopifyProductInput });
 
         const newProductId = createResult.productCreate?.product?.id;
         if (!newProductId) {
