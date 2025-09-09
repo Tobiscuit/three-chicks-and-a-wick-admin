@@ -234,8 +234,11 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
           title: `Product ${isEditMode ? 'Updated' : 'Created'}!`,
           description: `"${data.title}" has been successfully saved.`,
         });
-        router.push('/products');
-        // Removed router.refresh() - real-time updates will happen automatically
+
+        // Wait a moment for Firestore updates to complete, then navigate
+        setTimeout(() => {
+          router.push('/products');
+        }, 1000); // 1 second delay to ensure updates are processed
       } else {
         throw new Error(result.error || "An unknown error occurred.");
       }
