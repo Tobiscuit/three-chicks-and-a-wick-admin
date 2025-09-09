@@ -26,6 +26,7 @@ export function useInventoryStatus(inventoryItemId?: string) {
     console.log('[useInventoryStatus] Listening to:', id);
 
     // Set to syncing when we start listening
+    console.log('[useInventoryStatus] Setting initial status to syncing for:', id);
     setStatus('syncing');
 
     const unsub = onSnapshot(ref,
@@ -34,9 +35,11 @@ export function useInventoryStatus(inventoryItemId?: string) {
         if (snap.exists()) {
           const data = snap.data() as any;
           const newQuantity = typeof data.quantity === 'number' ? data.quantity : null;
+          const newStatus = (data.status as any) || 'confirmed';
           console.log('[useInventoryStatus] Data:', { quantity: newQuantity, status: data.status });
+          console.log('[useInventoryStatus] Setting status to:', newStatus, 'and quantity to:', newQuantity);
           setQuantity(newQuantity);
-          setStatus((data.status as any) || 'confirmed');
+          setStatus(newStatus);
         } else {
           console.log('[useInventoryStatus] Document does not exist');
           setQuantity(null);

@@ -151,6 +151,8 @@ function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string
   const { status, quantity } = useInventoryStatus(inventoryItemId);
   const displayValue = (typeof quantity === 'number') ? quantity : (fallback ?? 'N/A');
 
+  console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'quantity:', quantity, 'displayValue:', displayValue);
+
   return (
     <span className="inline-flex items-center gap-2">
       <span className={status === 'syncing' ? 'text-orange-600 font-medium' : ''}>
