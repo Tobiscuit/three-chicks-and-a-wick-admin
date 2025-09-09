@@ -133,7 +133,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     Image
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Price</TableHead>
                   <TableHead>
                     Inventory
@@ -157,8 +157,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
                         width="64"
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{product.title}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium max-w-[150px] truncate">{product.title}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <StatusCell
                         product={product}
                         inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
