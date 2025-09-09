@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Skeleton } from "@/components/ui/skeleton";
 
 function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inventoryItemId?: string }) {
   const { status: inventoryStatus } = useInventoryStatus(inventoryItemId);
@@ -290,6 +291,43 @@ export function ProductsTable({ products }: ProductsTableProps) {
           <PlusCircle className="h-6 w-6" />
           <span className="sr-only">Add Product</span>
       </Link>
+    </>
+  )
+}
+
+export function ProductsTableSkeleton() {
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1">
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-10 w-10" />
+                <Skeleton className="h-10 w-10" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i}>
+                <Skeleton className="aspect-square w-full" />
+                <CardContent className="p-4">
+                  <Skeleton className="h-6 w-3/4" />
+                  <div className="flex items-center justify-between mt-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-4 w-1/4" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <Skeleton className="fixed bottom-6 right-6 h-14 w-14 rounded-full" />
     </>
   )
 }

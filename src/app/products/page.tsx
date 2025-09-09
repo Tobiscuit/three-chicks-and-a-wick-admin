@@ -1,5 +1,6 @@
 
-import { ProductsTable } from '@/components/products-table';
+import { Suspense } from 'react';
+import { ProductsTable, ProductsTableSkeleton } from '@/components/products-table';
 import { getProducts } from '@/services/shopify';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, PlusCircle } from 'lucide-react';
@@ -10,14 +11,11 @@ import { AuthWrapper } from '@/components/auth/auth-wrapper';
 
 export const dynamic = 'force-dynamic';
 
-// This is now an async Server Component.
-// It fetches and transforms data on the server before rendering the page.
-export default async function ProductsPage() {
+async function ProductsData() {
     let products: ShopifyProduct[] = [];
     let error: string | null = null;
 
     try {
-        // Step 1: Fetch raw products directly on the server.
         const rawProducts = await getProducts();
         
         products = rawProducts.map(product => {
@@ -37,7 +35,7 @@ export default async function ProductsPage() {
                     ...product.priceRange,
                     minVariantPrice: {
                         ...product.priceRange.minVariantPrice,
-                        amount: priceAsNumber !== null ? String(priceAsNumber) : "0", // Store the corrected number as a string
+                        amount: priceAsNumber !== null ? String(priceAsNumber) : "0",
                     }
                 }
             }
@@ -48,23 +46,31 @@ export default async function ProductsPage() {
         console.error("[ProductsPage] Error fetching or transforming products:", e);
     }
 
+    if (error) {
+        return (
+            <div className="space-y-4">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error Fetching Products</AlertTitle>
+                    <AlertDescription>
+                        {error}
+                        <br />
+                        Please ensure your Shopify app has 'read_products' permission and your Admin Access Token is correct.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
+    return <ProductsTable products={products} />;
+}
+
+export default function ProductsPage() {
     return (
         <AuthWrapper>
-           {error ? (
-               <div className="space-y-4">
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error Fetching Products</AlertTitle>
-                        <AlertDescription>
-                            {error}
-                            <br />
-                            Please ensure your Shopify app has 'read_products' permission and your Admin Access Token is correct.
-                        </AlertDescription>
-                    </Alert>
-               </div>
-           ) : (
-                <ProductsTable products={products} />
-           )}
+           <Suspense fallback={<ProductsTableSkeleton />}>
+                <ProductsData />
+           </Suspense>
         </AuthWrapper>
     );
 }
