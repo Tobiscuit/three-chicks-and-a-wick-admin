@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from './lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
-import { generateCustomCandleBackground, composeCandleWithGeneratedBackground } from '@/ai/flows';
 
 
 type ActionResult = {
