@@ -35,10 +35,31 @@ export async function POST(req: NextRequest) {
     const payload = JSON.parse(raw.toString('utf8'));
     console.log('[Webhook inventory-update] Received payload:', payload);
 
-    // inventory_levels/update payload fields
-    const inventoryItemIdRaw = String(payload?.inventory_item_id || payload?.inventory_item?.id || '');
+    // Handle both real Shopify webhooks and test webhooks
+    let inventoryItemIdRaw = '';
+
+    // Real inventory_levels/update webhook format
+    if (payload?.inventory_item_id) {
+      inventoryItemIdRaw = String(payload.inventory_item_id);
+    }
+    // Shopify test webhook format
+    else if (payload?.admin_graphql_api_id) {
+      inventoryItemIdRaw = String(payload.admin_graphql_api_id);
+    }
+    // Alternative format
+    else if (payload?.inventory_item?.id) {
+      inventoryItemIdRaw = String(payload.inventory_item.id);
+    }
+
     const inventoryItemId = inventoryItemIdRaw.split('/').pop() || inventoryItemIdRaw; // Firestore-safe id
-    const available = Number(payload?.available ?? payload?.available_quantity ?? 0);
+
+    // Get available quantity from various possible fields
+    const available = Number(
+      payload?.available ??
+      payload?.available_quantity ??
+      payload?.quantity ??
+      0
+    );
 
     console.log('[Webhook inventory-update] Processing:', { inventoryItemId, available });
 
