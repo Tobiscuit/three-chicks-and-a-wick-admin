@@ -11,6 +11,22 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
 
 
+// Per Gemini SDK best practices, this helper function correctly formats a
+// Data URL string into the structured object the model expects for images.
+function fileToGenerativePart(dataUrl: string) {
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid data URL format for generative part.');
+    }
+    return {
+        inlineData: {
+            mimeType: match[1],
+            data: match[2]
+        }
+    };
+}
+
+
 type ActionResult = {
   success: boolean;
   imageDataUri?: string;
@@ -340,8 +356,8 @@ type ProductCreateResponse = {
 
 
 export async function generateProductFromImageAction(
-    { imageDataUrl, price, creatorNotes }: { imageDataUrl: string, price: string, creatorNotes: string }
-): Promise<{ success: boolean; productId?: string; error?: string }> {
+    { imageDataUrl, price, creatorNotes }: { imageDataUrl:string, price: string, creatorNotes: string }
+): Promise<{ success: boolean; token?: string; error?: string }> {
 
     if (!process.env.GEMINI_API_KEY) {
         return { success: false, error: "Gemini API key is not configured." };
@@ -349,30 +365,42 @@ export async function generateProductFromImageAction(
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+        // Correctly use the latest SDK features by passing the system prompt
+        // during model initialization. This is more efficient and robust.
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-pro",
+            systemInstruction: `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity.
+        
+Your task is to transform raw data into a partial Shopify product listing, focusing only on the creative text fields. You must generate a single, valid JSON object that strictly adheres to the provided output structure. The "tags" field is mandatory.`,
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity.
-        
-Your task is to transform raw data into a partial Shopify product listing, focusing only on the creative text fields. You must generate a single, valid JSON object that strictly adheres to the provided output structure. The "tags" field is mandatory.`;
+        // 1. Convert the image Data URL into the structured "Part" format.
+        const imagePart = fileToGenerativePart(imageDataUrl);
 
-        const userMessage = `
-            Here is the data for a new candle:
+        // 2. Define the user's text prompt as a separate "Part".
+        const textPart = `
+            Here is the data for a new candle. Please analyze the provided image and use the creator's notes to generate the creative text fields for the Shopify product JSON.
+
             - **Creator's Notes:** "${creatorNotes}"
             - **Price:** ${price}
-            - **Image URL:** ${imageDataUrl}
-            - **Image Analysis (Placeholder):** "A beautifully rendered, professional product shot of a handcrafted candle. The container is a clean, white ceramic jar. The lighting is soft and warm, creating a cozy and inviting mood."
 
-            Please generate only the creative text fields for the Shopify product JSON, strictly following the output structure.
+            **Output Structure:**
+            \`\`\`json
+            {
+              "title": "A creative and joyful title (5-7 words max)",
+              "body_html": "A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).",
+              "tags": "A string of 5-7 relevant, SEO-friendly tags, separated by commas.",
+              "sku": "Generate a simple, unique SKU based on the title (e.g., AHC-01).",
+              "image_alt": "A descriptive and accessible alt-text for the product image."
+            }
+            \`\`\`
         `;
         
-        const result = await model.generateContent([
-            systemPrompt,
-            "**Output Structure:**\n```json\n{\n  \"title\": \"A creative and joyful title (5-7 words max)\",\n  \"body_html\": \"A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).\",\n  \"tags\": \"A string of 5-7 relevant, SEO-friendly tags, separated by commas.\",\n  \"sku\": \"Generate a simple, unique SKU based on the title (e.g., AHC-01).\",\n  \"image_alt\": \"A descriptive and accessible alt-text for the product image.\"\n}\n```",
-            userMessage
-        ]);
+        // 3. Send the text and image parts together in a single multimodal request.
+        const result = await model.generateContent([textPart, imagePart]);
+        
         const response = await result.response;
         const text = response.text();
         console.log("===== AI RESPONSE TEXT =====", text);
