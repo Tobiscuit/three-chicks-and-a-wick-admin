@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
+import { z } from 'zod';
 
 
 type ActionResult = {
@@ -94,73 +95,36 @@ export async function checkAuthorization(idToken: string | null) {
 
 const toDataURL = (buffer: Buffer, mimeType: string) => `data:${mimeType};base64,${buffer.toString("base64")}`;
 
-export async function generateImageAction(formData: FormData): Promise<ActionResult> {
-  const primaryProductImage = formData.get('primaryProductImage') as File | null;
-  const secondaryProductImage = formData.get('secondaryProductImage') as File | null;
-  const backgroundType = formData.get('backgroundType') as 'gallery' | 'generate' | null;
-  const backgroundPrompt = formData.get('backgroundPrompt') as string | null;
-  const selectedBackgroundUrl = formData.get('selectedBackgroundUrl') as string | null;
-  const contextualDetails = formData.get('contextualDetails') as string | null;
+export async function generateImageAction(prevState: any, formData: FormData): Promise<{ imageDataUrl?: string; error?: string }> {
+    try {
+        const validated = imageGenSchema.safeParse({
+            background: formData.get('background'),
+            angle1: formData.get('angle1'),
+            angle2: formData.get('angle2'),
+            context: formData.get('context') || undefined,
+        });
 
-  if (!primaryProductImage) {
-    return { success: false, error: "Primary product image is missing." };
-  }
-  if (!backgroundType) {
-    return { success: false, error: "Background type is missing." };
-  }
+        if (!validated.success) {
+            return { error: validated.error.errors.map(e => e.message).join(', ') };
+        }
 
-  try {
-    const primaryProductPhotoDataUri = toDataURL(Buffer.from(await primaryProductImage.arrayBuffer()), primaryProductImage.type);
-    let secondaryProductPhotoDataUri: string | undefined = undefined;
-    if (secondaryProductImage) {
-        secondaryProductPhotoDataUri = toDataURL(Buffer.from(await secondaryProductImage.arrayBuffer()), secondaryProductImage.type);
+        const { background, angle1, angle2, context } = validated.data;
+
+        const result = await generateCustomCandleBackground({
+            primaryProductPhotoDataUri: angle1,
+            secondaryProductPhotoDataUri: angle2,
+            backgroundPrompt: background,
+            contextualDetails: context,
+        });
+
+        return { imageDataUrl: result.compositeImageDataUri };
+    } catch (error: any) {
+        console.error("[generateImageAction Error]", error);
+        if (error.message.includes('500') || error.message.includes('503')) {
+            return { error: "The AI image service is temporarily unavailable. Please try again later." };
+        }
+        return { error: "An unexpected error occurred during image generation." };
     }
-
-
-    if (backgroundType === 'generate') {
-      if (!backgroundPrompt) {
-        return { success: false, error: "Background prompt is required for generation." };
-      }
-
-      const result = await generateCustomCandleBackground({
-        primaryProductPhotoDataUri,
-        secondaryProductPhotoDataUri,
-        backgroundPrompt,
-        ...(contextualDetails && { contextualDetails }),
-      });
-
-      if (!result.compositeImageDataUri) {
-         throw new Error("AI failed to generate a composite image.");
-      }
-
-      return { success: true, imageDataUri: result.compositeImageDataUri };
-
-    } else if (backgroundType === 'gallery') {
-      if (!selectedBackgroundUrl) {
-        return { success: false, error: "A gallery background must be selected." };
-      }
-
-      const result = await composeCandleWithGeneratedBackground({
-        primaryCandleImage: primaryProductPhotoDataUri,
-        secondaryCandleImage: secondaryProductPhotoDataUri,
-        generatedBackground: selectedBackgroundUrl,
-        ...(contextualDetails && { contextualDetails }),
-      });
-
-      if (!result.compositeImage) {
-         throw new Error("AI failed to compose the image.");
-      }
-
-      return { success: true, imageDataUri: result.compositeImage };
-
-    } else {
-      return { success: false, error: "Invalid background type specified." };
-    }
-
-  } catch (e: any) {
-    console.error("[generateImageAction Error]", e);
-    return { success: false, error: e.message || "An unexpected error occurred during image generation." };
-  }
 }
 
 type PrefillTokenResult = {
@@ -517,3 +481,10 @@ async function uploadImageToFirebase(imageDataUrl: string, token: string): Promi
     });
     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
+
+const imageGenSchema = z.object({
+    background: z.string(),
+    angle1: z.string(),
+    angle2: z.string(),
+    context: z.string().optional(),
+});
