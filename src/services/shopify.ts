@@ -390,6 +390,35 @@ export async function createProduct(productData: ProductData) {
   return { product: { id: productId } };
 }
 
+export async function updateProduct(productId: string, productInput: any) {
+    const updateProductMutation = `
+        mutation productUpdate($input: ProductInput!) {
+            productUpdate(input: $input) {
+                product {
+                    id
+                }
+                userErrors {
+                    field
+                    message
+                }
+            }
+        }
+    `;
+    
+    // For now, we only support updating core fields, not variants or images in this simplified flow
+    const { variants, images, ...coreInput } = productInput;
+    coreInput.id = productId;
+
+    const result = await fetchShopify<any>(updateProductMutation, { input: coreInput });
+    const userErrors = result.productUpdate.userErrors;
+
+     if (userErrors && userErrors.length > 0) {
+        throw new Error(`Product update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
+    }
+    
+    return result;
+}
+
 
 // --- Delete Product ---
 const PRODUCT_DELETE_MUTATION = `
