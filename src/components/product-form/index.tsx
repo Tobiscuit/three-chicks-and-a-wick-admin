@@ -166,6 +166,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     price: data.price,
                     sku: data.sku,
                     tags: data.tags,
+                    inventory: 0, // Default inventory for new AI products
                 });
                 if (data.publicImageUrl) {
                     setImagePreviews([data.publicImageUrl]);
@@ -323,6 +324,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       const result = await action({
         ...data,
         id: initialData?.id,
+        inventoryItemId: initialData?.variants.edges[0]?.node.inventoryItem.id,
         imageUrls: imagePreviews, // Pass the entire imagePreviews array
       });
       
@@ -480,8 +482,21 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             </FormItem>
                         )}
                     />
+                    <FormField control={form.control} name="inventory" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Inventory</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    type="number" 
+                                    placeholder="0" 
+                                    {...field}
+                                    onChange={e => field.onChange(parseInt(e.target.value, 10))}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
                     <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU (Stock Keeping Unit)</FormLabel><FormControl><Input placeholder="Auto-generated if left empty" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="inventory" render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>Available Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </CardContent>
                 </Card>
             </div>

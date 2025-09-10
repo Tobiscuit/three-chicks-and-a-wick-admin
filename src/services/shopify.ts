@@ -419,6 +419,43 @@ export async function updateProduct(productId: string, productInput: any) {
     return result;
 }
 
+export async function updateInventoryQuantity(inventoryItemId: string, quantity: number, locationId: string) {
+    const mutation = `
+        mutation InventorySetQuantities($input: InventorySetQuantitiesInput!) {
+            inventorySetQuantities(input: $input) {
+                userErrors {
+                    field
+                    message
+                }
+            }
+        }
+    `;
+    
+    const variables = {
+        input: {
+            name: "available",
+            reason: "correction",
+            ignoreCompareQuantity: true,
+            quantities: [
+                {
+                    inventoryItemId,
+                    locationId,
+                    quantity,
+                },
+            ],
+        },
+    };
+    
+    const result = await fetchShopify<any>(mutation, variables);
+    const userErrors = result.inventorySetQuantities.userErrors;
+
+    if (userErrors && userErrors.length > 0) {
+        throw new Error(`Inventory update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
+    }
+    
+    return result;
+}
+
 
 // --- Delete Product ---
 const PRODUCT_DELETE_MUTATION = `

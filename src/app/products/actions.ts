@@ -17,6 +17,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 const productSchema = z.object({
     id: z.string().optional(),
+    inventoryItemId: z.string().optional(),
+    inventory: z.number().optional(),
     title: z.string(),
     description: z.string(),
     price: z.string(),
@@ -53,10 +55,32 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
         if (!product.id) {
             throw new Error('Product ID is required for updates.');
         }
+
+        const locationId = await getPrimaryLocationId();
+        if (!locationId) {
+            throw new Error("Could not determine primary location for inventory update.");
+        }
+
+        if (product.inventoryItemId && typeof product.inventory === 'number') {
+            await updateInventoryQuantity(product.inventoryItemId, product.inventory, locationId);
+        }
+
         const result = await updateProduct(product.id, {
             title: product.title,
             tags: product.tags,
+            // description is now a metafield and needs to be updated separately.
         });
+
+        // Update Firestore for real-time UI
+        if (product.inventoryItemId && typeof product.inventory === 'number') {
+            const docId = encodeShopifyId(product.inventoryItemId);
+            await adminDb.collection('inventoryStatus').doc(docId).set({
+                quantity: product.inventory,
+                status: 'confirmed',
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+        }
+
         revalidatePath('/products');
         return { success: true, product: result };
     } catch (error) {
