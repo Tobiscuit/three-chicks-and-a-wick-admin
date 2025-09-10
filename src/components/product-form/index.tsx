@@ -182,7 +182,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             toast({ variant: "destructive", title: "Error", description: error.message });
         }
     })();
-  }, [isEditMode, setValue, toast, form, defaultValues]);
+  }, [isEditMode, setValue, toast]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
