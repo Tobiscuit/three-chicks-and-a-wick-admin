@@ -404,7 +404,16 @@ Your task is to transform raw data into a partial Shopify product listing, focus
 
     } catch (error: any) {
         console.error("[generateProductFromImageAction Error]", error);
-        return { success: false, error: error.message || "An unexpected error occurred." };
+
+        if (error.message.includes('503')) {
+            throw new Error("The AI service is temporarily unavailable. Please try again later.");
+        }
+        
+        if (error.message.includes('token')) {
+            throw new Error("The image is too large to be processed by the AI. Please try a smaller image.");
+        }
+
+        throw new Error("An unexpected error occurred while generating the product.");
     }
 }
 
