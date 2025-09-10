@@ -533,6 +533,13 @@ const addProductModalSchema = z.object({
 
 type AddProductModalValues = z.infer<typeof addProductModalSchema>;
 
+// Helper to convert a Base64 Data URL to a File object
+async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: blob.type });
+}
+
 function AddProductModal({ generatedImage, onClose }: { generatedImage: string; onClose: () => void; }) {
     const router = useRouter();
     const { toast } = useToast();
@@ -545,20 +552,41 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
     const onSubmit = async (values: AddProductModalValues) => {
         setIsGenerating(true);
         try {
-            const result = await generateProductFromImageAction({
-                imageDataUrl: generatedImage,
-                price: values.price,
-                creatorNotes: values.creatorNotes,
+            // Step 1: Get the Firebase Auth token for the API route
+            const user = auth.currentUser;
+            if (!user) {
+                throw new Error("You must be logged in to perform this action.");
+            }
+            const idToken = await user.getIdToken();
+
+            // Step 2: Convert the Data URL to a File
+            const imageFile = await dataUrlToFile(generatedImage, `ai-generated-${Date.now()}.webp`);
+            
+            // Step 3: Prepare the form data for the API POST request
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            formData.append('price', values.price);
+            formData.append('creatorNotes', values.creatorNotes);
+            
+            // Step 4: Call the new API route
+            const response = await fetch('/api/image-studio/generate-details', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: formData,
             });
+
+            const result = await response.json();
 
             if (result.success && result.token) {
                 toast({
-                    title: "Content Generated!",
+                    title: "Content Generation Started!",
                     description: "Redirecting you to the new product page to finalize...",
                 });
-                router.push(`/products/new?ai-token=${result.token}`);
+                router.push(`/products/new?draftToken=${result.token}`);
             } else {
-                throw new Error(result.error || "Failed to create product.");
+                throw new Error(result.error || "Failed to start content generation.");
             }
         } catch (error: any) {
             toast({

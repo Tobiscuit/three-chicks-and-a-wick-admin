@@ -502,3 +502,49 @@ export async function resolveAiGeneratedProductAction(
         return { success: false, error: "Failed to resolve AI-generated product data." };
     }
 }
+
+
+export async function resolveAiDraftAction(
+    token: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        if (!token) return { success: false, error: "Missing draft token." };
+
+        const docRef = adminDb.collection('aiProductDrafts').doc(token);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            return { success: false, error: "Draft not found, it may have expired." };
+        }
+
+        const draftData = doc.data();
+        if (!draftData || !draftData.tempImagePath) {
+            return { success: false, error: "Draft data is incomplete." };
+        }
+
+        // Get a signed URL for the temporary image in Firebase Storage
+        const [imageUrl] = await adminStorage.bucket().file(draftData.tempImagePath).getSignedUrl({
+            action: 'read',
+            expires: Date.now() + 5 * 60 * 1000, // 5 minutes to fetch
+        });
+
+        // We don't delete the draft here. It will be cleaned up by the TTL policy.
+
+        return { 
+            success: true, 
+            data: {
+                ...draftData,
+                imageUrl, // Add the accessible image URL to the response
+            } 
+        };
+
+    } catch (error: any) {
+        console.error("[resolveAiDraftAction Error]", error);
+        return { success: false, error: "Failed to resolve AI draft." };
+    }
+}
+
+
+export async function uploadImageAction(imageDataUrl: string): Promise<string | null> {
+    try {
+        const token = uuidv4();
