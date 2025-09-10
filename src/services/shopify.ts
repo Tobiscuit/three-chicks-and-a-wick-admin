@@ -268,7 +268,6 @@ const CREATE_PRODUCT_MUTATION = `
     productCreate(input: $input) {
       product {
         id
-        title
       }
       userErrors {
         field
@@ -330,39 +329,6 @@ export async function updateProduct(productId: string, productInput: any): Promi
     };
     const data = await fetchShopify<ProductUpdateResponse>(UPDATE_PRODUCT_MUTATION, variables);
     return data;
-}
-
-const QUICK_UPDATE_INVENTORY_MUTATION = `
-    mutation inventoryAdjustQuantities($input: InventoryAdjustQuantitiesInput!) {
-        inventoryAdjustQuantities(input: $input) {
-            userErrors {
-                field
-                message
-            }
-        }
-    }
-`;
-
-export async function quickUpdateInventory(inventoryItemId: string, quantity: number) {
-    const locationId = await getPrimaryLocationId();
-    if (!locationId) {
-        throw new Error("Primary location not found for inventory adjustment.");
-    }
-
-    const variables = {
-        input: {
-            reason: "correction",
-            name: "available",
-            changes: [
-                {
-                    delta: quantity,
-                    inventoryItemId: inventoryItemId,
-                    locationId: locationId,
-                },
-            ],
-        },
-    };
-    return fetchShopify(QUICK_UPDATE_INVENTORY_MUTATION, variables);
 }
 
 // --- Delete Product ---
