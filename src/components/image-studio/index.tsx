@@ -43,6 +43,7 @@ import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { ShopifyProduct } from "@/types/shopify";
 import CurrencyInput from "../ui/currency-input";
 import { useRouter } from "next/navigation";
+import { toWebpAndResize } from "@/lib/image";
 
 
 // Client-side image conversion to WebP (no resizing)
@@ -234,10 +235,10 @@ export function ImageStudio() {
 
     const formData = new FormData();
     // Convert to WebP client-side to shrink payloads
-    const primaryWebp = await toWebp(values.primaryProductImage);
+    const primaryWebp = await toWebpAndResize(values.primaryProductImage, 1024, 0.9);
     formData.append('primaryProductImage', primaryWebp);
     if(values.secondaryProductImage) {
-      const secondaryWebp = await toWebp(values.secondaryProductImage);
+      const secondaryWebp = await toWebpAndResize(values.secondaryProductImage, 1024, 0.9);
       formData.append('secondaryProductImage', secondaryWebp);
     }
     formData.append('backgroundType', values.backgroundType);
