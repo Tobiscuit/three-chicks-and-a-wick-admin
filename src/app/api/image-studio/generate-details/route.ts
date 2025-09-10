@@ -21,6 +21,7 @@ async function isAuthorized(request: Request): Promise<boolean> {
 }
 
 export async function POST(request: Request) {
+    console.log("--- [API ROUTE]: /api/image-studio/generate-details TRIGGERED ---");
     if (!await isAuthorized(request)) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }

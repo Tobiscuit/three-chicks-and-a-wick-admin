@@ -111,6 +111,7 @@ export async function checkAuthorization(idToken: string | null) {
 const toDataURL = (buffer: Buffer, mimeType: string) => `data:${mimeType};base64,${buffer.toString("base64")}`;
 
 export async function generateImageAction(formData: FormData): Promise<ActionResult> {
+  console.log("--- [SERVER ACTION]: generateImageAction TRIGGERED ---");
   const primaryProductImage = formData.get('primaryProductImage') as File | null;
   const secondaryProductImage = formData.get('secondaryProductImage') as File | null;
   const backgroundType = formData.get('backgroundType') as 'gallery' | 'generate' | null;
@@ -358,6 +359,10 @@ type ProductCreateResponse = {
 export async function generateProductFromImageAction(
     { imageDataUrl, price, creatorNotes }: { imageDataUrl:string, price: string, creatorNotes: string }
 ): Promise<{ success: boolean; token?: string; error?: string }> {
+    console.log("--- [SERVER ACTION]: generateProductFromImageAction TRIGGERED ---");
+    console.log(`Received creatorNotes: ${creatorNotes}`);
+    console.log(`Received price: ${price}`);
+    console.log(`Received imageDataUrl (length): ${imageDataUrl.length}`);
 
     if (!process.env.GEMINI_API_KEY) {
         return { success: false, error: "Gemini API key is not configured." };
