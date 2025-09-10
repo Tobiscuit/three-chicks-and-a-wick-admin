@@ -323,6 +323,9 @@ export async function createProduct(productData: ProductData) {
   `;
   const variantInput = [{
     price: productData.price,
+    optionValues: [
+      { name: "Default Title", optionName: "Title" }
+    ]
   }];
   const createVariantResult = await fetchShopify<any>(createVariantMutation, { productId, variants: variantInput });
   const variantErrors = createVariantResult.productVariantsBulkCreate.userErrors;
