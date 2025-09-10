@@ -304,11 +304,12 @@ type ProductCreateResponse = {
 
 
 export async function generateProductFromImageAction(
-    { imageDataUrl, price, creatorNotes }: { imageDataUrl: string, price: string, creatorNotes: string }
-): Promise<{ success: boolean; productId?: string; error?: string }> {
+    prevState: any,
+    formData: FormData
+): Promise<{ token?: string; error?: string }> {
 
     if (!process.env.GEMINI_API_KEY) {
-        return { success: false, error: "Gemini API key is not configured." };
+        return { error: "Gemini API key is not configured." };
     }
 
     try {
@@ -317,6 +318,18 @@ export async function generateProductFromImageAction(
             model: "gemini-2.5-pro",
             generationConfig: { responseMimeType: "application/json" }
         });
+
+        const creatorNotes = formData.get('creatorNotes') as string;
+        const price = formData.get('price') as string;
+        const imageDataUrl = formData.get('imageDataUrl') as string;
+
+        if (!creatorNotes || !price || !imageDataUrl) {
+            return { error: "Missing required fields for product generation." };
+        }
+
+        console.log("===== GENERATING PRODUCT FROM IMAGE =====");
+        console.log("Creator Notes:", creatorNotes);
+        console.log("Price:", price);
 
         const base64Data = imageDataUrl.match(/;base64,(.*)$/)?.[1];
         if (!base64Data) {
@@ -369,20 +382,20 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             throw new Error(stashResult.error || "Failed to stash AI-generated data.");
         }
 
-        return { success: true, token: stashResult.token };
+        return { token: stashResult.token };
 
     } catch (error: any) {
         console.error("[generateProductFromImageAction Error]", error);
 
         if (error.message.includes('503')) {
-            throw new Error("The AI service is temporarily unavailable. Please try again later.");
+            return { error: "The AI service is temporarily unavailable. Please try again later." };
         }
         
         if (error.message.includes('token')) {
-            throw new Error("The image is too large to be processed by the AI. Please try a smaller image.");
+            return { error: "The image is too large to be processed by the AI. Please try a smaller image." };
         }
 
-        throw new Error("An unexpected error occurred while generating the product.");
+        return { error: "An unexpected error occurred while generating the product." };
     }
 }
 
