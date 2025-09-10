@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from "next/image";
 import Link from 'next/link';
 
@@ -36,7 +36,7 @@ import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy }
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
-import { resolveProductPrefillImage, resolveAiGeneratedProductAction, resolveAiDraftAction } from "@/app/actions";
+import { resolveAiDraftAction } from "@/app/actions";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -75,6 +75,7 @@ function generateSku(title: string): string {
 
 export function ProductForm({ collections, initialData = null }: ProductFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.featuredImage?.url || null);
@@ -119,41 +120,22 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     defaultValues,
   });
   
-  const { setValue, getValues, formState } = form;
-  // Prefill image by token (from Image Studio)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (!token || isEditMode) return;
-    (async () => {
-      try {
-        const res = await resolveProductPrefillImage(token);
-        if (!res.success || !res.url) return;
-        const response = await fetch(res.url);
-        const blob = await response.blob();
-        const rawFile = new File([blob], `prefill-${Date.now()}.webp`, { type: blob.type || 'image/webp' });
-        console.log('[ProductForm prefill] original bytes:', rawFile.size);
-        const optimized = await toWebpAndResize(rawFile, 1600, 0.82);
-        console.log('[ProductForm prefill] optimized bytes:', optimized.size);
-        setValue('image', optimized, { shouldValidate: true, shouldDirty: true });
-        const reader = new FileReader();
-        reader.onloadend = () => setImagePreview(reader.result as string);
-        reader.readAsDataURL(optimized);
-      } catch {}
-    })();
-  }, [isEditMode, setValue]);
+  const { setValue } = form;
 
   // Prefill form with AI generated data using the new draft token flow
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('draftToken');
+    const token = searchParams.get('draftToken');
     if (!token || isEditMode) return;
+
+    let isCancelled = false;
 
     (async () => {
         try {
-            toast({ title: "Loading AI Content..." });
+            toast({ id: "ai-prefill-toast", title: "🪄 Loading AI Content..." });
             const res = await resolveAiDraftAction(token);
             
+            if (isCancelled) return;
+
             if (res.success && res.data) {
                 const { title, body_html, tags, sku, price, imageUrl } = res.data;
                 
@@ -165,36 +147,47 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     tags,
                     sku,
                     price,
+                    status: "DRAFT", // Always default AI products to Draft
                 });
                 
                 // Fetch the temporary image, convert to a File, and set in the form
                 const response = await fetch(imageUrl);
+                if (isCancelled) return;
+
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
                 
-                // This re-uses the existing image handling logic
                 setValue('image', file, { shouldValidate: true, shouldDirty: true });
                 const reader = new FileReader();
-                reader.onloadend = () => setImagePreview(reader.result as string);
+                reader.onloadend = () => {
+                    if (!isCancelled) setImagePreview(reader.result as string)
+                };
                 reader.readAsDataURL(file);
 
-                toast({ title: "Success!", description: "AI content has been pre-filled." });
+                toast({ id: "ai-prefill-toast", title: "✅ Success!", description: "AI content has been pre-filled." });
 
                 // Clean the URL
-                window.history.replaceState(null, '', window.location.pathname);
+                const newUrl = window.location.pathname;
+                window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+
             } else {
                 throw new Error(res.error || "Could not load AI content.");
             }
         } catch (error: any) {
-            toast({ variant: "destructive", title: "Error", description: error.message });
+             if (isCancelled) return;
+            toast({ id: "ai-prefill-toast", variant: "destructive", title: "❌ Error", description: error.message });
         }
     })();
-  }, [isEditMode, setValue, toast, form, defaultValues]);
+
+    return () => {
+        isCancelled = true;
+    }
+  }, [isEditMode, setValue, toast, searchParams, form, defaultValues]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
       const titleValue = event.target.value;
-      const skuValue = getValues('sku');
+      const skuValue = form.getValues('sku');
 
       // Generate SKU only if the title has a value and the SKU is currently empty.
       if (titleValue && !skuValue) {
@@ -332,7 +325,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             </div>
             <div className="flex gap-2">
                  <Button variant="outline" type="button" onClick={() => router.push('/products')}>Cancel</Button>
-                 <Button type="submit" disabled={isSubmitting || !formState.isDirty}>
+                 <Button type="submit" disabled={isSubmitting || !form.formState.isDirty}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditMode ? 'Save Changes' : 'Add Product'}
                  </Button>

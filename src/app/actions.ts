@@ -530,10 +530,15 @@ export async function resolveAiDraftAction(
 
         // We don't delete the draft here. It will be cleaned up by the TTL policy.
 
+        // --- FIX ---
+        // As with the other resolver, we must strip out the non-serializable
+        // `createdAt` Timestamp before sending the data to the client.
+        const { createdAt, ...rest } = draftData;
+
         return { 
             success: true, 
             data: {
-                ...draftData,
+                ...rest,
                 imageUrl, // Add the accessible image URL to the response
             } 
         };

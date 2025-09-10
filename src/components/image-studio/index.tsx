@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus } from "lucide-react";
-import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage, createPrefillUploadUrl, generateProductFromImageAction } from "@/app/actions";
+import { generateImageAction, getGalleryImagesAction } from "@/app/actions";
 import { storage, auth } from "@/lib/firebase";
 import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { ref as storageRef, uploadString } from "firebase/storage";
@@ -555,16 +555,21 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
             // Step 1: Get the Firebase Auth token for the API route
             const user = auth.currentUser;
             if (!user) {
-                throw new Error("You must be logged in to perform this action.");
+                // This should ideally be handled by an auth provider wrapper,
+                // but as a fallback we'll try to sign in.
+                await signInAnonymously(auth);
+                if (!auth.currentUser) {
+                  throw new Error("Authentication is required to perform this action.");
+                }
             }
-            const idToken = await user.getIdToken();
+            const idToken = await auth.currentUser!.getIdToken();
 
             // Step 2: Convert the Data URL to a File
             const imageFile = await dataUrlToFile(generatedImage, `ai-generated-${Date.now()}.webp`);
             
             // Step 3: Prepare the form data for the API POST request
             const formData = new FormData();
-            formData.append('image', imageFile);
+            formData.append('imageFile', imageFile); // Match the name in the API route
             formData.append('price', values.price);
             formData.append('creatorNotes', values.creatorNotes);
             
@@ -579,7 +584,7 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
 
             const result = await response.json();
 
-            if (result.success && result.token) {
+            if (response.ok && result.success && result.token) {
                 toast({
                     title: "Content Generation Started!",
                     description: "Redirecting you to the new product page to finalize...",
