@@ -30,7 +30,7 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
         const product = productSchema.parse(formData);
         const result = await createProduct({
             title: product.title,
-            body_html: product.description,
+            bodyHtml: product.description,
             tags: product.tags,
             variants: [{ price: product.price, sku: product.sku }],
             images: product.imageUrls ? product.imageUrls.map(src => ({ src })) : [],
@@ -52,7 +52,7 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
         }
         const result = await updateProduct(product.id, {
             title: product.title,
-            body_html: product.description,
+            bodyHtml: product.description,
             tags: product.tags,
             variants: [{ price: product.price, sku: product.sku }],
             images: product.imageUrls ? product.imageUrls.map(src => ({ src })) : [],
