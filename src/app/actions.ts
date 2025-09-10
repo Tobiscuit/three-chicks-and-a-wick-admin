@@ -496,8 +496,8 @@ async function uploadImageToFirebase(imageDataUrl: string, token: string): Promi
 }
 
 const imageGenSchema = z.object({
-    background: z.string(),
-    angle1: z.string(),
-    angle2: z.string(),
+    background: z.string().min(1, { message: 'Background prompt is required.' }),
+    angle1: z.string().min(1, { message: 'Primary candle image is required.' }),
+    angle2: z.string().optional(),
     context: z.string().optional(),
 });
