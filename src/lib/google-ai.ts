@@ -1,28 +1,20 @@
-import { VertexAI } from '@google-cloud/vertex-ai';
+import { GoogleGenerativeAI } from '@google/genai';
 
-// This is the modern, recommended way to interact with the Google AI File API.
+// This function uses the modern, built-in File API from the @google/genai SDK.
 // It handles uploading a file (provided as a buffer) and returns the API's
 // response, which includes the all-important `fileUri` for use in prompts.
 export async function uploadFileToGoogleAI(fileBuffer: Buffer, mimeType: string) {
-  const vertexAI = new VertexAI({
-    project: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
-    location: 'us-central1' 
-  });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+  const fileApi = genAI.getGenerativeModel({ model: "gemini-pro" }).files; // Use a basic model just to access the API
 
-  const generativeModel = vertexAI.getGenerativeModel({
-    model: 'gemini-2.5-pro',
-  });
-
-  const filePart = {
-    inlineData: {
-      data: fileBuffer.toString('base64'),
-      mimeType,
+  const result = await fileApi.uploadFile({
+    file: {
+      contents: fileBuffer,
+      mimeType: mimeType,
     },
-  };
-
-  // The Vertex AI SDK's `uploadFile` is a convenience method that handles
-  // the REST API calls for uploading and provides the file resource object back.
-  const result = await generativeModel.uploadFile(filePart);
+    // Optional: a display name for the file
+    displayName: `product-image-${Date.now()}`,
+  });
   
   return result;
 }

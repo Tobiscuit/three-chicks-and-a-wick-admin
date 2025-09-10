@@ -7,7 +7,7 @@ import { adminApp, adminAuth, adminStorage } from "@/lib/firebase-admin"; // USE
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/genai";
 import { fetchShopify } from '@/services/shopify';
 
 
@@ -548,3 +548,26 @@ export async function resolveAiDraftAction(
 export async function uploadImageAction(imageDataUrl: string): Promise<string | null> {
     try {
         const token = uuidv4();
+        const publicImageUrl = await uploadImageToFirebase(imageDataUrl, token);
+        return publicImageUrl;
+    } catch (error) {
+        console.error("[uploadImageAction Error]", error);
+        return null;
+    }
+}
+
+async function uploadImageToFirebase(imageDataUrl: string, token: string): Promise<string> {
+    const bucket = adminStorage.bucket();
+    const fileName = `product-images/${token}-upload.webp`;
+    const [meta, base64] = imageDataUrl.split(',');
+    const mimeMatch = /data:(.*?);base64/.exec(meta || '');
+    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const buffer = Buffer.from(base64, 'base64');
+
+    await bucket.file(fileName).save(buffer, {
+        contentType: mimeType,
+        resumable: false,
+        public: true,
+    });
+    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+}
