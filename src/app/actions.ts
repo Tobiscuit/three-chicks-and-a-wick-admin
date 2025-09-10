@@ -482,7 +482,20 @@ export async function resolveAiGeneratedProductAction(
         // Delete the draft after reading it to ensure one-time use
         await docRef.delete();
 
-        return { success: true, data: doc.data() };
+        const data = doc.data();
+
+        if (!data) {
+            // This case should ideally not be hit if doc.exists is true, but it's good practice.
+            return { success: false, error: "Draft data is empty." };
+        }
+
+        // --- FIX ---
+        // Firestore `Timestamp` is a class, not a plain object. It cannot be
+        // passed from a Server Component to a Client Component. We destructure
+        // it out here, returning only the serializable data the client needs.
+        const { createdAt, ...rest } = data;
+
+        return { success: true, data: rest };
 
     } catch (error: any) {
         console.error("[resolveAiGeneratedProductAction Error]", error);
