@@ -68,7 +68,7 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
     });
 
     const toMediaPart = (dataUri: string): Part => {
-        const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+        const match = dataUri.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
         if (!match) throw new Error('Invalid data URI format');
         return {
             media: {
