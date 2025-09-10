@@ -304,12 +304,15 @@ export async function createProduct(productData: ProductData) {
       throw new Error("Product was created but its ID could not be retrieved.");
   }
 
-  // Step 2: Create the variant
+  // Step 2: Create the variant (without SKU)
   const createVariantMutation = `
     mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
       productVariantsBulkCreate(productId: $productId, variants: $variants) {
         productVariants {
           id
+          inventoryItem {
+            id
+          }
         }
         userErrors {
           field
@@ -320,15 +323,43 @@ export async function createProduct(productData: ProductData) {
   `;
   const variantInput = [{
     price: productData.price,
-    sku: productData.sku,
   }];
   const createVariantResult = await fetchShopify<any>(createVariantMutation, { productId, variants: variantInput });
   const variantErrors = createVariantResult.productVariantsBulkCreate.userErrors;
   if (variantErrors && variantErrors.length > 0) {
     throw new Error(`Variant create failed: ${variantErrors.map((e:any) => e.message).join(', ')}`);
   }
+  const inventoryItemId = createVariantResult.productVariantsBulkCreate.productVariants[0]?.inventoryItem?.id;
+  if (!inventoryItemId) {
+      // This is a non-critical error for the flow, but we should log it.
+      console.warn("Variant was created but its inventoryItem ID could not be retrieved. SKU will not be set.");
+  } else {
+    // Step 3: Update the inventory item with the SKU
+    const updateInventoryItemMutation = `
+        mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+            inventoryItemUpdate(id: $id, input: $input) {
+                inventoryItem {
+                    id
+                    sku
+                }
+                userErrors {
+                    field
+                    message
+                }
+            }
+        }
+    `;
+    const inventoryItemInput = { sku: productData.sku };
+    const updateInventoryResult = await fetchShopify<any>(updateInventoryItemMutation, { id: inventoryItemId, input: inventoryItemInput });
+    const inventoryErrors = updateInventoryResult.inventoryItemUpdate.userErrors;
+     if (inventoryErrors && inventoryErrors.length > 0) {
+        // Non-critical, just log
+      console.warn(`Setting SKU failed: ${inventoryErrors.map((e:any) => e.message).join(', ')}`);
+    }
+  }
 
-  // Step 3: Attach images
+
+  // Step 4: Attach images
   if (productData.imageUrls && productData.imageUrls.length > 0) {
     const createMediaMutation = `
       mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
