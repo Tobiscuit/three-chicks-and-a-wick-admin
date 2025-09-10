@@ -265,7 +265,7 @@ export async function getPrimaryLocationId(): Promise<string | null> {
 
 type ProductData = {
     title: string;
-    descriptionHtml: string;
+    description: string; // HTML string
     tags: string;
     price: string;
     sku: string;
@@ -273,147 +273,123 @@ type ProductData = {
 };
 
 export async function createProduct(productData: ProductData) {
-  // Step 1: Create the product
+  // 1. Create the product (title, tags, status)
   const createProductMutation = `
     mutation productCreate($input: ProductInput!) {
       productCreate(input: $input) {
-        product {
-          id
-        }
-        userErrors {
-          field
-          message
-        }
+        product { id }
+        userErrors { field message }
       }
     }
   `;
   const productInput = {
     title: productData.title,
-    status: 'DRAFT',
-    descriptionHtml: productData.descriptionHtml,
     tags: productData.tags,
+    status: "DRAFT"
   };
-
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
-  const productCreateErrors = createProductResult.productCreate.userErrors;
-  if (productCreateErrors && productCreateErrors.length > 0) {
-    throw new Error(`Product create failed: ${productCreateErrors.map((e:any) => e.message).join(', ')}`);
-  }
-  const productId = createProductResult.productCreate.product.id;
-  if (!productId) {
-      throw new Error("Product was created but its ID could not be retrieved.");
-  }
+  const productId = createProductResult.productCreate.product?.id;
+  if (!productId) throw new Error(`Product create failed: ${JSON.stringify(createProductResult.productCreate.userErrors)}`);
 
-  // Step 2: Get the ID of the default variant that Shopify created
-  const productWithVariant = await getProductById(productId);
-  const variant = productWithVariant?.variants.edges[0]?.node;
-  if (!variant || !variant.inventoryItem?.id) {
-    // Non-critical, but log it. The product exists but we can't update its price/sku.
-    console.warn(`Product ${productId} created, but its default variant could not be found. Price/SKU not set.`);
-    return { product: { id: productId } };
-  }
-  const variantId = variant.id;
-  const inventoryItemId = variant.inventoryItem.id;
-  
-  // Step 3: Update the variant with the correct price
+  // 2. Get the default variant and inventoryItemId
+  const getProductQuery = `
+    query getProductById($id: ID!) {
+      product(id: $id) {
+        variants(first: 1) {
+          edges {
+            node {
+              id
+              inventoryItem { id }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const getProductResult = await fetchShopify<any>(getProductQuery, { id: productId });
+  const variantNode = getProductResult.product.variants.edges[0]?.node;
+  if (!variantNode) throw new Error("No default variant found");
+  const variantId = variantNode.id;
+  const inventoryItemId = variantNode.inventoryItem.id;
+
+  // 3. Update the variant's price
   const updateVariantMutation = `
     mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
       productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        userErrors {
-          field
-          message
-        }
+        productVariants { id }
+        userErrors { field message }
       }
     }
   `;
-  const variantInput = { id: variantId, price: productData.price };
-  const updateVariantResult = await fetchShopify<any>(updateVariantMutation, { productId, variants: [variantInput] });
-  const variantErrors = updateVariantResult.productVariantsBulkUpdate.userErrors;
-  if (variantErrors && variantErrors.length > 0) {
-    console.warn(`Failed to update variant price for ${productId}: ${variantErrors.map((e:any) => e.message).join(', ')}`);
+  const updateVariantResult = await fetchShopify<any>(updateVariantMutation, {
+    productId,
+    variants: [{ id: variantId, price: productData.price }]
+  });
+  if (updateVariantResult.productVariantsBulkUpdate.userErrors?.length) {
+    throw new Error(`Variant update failed: ${JSON.stringify(updateVariantResult.productVariantsBulkUpdate.userErrors)}`);
   }
 
-  // Step 4: Update the inventory item with the SKU
-  const updateInventoryItemMutation = `
-      mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
-          inventoryItemUpdate(id: $id, input: $input) {
-              userErrors {
-                  field
-                  message
-              }
-          }
+  // 4. Update the inventory item's SKU
+  const updateInventoryMutation = `
+    mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+      inventoryItemUpdate(id: $id, input: $input) {
+        inventoryItem { id sku }
+        userErrors { field message }
       }
+    }
   `;
-  const inventoryItemInput = { sku: productData.sku };
-  const updateInventoryResult = await fetchShopify<any>(updateInventoryItemMutation, { id: inventoryItemId, input: inventoryItemInput });
-  const inventoryErrors = updateInventoryResult.inventoryItemUpdate.userErrors;
-    if (inventoryErrors && inventoryErrors.length > 0) {
-    console.warn(`Setting SKU failed for ${inventoryItemId}: ${inventoryErrors.map((e:any) => e.message).join(', ')}`);
+  const updateInventoryResult = await fetchShopify<any>(updateInventoryMutation, {
+    id: inventoryItemId,
+    input: { sku: productData.sku }
+  });
+  if (updateInventoryResult.inventoryItemUpdate.userErrors?.length) {
+    throw new Error(`Inventory update failed: ${JSON.stringify(updateInventoryResult.inventoryItemUpdate.userErrors)}`);
   }
 
-  // Step 5: Attach images
-  if (productData.imageUrls && productData.imageUrls.length > 0) {
+  // 5. Attach images
+  if (productData.imageUrls.length > 0) {
     const createMediaMutation = `
-      mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
-        productCreateMedia(productId: $productId, media: $media) {
-          media {
-            ... on MediaImage {
-              id
+        mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+            productCreateMedia(productId: $productId, media: $media) {
+                media { ... on MediaImage { id } }
+                userErrors { field message }
             }
-          }
-          userErrors {
-            field
-            message
-          }
         }
-      }
     `;
-    const mediaInput = productData.imageUrls.map(url => ({
-        originalSource: url,
-        mediaContentType: 'IMAGE',
-    }));
-    
-    const createMediaResult = await fetchShopify<any>(createMediaMutation, { productId, media: mediaInput });
-    const mediaErrors = createMediaResult.productCreateMedia.userErrors;
-    if (mediaErrors && mediaErrors.length > 0) {
-        // Non-critical error, just log it
-      console.warn(`Attaching images failed: ${mediaErrors.map((e:any) => e.message).join(', ')}`);
+    const createMediaResult = await fetchShopify<any>(createMediaMutation, {
+        productId,
+        media: productData.imageUrls.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
+    });
+    if (createMediaResult.productCreateMedia.userErrors?.length) {
+        console.warn(`Media create failed: ${JSON.stringify(createMediaResult.productCreateMedia.userErrors)}`);
     }
+  }
+
+  // 6. Set the description via metafield
+  const setMetafieldMutation = `
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+            metafields { id }
+            userErrors { field message }
+        }
+    }
+  `;
+  const setMetafieldResult = await fetchShopify<any>(setMetafieldMutation, {
+    metafields: [{
+        ownerId: productId,
+        namespace: "custom",
+        key: "description",
+        type: "multi_line_text_field",
+        value: productData.description
+    }]
+  });
+  if (setMetafieldResult.metafieldsSet.userErrors?.length) {
+    console.warn(`Metafield set failed: ${JSON.stringify(setMetafieldResult.metafieldsSet.userErrors)}`);
   }
 
   return { product: { id: productId } };
 }
 
-export async function updateProduct(productId: string, productInput: any) {
-    const updateProductMutation = `
-        mutation productUpdate($input: ProductInput!) {
-            productUpdate(input: $input) {
-                product {
-                    id
-                }
-                userErrors {
-                    field
-                    message
-                }
-            }
-        }
-    `;
-    
-    const { variants, images, ...coreInput } = productInput;
-    coreInput.id = productId;
-
-    const result = await fetchShopify<any>(updateProductMutation, { input: coreInput });
-    const userErrors = result.productUpdate.userErrors;
-
-     if (userErrors && userErrors.length > 0) {
-        throw new Error(`Product update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
-    }
-    
-    // In a real app, you would add logic here to update variants and images separately
-    // For now, we are just updating the core product details.
-    
-    return result;
-}
 
 // --- Delete Product ---
 const PRODUCT_DELETE_MUTATION = `
@@ -575,3 +551,4 @@ export async function setInventoryQuantity(params: { inventoryItemId: string; lo
   };
   return fetchShopify<InventorySetQuantitiesResponse>(INVENTORY_SET_QUANTITIES_MUTATION, variables);
 }
+

@@ -30,7 +30,7 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
         const product = productSchema.parse(formData);
         const result = await createProduct({
             title: product.title,
-            descriptionHtml: product.description,
+            description: product.description,
             tags: product.tags,
             price: product.price,
             sku: product.sku,
@@ -47,15 +47,15 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
 
 export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
+        // Note: A full update would require a multi-step process similar to create.
+        // This is a simplified version for core details only.
         const product = productSchema.parse(formData);
         if (!product.id) {
             throw new Error('Product ID is required for updates.');
         }
         const result = await updateProduct(product.id, {
             title: product.title,
-            bodyHtml: product.description,
             tags: product.tags,
-            // Variants and images are not updated in this simplified flow
         });
         revalidatePath('/products');
         return { success: true, product: result };
