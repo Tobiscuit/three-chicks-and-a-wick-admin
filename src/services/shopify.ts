@@ -304,16 +304,21 @@ export async function createProduct(productData: ProductData) {
       throw new Error("Product was created but its ID could not be retrieved.");
   }
 
-  // Step 2: Create the variant (without SKU)
-  const createVariantMutation = `
-    mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkCreate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          inventoryItem {
-            id
-          }
-        }
+  // Step 2: Get the ID of the default variant that Shopify created
+  const productWithVariant = await getProductById(productId);
+  const variant = productWithVariant?.variants.edges[0]?.node;
+  if (!variant || !variant.inventoryItem?.id) {
+    // Non-critical, but log it. The product exists but we can't update its price/sku.
+    console.warn(`Product ${productId} created, but its default variant could not be found. Price/SKU not set.`);
+    return { product: { id: productId } };
+  }
+  const variantId = variant.id;
+  const inventoryItemId = variant.inventoryItem.id;
+  
+  // Step 3: Update the variant with the correct price
+  const updateVariantMutation = `
+    mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
         userErrors {
           field
           message
@@ -321,48 +326,32 @@ export async function createProduct(productData: ProductData) {
       }
     }
   `;
-  const variantInput = [{
-    price: productData.price,
-    optionValues: [
-      { name: "Default Title", optionName: "Title" }
-    ]
-  }];
-  const createVariantResult = await fetchShopify<any>(createVariantMutation, { productId, variants: variantInput });
-  const variantErrors = createVariantResult.productVariantsBulkCreate.userErrors;
+  const variantInput = { id: variantId, price: productData.price };
+  const updateVariantResult = await fetchShopify<any>(updateVariantMutation, { productId, variants: [variantInput] });
+  const variantErrors = updateVariantResult.productVariantsBulkUpdate.userErrors;
   if (variantErrors && variantErrors.length > 0) {
-    throw new Error(`Variant create failed: ${variantErrors.map((e:any) => e.message).join(', ')}`);
-  }
-  const inventoryItemId = createVariantResult.productVariantsBulkCreate.productVariants[0]?.inventoryItem?.id;
-  if (!inventoryItemId) {
-      // This is a non-critical error for the flow, but we should log it.
-      console.warn("Variant was created but its inventoryItem ID could not be retrieved. SKU will not be set.");
-  } else {
-    // Step 3: Update the inventory item with the SKU
-    const updateInventoryItemMutation = `
-        mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
-            inventoryItemUpdate(id: $id, input: $input) {
-                inventoryItem {
-                    id
-                    sku
-                }
-                userErrors {
-                    field
-                    message
-                }
-            }
-        }
-    `;
-    const inventoryItemInput = { sku: productData.sku };
-    const updateInventoryResult = await fetchShopify<any>(updateInventoryItemMutation, { id: inventoryItemId, input: inventoryItemInput });
-    const inventoryErrors = updateInventoryResult.inventoryItemUpdate.userErrors;
-     if (inventoryErrors && inventoryErrors.length > 0) {
-        // Non-critical, just log
-      console.warn(`Setting SKU failed: ${inventoryErrors.map((e:any) => e.message).join(', ')}`);
-    }
+    console.warn(`Failed to update variant price for ${productId}: ${variantErrors.map((e:any) => e.message).join(', ')}`);
   }
 
+  // Step 4: Update the inventory item with the SKU
+  const updateInventoryItemMutation = `
+      mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+          inventoryItemUpdate(id: $id, input: $input) {
+              userErrors {
+                  field
+                  message
+              }
+          }
+      }
+  `;
+  const inventoryItemInput = { sku: productData.sku };
+  const updateInventoryResult = await fetchShopify<any>(updateInventoryItemMutation, { id: inventoryItemId, input: inventoryItemInput });
+  const inventoryErrors = updateInventoryResult.inventoryItemUpdate.userErrors;
+    if (inventoryErrors && inventoryErrors.length > 0) {
+    console.warn(`Setting SKU failed for ${inventoryItemId}: ${inventoryErrors.map((e:any) => e.message).join(', ')}`);
+  }
 
-  // Step 4: Attach images
+  // Step 5: Attach images
   if (productData.imageUrls && productData.imageUrls.length > 0) {
     const createMediaMutation = `
       mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
