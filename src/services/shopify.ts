@@ -268,6 +268,7 @@ const CREATE_PRODUCT_MUTATION = `
     productCreate(input: $input) {
       product {
         id
+        title
       }
       userErrors {
         field
@@ -290,47 +291,9 @@ type ProductCreateResponse = {
 };
 
 export async function createProduct(productInput: any): Promise<ProductCreateResponse> {
-    const variables = {
-        input: productInput,
-    };
-    const data = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, variables);
+    const data = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, { input: productInput });
     return data;
 }
-
-const PRODUCT_VARIANTS_BULK_CREATE_MUTATION = `
-    mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-        productVariantsBulkCreate(productId: $productId, variants: $variants) {
-            productVariants {
-                id
-            }
-            userErrors {
-                field
-                message
-            }
-        }
-    }
-`;
-
-type ProductVariantsBulkCreateResponse = {
-    productVariantsBulkCreate: {
-        productVariants: {
-            id: string;
-        }[] | null;
-        userErrors: {
-            field: string[];
-            message: string;
-        }[];
-    }
-}
-
-export async function createProductVariantsBulk(productId: string, variants: ProductVariantInput[]): Promise<ProductVariantsBulkCreateResponse> {
-    const variables = { 
-        productId: productId,
-        variants: variants 
-    };
-    return fetchShopify<ProductVariantsBulkCreateResponse>(PRODUCT_VARIANTS_BULK_CREATE_MUTATION, variables);
-}
-
 
 const UPDATE_PRODUCT_MUTATION = `
   mutation productUpdate($input: ProductInput!) {
@@ -345,17 +308,6 @@ const UPDATE_PRODUCT_MUTATION = `
     }
   }
 `;
-
-export type ProductUpdateInput = {
-    id: string;
-    title?: string;
-    descriptionHtml?: string;
-    productType?: string;
-    status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
-    tags?: string[];
-    collectionsToJoin?: string[];
-    collectionsToLeave?: string[];
-};
 
 type ProductUpdateResponse = {
     productUpdate: {
@@ -380,106 +332,37 @@ export async function updateProduct(productId: string, productInput: any): Promi
     return data;
 }
 
-
-const PRODUCT_VARIANTS_BULK_UPDATE_MUTATION = `
-  mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-    productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-      productVariants {
-        id
-      }
-      userErrors {
-        field
-        message
-      }
+const QUICK_UPDATE_INVENTORY_MUTATION = `
+    mutation inventoryAdjustQuantities($input: InventoryAdjustQuantitiesInput!) {
+        inventoryAdjustQuantities(input: $input) {
+            userErrors {
+                field
+                message
+            }
+        }
     }
-  }
 `;
 
-export type ProductVariantInput = {
-    id?: string;
-    price?: string;
-    sku?: string;
-    inventoryItem?: { 
-        tracked: boolean;
-        cost?: {
-            amount: string;
-            currencyCode: string;
-        } | null;
-    };
-    inventoryQuantities?: {
-        availableQuantity: number;
-        locationId: string;
-    }[];
-};
+export async function quickUpdateInventory(inventoryItemId: string, quantity: number) {
+    const locationId = await getPrimaryLocationId();
+    if (!locationId) {
+        throw new Error("Primary location not found for inventory adjustment.");
+    }
 
-export type NewProductVariantInput = Omit<ProductVariantInput, 'id'>;
-
-
-type ProductVariantUpdateResponse = {
-    productVariantsBulkUpdate: {
-        productVariants: {
-            id: string;
-        }[] | null;
-        userErrors: {
-            field: string[];
-            message: string;
-        }[];
-    };
-};
-
-export async function updateProductVariant(productId: string, variantInput: ProductVariantInput): Promise<ProductVariantUpdateResponse> {
-    const bulkInput = {
-      id: variantInput.id,
-      price: variantInput.price,
-      inventoryItem: variantInput.inventoryItem,
-      inventoryQuantities: variantInput.inventoryQuantities
-    };
-    
     const variables = {
-        productId: productId,
-        variants: [bulkInput],
+        input: {
+            reason: "correction",
+            name: "available",
+            changes: [
+                {
+                    delta: quantity,
+                    inventoryItemId: inventoryItemId,
+                    locationId: locationId,
+                },
+            ],
+        },
     };
-
-    return fetchShopify<ProductVariantUpdateResponse>(PRODUCT_VARIANTS_BULK_UPDATE_MUTATION, variables);
-}
-
-// --- Publications (Sales Channels) ---
-const GET_PUBLICATIONS_QUERY = `
-  query getPublications($first: Int!) {
-    publications(first: $first) {
-      edges { node { id name } }
-    }
-  }
-`;
-
-type GetPublicationsResponse = {
-  publications: { edges: { node: { id: string; name: string } }[] }
-}
-
-export async function getPublicationIds(limit: number = 10): Promise<{ id: string; name: string }[]> {
-  const res = await fetchShopify<GetPublicationsResponse>(GET_PUBLICATIONS_QUERY, { first: limit });
-  return res.publications.edges.map(e => e.node);
-}
-
-const PUBLISHABLE_PUBLISH_MUTATION = `
-  mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
-    publishablePublish(id: $id, input: $input) {
-      publishable { ... on Product { id } }
-      userErrors { field message }
-    }
-  }
-`;
-
-type PublishablePublishResponse = {
-  publishablePublish: {
-    publishable: { id: string } | null;
-    userErrors: { field?: string[]; message: string }[];
-  }
-}
-
-export async function publishProductToPublications(productId: string, publicationIds: string[]): Promise<PublishablePublishResponse> {
-  const input = publicationIds.map((publicationId) => ({ publicationId }));
-  return fetchShopify<PublishablePublishResponse>(PUBLISHABLE_PUBLISH_MUTATION, { id: productId, input });
+    return fetchShopify(QUICK_UPDATE_INVENTORY_MUTATION, variables);
 }
 
 // --- Delete Product ---
