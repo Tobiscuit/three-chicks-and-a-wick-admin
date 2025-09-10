@@ -86,6 +86,13 @@ export async function POST(request: Request) {
         
         const filePart = { fileData: { mimeType: imageFile.type, fileUri } };
 
+        // --- DEBUG LOG ---
+        // Log the exact payload being sent to the model to verify the image data is NOT being inlined.
+        console.log("--- Sending to Gemini ---");
+        console.log("Text Part Length:", textPart.length);
+        console.log("File Part:", JSON.stringify(filePart, null, 2));
+        console.log("-------------------------");
+
         const result = await model.generateContent([textPart, filePart]);
         const responseText = result.response.text();
         console.log("[API Route] Gemini response received.");
