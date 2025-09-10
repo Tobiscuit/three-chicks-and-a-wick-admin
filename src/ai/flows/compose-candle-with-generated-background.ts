@@ -67,12 +67,24 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
         contextualDetails: input.contextualDetails,
     });
 
+    const toMediaPart = (dataUri: string): Part => {
+        const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (!match) throw new Error('Invalid data URI format');
+        return {
+            media: {
+                contentType: match[1],
+                url: dataUri,
+                inlineData: match[2],
+            }
+        };
+    };
+
     const promptParts: Part[] = [
         { text: system },
         { text: user },
-        { media: { url: input.generatedBackground } },
-        { media: { url: input.primaryCandleImage } },
-        ...(input.secondaryCandleImage ? [{ media: { url: input.secondaryCandleImage } }] as Part[] : []),
+        toMediaPart(input.generatedBackground),
+        toMediaPart(input.primaryCandleImage),
+        ...(input.secondaryCandleImage ? [toMediaPart(input.secondaryCandleImage)] : []),
     ];
 
     console.log("[Compose Flow] prompt parts", {
