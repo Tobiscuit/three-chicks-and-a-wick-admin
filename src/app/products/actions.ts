@@ -30,14 +30,15 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
         const product = productSchema.parse(formData);
         const result = await createProduct({
             title: product.title,
-            bodyHtml: product.description,
+            descriptionHtml: product.description,
             tags: product.tags,
-            variants: [{ price: product.price, sku: product.sku }],
-            images: product.imageUrls ? product.imageUrls.map(src => ({ src })) : [],
+            price: product.price,
+            sku: product.sku,
+            imageUrls: product.imageUrls || [],
         });
         revalidatePath('/products');
         return { success: true, product: result };
-            } catch (error) {
+    } catch (error) {
         console.error('Error adding product:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         return { success: false, error: errorMessage };
@@ -54,8 +55,7 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
             title: product.title,
             bodyHtml: product.description,
             tags: product.tags,
-            variants: [{ price: product.price, sku: product.sku }],
-            images: product.imageUrls ? product.imageUrls.map(src => ({ src })) : [],
+            // Variants and images are not updated in this simplified flow
         });
         revalidatePath('/products');
         return { success: true, product: result };
