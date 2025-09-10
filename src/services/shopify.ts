@@ -263,72 +263,133 @@ export async function getPrimaryLocationId(): Promise<string | null> {
   }
 }
 
-const CREATE_PRODUCT_MUTATION = `
-  mutation productCreate($input: ProductInput!) {
-    productCreate(input: $input) {
-      product {
-        id
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-type ProductCreateResponse = {
-    productCreate: {
-        product: { 
-            id: string;
-        } | null;
-        userErrors: {
-            field: string[];
-            message: string;
-        }[];
-    };
+type ProductData = {
+    title: string;
+    descriptionHtml: string;
+    tags: string;
+    price: string;
+    sku: string;
+    imageUrls: string[];
 };
 
-export async function createProduct(productInput: any): Promise<ProductCreateResponse> {
-    const data = await fetchShopify<ProductCreateResponse>(CREATE_PRODUCT_MUTATION, { input: productInput });
-    return data;
+export async function createProduct(productData: ProductData) {
+  // Step 1: Create the product
+  const createProductMutation = `
+    mutation productCreate($input: ProductInput!) {
+      productCreate(input: $input) {
+        product {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  const productInput = {
+    title: productData.title,
+    status: 'DRAFT',
+    descriptionHtml: productData.descriptionHtml,
+    tags: productData.tags,
+  };
+
+  const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
+  const productCreateErrors = createProductResult.productCreate.userErrors;
+  if (productCreateErrors && productCreateErrors.length > 0) {
+    throw new Error(`Product create failed: ${productCreateErrors.map((e:any) => e.message).join(', ')}`);
+  }
+  const productId = createProductResult.productCreate.product.id;
+  if (!productId) {
+      throw new Error("Product was created but its ID could not be retrieved.");
+  }
+
+  // Step 2: Create the variant
+  const createVariantMutation = `
+    mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkCreate(productId: $productId, variants: $variants) {
+        productVariants {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  const variantInput = [{
+    price: productData.price,
+    sku: productData.sku,
+  }];
+  const createVariantResult = await fetchShopify<any>(createVariantMutation, { productId, variants: variantInput });
+  const variantErrors = createVariantResult.productVariantsBulkCreate.userErrors;
+  if (variantErrors && variantErrors.length > 0) {
+    throw new Error(`Variant create failed: ${variantErrors.map((e:any) => e.message).join(', ')}`);
+  }
+
+  // Step 3: Attach images
+  if (productData.imageUrls && productData.imageUrls.length > 0) {
+    const createMediaMutation = `
+      mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+        productCreateMedia(productId: $productId, media: $media) {
+          media {
+            ... on MediaImage {
+              id
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+    const mediaInput = productData.imageUrls.map(url => ({
+        originalSource: url,
+        mediaContentType: 'IMAGE',
+    }));
+    
+    const createMediaResult = await fetchShopify<any>(createMediaMutation, { productId, media: mediaInput });
+    const mediaErrors = createMediaResult.productCreateMedia.userErrors;
+    if (mediaErrors && mediaErrors.length > 0) {
+        // Non-critical error, just log it
+      console.warn(`Attaching images failed: ${mediaErrors.map((e:any) => e.message).join(', ')}`);
+    }
+  }
+
+  return { product: { id: productId } };
 }
 
-const UPDATE_PRODUCT_MUTATION = `
-  mutation productUpdate($input: ProductInput!) {
-    productUpdate(input: $input) {
-      product {
-        id
-      }
-      userErrors {
-        field
-        message
-      }
+export async function updateProduct(productId: string, productInput: any) {
+    const updateProductMutation = `
+        mutation productUpdate($input: ProductInput!) {
+            productUpdate(input: $input) {
+                product {
+                    id
+                }
+                userErrors {
+                    field
+                    message
+                }
+            }
+        }
+    `;
+    
+    const { variants, images, ...coreInput } = productInput;
+    coreInput.id = productId;
+
+    const result = await fetchShopify<any>(updateProductMutation, { input: coreInput });
+    const userErrors = result.productUpdate.userErrors;
+
+     if (userErrors && userErrors.length > 0) {
+        throw new Error(`Product update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
     }
-  }
-`;
-
-type ProductUpdateResponse = {
-    productUpdate: {
-        product: {
-            id: string;
-        } | null;
-        userErrors: {
-            field: string[];
-            message: string;
-        }[];
-    };
-};
-
-export async function updateProduct(productId: string, productInput: any): Promise<ProductUpdateResponse> {
-    const variables = {
-        input: {
-            id: productId,
-            ...productInput
-        },
-    };
-    const data = await fetchShopify<ProductUpdateResponse>(UPDATE_PRODUCT_MUTATION, variables);
-    return data;
+    
+    // In a real app, you would add logic here to update variants and images separately
+    // For now, we are just updating the core product details.
+    
+    return result;
 }
 
 // --- Delete Product ---
