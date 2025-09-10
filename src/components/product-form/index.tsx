@@ -415,54 +415,49 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <CardDescription>Add or replace the featured image. An image is optional.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <FormField control={form.control} name="image" render={({ field }) => (
-                            <FormItem>
-                            <FormControl>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                                    {imagePreviews.map((src, index) => (
-                                        <div key={index} className="relative aspect-square group">
-                                            <Image
-                                                src={src}
-                                                alt={`Product image ${index + 1}`}
-                                                fill
-                                                className="object-cover rounded-md"
-                                            />
-                                            <div className="absolute top-1 right-1">
-                                                <Button
-                                                    type="button"
-                                                    variant="destructive"
-                                                    size="icon"
-                                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => removeImage(index)}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <Card
-                                        className="aspect-square flex items-center justify-center border-2 border-dashed cursor-pointer hover:border-primary transition-colors"
-                                        onClick={() => fileInputRef.current?.click()}
-                                    >
-                                        <div className="text-center">
-                                            <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-1">Add Image</p>
-                                        </div>
-                                    </Card>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mb-4">
+                            {imagePreviews.map((src, index) => (
+                                <div key={index} className="relative aspect-square group">
+                                    <Image
+                                        src={src}
+                                        alt={`Product image ${index + 1}`}
+                                        fill
+                                        className="object-cover rounded-md"
+                                    />
+                                    <div className="absolute top-1 right-1">
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => removeImage(index)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Input
-                                    type="file"
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    onChange={handleFileChange}
-                                    accept="image/*"
-                                    multiple
-                                />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
+                            ))}
+                            <Card
+                                className="aspect-square flex items-center justify-center border-2 border-dashed cursor-pointer hover:border-primary transition-colors"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <div className="text-center">
+                                    <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground mt-1">Add Image</p>
+                                </div>
+                            </Card>
+                        </div>
+                        <FormControl>
+                            <Input
+                                type="file"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                                accept="image/*"
+                                multiple
+                            />
+                        </FormControl>
+                        <FormMessage />
                     </CardContent>
                 </Card>
                 <Card>
