@@ -354,9 +354,14 @@ export async function generateProductFromImageAction(
             generationConfig: { responseMimeType: "application/json" }
         });
 
+        const base64Data = imageDataUrl.match(/;base64,(.*)$/)?.[1];
+        if (!base64Data) {
+            throw new Error("Invalid image data URL format.");
+        }
+
         const imagePart = {
             inlineData: {
-                data: imageDataUrl.split(',')[1],
+                data: base64Data,
                 mimeType: 'image/webp'
             }
         };
