@@ -455,31 +455,6 @@ export function ImageStudio() {
                         )}
                     </div>
                 </div>
-                {generatedImage && (
-                  <div className="flex gap-2 pt-2">
-                    <Button type="button" onClick={async ()=>{
-                      try {
-                        // Ensure Firebase auth (anonymous) so Storage rules allow write
-                        await new Promise<void>((resolve, reject) => {
-                          const unsub = onAuthStateChanged(auth, async (user) => {
-                            unsub();
-                            if (user) return resolve();
-                            try { await signInAnonymously(auth); resolve(); } catch (e) { reject(e); }
-                          });
-                        });
-                        // Upload via Firebase client SDK to avoid CORS on signed PUT
-                        const token = uuidv4();
-                        const path = `prefill-product-images/${token}.webp`;
-                        const ref = storageRef(storage, path);
-                        await uploadString(ref, generatedImage, 'data_url');
-                        window.location.href = `/products/new?token=${encodeURIComponent(token)}`;
-                      } catch (e:any) {
-                        console.error('[Add as Product] failed', e);
-                        toast({ variant: 'destructive', title: 'Could not prefill product', description: e.message || 'Upload failed. Please try again.'});
-                      }
-                    }}>Add as Product</Button>
-                  </div>
-                )}
               </CardContent>
               <CardFooter className="flex-col sm:flex-row gap-2">
                 <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
