@@ -1,12 +1,15 @@
-import { configure } from "genkit";
+import { configure as genkitConfigure } from "genkit";
 import { googleAI } from "@genkit-ai/googleai";
 import { enableFirebaseTelemetry } from "@genkit-ai/firebase";
 
 // This is an async function to properly initialize telemetry.
 async function initializeGenkit() {
-  await enableFirebaseTelemetry();
+  // Explicitly provide the project ID to the new telemetry system.
+  await enableFirebaseTelemetry({
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  });
 
-  return configure({
+  return genkitConfigure({
     plugins: [
       googleAI({
         apiVersion: "v1beta",
