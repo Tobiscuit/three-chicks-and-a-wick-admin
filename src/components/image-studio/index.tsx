@@ -235,10 +235,10 @@ export function ImageStudio() {
 
     const formData = new FormData();
     // Convert to WebP client-side to shrink payloads
-    const primaryWebp = await toWebpAndResize(values.primaryProductImage, 1024, 0.9);
+    const primaryWebp = await toWebpAndResize(values.primaryProductImage, 1024, 0.75);
     formData.append('primaryProductImage', primaryWebp);
     if(values.secondaryProductImage) {
-      const secondaryWebp = await toWebpAndResize(values.secondaryProductImage, 1024, 0.9);
+      const secondaryWebp = await toWebpAndResize(values.secondaryProductImage, 1024, 0.75);
       formData.append('secondaryProductImage', secondaryWebp);
     }
     formData.append('backgroundType', values.backgroundType);

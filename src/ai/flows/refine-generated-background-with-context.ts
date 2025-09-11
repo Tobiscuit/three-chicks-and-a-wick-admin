@@ -84,7 +84,7 @@ const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
 
 
     const {media} = await ai.generate({
-      model: 'googleai/gemini-2.5-flash',
+      model: 'googleai/gemini-2.5-pro',
       prompt: promptParts,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],

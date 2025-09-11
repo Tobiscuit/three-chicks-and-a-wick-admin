@@ -82,10 +82,13 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
     });
 
     const {media} = await ai.generate({
-      model: 'googleai/gemini-2.5-flash',
+      model: 'googleai/gemini-2.5-pro',
       prompt: promptParts,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
+      },
+      generationConfig: {
+        temperature: 0.6,
       },
     });
 
