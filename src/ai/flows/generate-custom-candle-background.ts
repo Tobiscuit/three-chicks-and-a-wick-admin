@@ -48,7 +48,7 @@ export async function generateCustomCandleBackground(
   return generateCustomCandleBackgroundFlow(input);
 }
 
-const generateCustomCandleBackgroundFlow = (await ai).defineFlow(
+const generateCustomCandleBackgroundFlow = ai.defineFlow(
   {
     name: 'generateCustomCandleBackgroundFlow',
     inputSchema: GenerateCustomCandleBackgroundInputSchema,

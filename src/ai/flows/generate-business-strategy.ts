@@ -112,7 +112,7 @@ const strategyGenerationPrompt = ai.definePrompt({
 });
 
 
-export const generateBusinessStrategyFlow = (await ai).defineFlow(
+export const generateBusinessStrategyFlow = ai.defineFlow(
   {
     name: 'generateBusinessStrategyFlow',
     inputSchema: BusinessSnapshotSchema,

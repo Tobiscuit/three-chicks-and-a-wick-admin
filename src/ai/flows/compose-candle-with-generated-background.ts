@@ -45,7 +45,7 @@ export async function composeCandleWithGeneratedBackground(input: ComposeCandleW
   return composeCandleWithGeneratedBackgroundFlow(input);
 }
 
-const composeCandleWithGeneratedBackgroundFlow = (await ai).defineFlow(
+const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
   {
     name: 'composeCandleWithGeneratedBackgroundFlow',
     inputSchema: ComposeCandleWithGeneratedBackgroundInputSchema,
