@@ -1,10 +1,10 @@
 import { configure } from "genkit";
-import { firebase } from "@genkit-ai/firebase";
+import { firebasePlugin } from "@genkit-ai/firebase";
 import { googleAI } from "@genkit-ai/googleai";
 
 export default configure({
   plugins: [
-    firebase(),
+    firebasePlugin(),
     googleAI({
       apiVersion: "v1beta",
     }),
