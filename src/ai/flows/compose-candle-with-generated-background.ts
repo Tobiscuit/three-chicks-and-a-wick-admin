@@ -8,9 +8,10 @@
  * - ComposeCandleWithGeneratedBackgroundOutput - The return type for the composeCandleWithGeneratedBackground function.
  */
 
-import { defineFlow, generate, z } from 'genkit';
+import { defineFlow, generate } from '@genkit-ai/ai';
+import { z } from '@genkit-ai/core';
 import { buildImageStudioSystemMessage, buildImageStudioUserMessage } from '@/ai/prompts';
-import type { Part } from 'genkit';
+import type { Part } from '@genkit-ai/ai';
 
 const ComposeCandleWithGeneratedBackgroundInputSchema = z.object({
   primaryCandleImage: z

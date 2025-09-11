@@ -9,8 +9,9 @@
  * - RefineGeneratedBackgroundWithContextOutput - The return type for the refineGeneratedBackgroundWithContext function.
  */
 
-import { defineFlow, generate, z } from 'genkit';
-import type { Part } from 'genkit';
+import { defineFlow, generate } from '@genkit-ai/ai';
+import { z } from '@genkit-ai/core';
+import type { Part } from '@genkit-ai/ai';
 
 const RefineGeneratedBackgroundWithContextInputSchema = z.object({
   primaryProductImageDataUri: z

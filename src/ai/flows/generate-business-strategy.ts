@@ -8,7 +8,8 @@
  * - StrategyOutput - The return type for the generateBusinessStrategy function.
  */
 
-import { defineFlow, definePrompt, z } from 'genkit';
+import { defineFlow, definePrompt } from '@genkit-ai/ai';
+import { z } from '@genkit-ai/core';
 import type { ShopifyOrder, ShopifyProduct } from '@/services/shopify';
 
 // We define the input schema based on the data we get from Shopify

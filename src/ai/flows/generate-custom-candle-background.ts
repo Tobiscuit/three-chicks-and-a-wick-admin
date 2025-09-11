@@ -8,9 +8,9 @@
  * - GenerateCustomCandleBackgroundOutput - The return type for the generateCustomCandleBackground function.
  */
 
-import { defineFlow, generate, z } from 'genkit';
-import wav from 'wav';
-import type { Part } from 'genkit';
+import { defineFlow, generate } from '@genkit-ai/ai';
+import { z } from '@genkit-ai/core';
+import type { Part } from '@genkit-ai/ai';
 
 const GenerateCustomCandleBackgroundInputSchema = z.object({
   primaryProductPhotoDataUri: z
