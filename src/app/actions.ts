@@ -176,6 +176,9 @@ export async function generateImageAction(formData: FormData): Promise<ActionRes
 
   } catch (e: any) {
     console.error("[generateImageAction Error]", e);
+    if (e.errorDetails) {
+        console.error("[generateImageAction Error Details]:", JSON.stringify(e.errorDetails, null, 2));
+    }
     return { success: false, error: e.message || "An unexpected error occurred during image generation." };
   }
 }
