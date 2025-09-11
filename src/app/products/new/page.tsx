@@ -1,4 +1,6 @@
 
+export const dynamic = 'force-dynamic';
+
 import { getCollections } from '@/services/shopify';
 import type { ShopifyCollection } from '@/services/shopify';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

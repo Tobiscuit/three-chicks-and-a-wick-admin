@@ -1,4 +1,6 @@
 
+export const dynamic = 'force-dynamic';
+
 import { getOrders, getProducts } from '@/services/shopify';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';

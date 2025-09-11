@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // This function uses the modern, built-in File API from the @google/genai SDK.
 // It handles uploading a file (provided as a buffer) and returns the API's
