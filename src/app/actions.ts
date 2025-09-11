@@ -92,10 +92,13 @@ export async function checkAuthorization(idToken: string | null) {
   }
 
   const authorizedEmails = rawAuthorizedEmails.split(',').map(email => email.trim().toLowerCase());
-  const lowercasedUserEmail = userEmail.toLowerCase();
+  const lowercasedUserEmail = userEmail.toLowerCase().trim();
   
-  console.log(`[Auth Check] Verifying user against authorized list. Found ${authorizedEmails.length} authorized emails.`);
-  console.log(`[Auth Check] Authorized list from secret: [${authorizedEmails.join(", ")}]`);
+  // --- Enhanced Debug Logging ---
+  console.log(`[Auth Check] Raw env var string: "${rawAuthorizedEmails}"`);
+  console.log(`[Auth Check] Processed authorized list: [${authorizedEmails.join(", ")}]`);
+  console.log(`[Auth Check] Processed user email for check: "${lowercasedUserEmail}"`);
+  // --- End Enhanced Debug Logging ---
 
   const isAuthorized = authorizedEmails.includes(lowercasedUserEmail);
 
