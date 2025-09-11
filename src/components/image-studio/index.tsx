@@ -527,7 +527,6 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
 
     const onSubmit = async (values: AddProductModalValues) => {
         setIsGenerating(true);
-        console.log("[Client] AddProductModal submitted. Calling server action...");
         try {
             // Step 1: Convert the Data URL to a File
             const imageFile = await dataUrlToFile(generatedImage, `ai-generated-${Date.now()}.webp`);
@@ -538,6 +537,17 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
             formData.append('price', values.price);
             formData.append('creatorNotes', values.creatorNotes);
             
+            // --- DEBUG LOGGING ---
+            console.log("[Client] Preparing to call server action with FormData:");
+            for (const [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    console.log(`  - ${key}: File(name=${value.name}, size=${value.size}, type=${value.type})`);
+                } else {
+                    console.log(`  - ${key}: ${value}`);
+                }
+            }
+            // --- END DEBUG LOGGING ---
+
             // Step 3: Call the rewritten Server Action
             const result = await generateProductFromImageAction(formData);
             console.log("[Client] Server action returned:", result);

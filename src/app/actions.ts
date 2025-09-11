@@ -367,6 +367,15 @@ export async function generateProductFromImageAction(
     const creatorNotes = formData.get('creatorNotes') as string | null;
     const price = formData.get('price') as string | null;
 
+    // --- DEBUG LOGGING ---
+    console.log("[Server Action] generateProductFromImageAction received a request.");
+    if (imageFile) {
+        console.log(`  - Received file: name=${imageFile.name}, size=${imageFile.size}, type=${imageFile.type}`);
+    } else {
+        console.log("  - No file received.");
+    }
+    // --- END DEBUG LOGGING ---
+
     if (!imageFile || !creatorNotes || !price) {
         return { success: false, error: 'Missing required fields.' };
     }
