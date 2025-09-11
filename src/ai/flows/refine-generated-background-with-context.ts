@@ -53,7 +53,7 @@ export async function refineGeneratedBackgroundWithContext(
   return refineGeneratedBackgroundWithContextFlow(input);
 }
 
-const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
+const refineGeneratedBaclgroundWithContextFlow = (await ai).defineFlow(
   {
     name: 'refineGeneratedBackgroundWithContextFlow',
     inputSchema: RefineGeneratedBackgroundWithContextInputSchema,

@@ -8,8 +8,8 @@
  * - StrategyOutput - The return type for the generateBusinessStrategy function.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import {ai} from '@/ai/genkit';
+import {z} from 'zod';
 import type { ShopifyOrder, ShopifyProduct } from '@/services/shopify';
 
 // We define the input schema based on the data we get from Shopify
@@ -112,7 +112,7 @@ const strategyGenerationPrompt = ai.definePrompt({
 });
 
 
-const generateBusinessStrategyFlow = ai.defineFlow(
+export const generateBusinessStrategyFlow = (await ai).defineFlow(
   {
     name: 'generateBusinessStrategyFlow',
     inputSchema: BusinessSnapshotSchema,
