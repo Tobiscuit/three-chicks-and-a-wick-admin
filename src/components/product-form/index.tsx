@@ -124,12 +124,9 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   // Prefill form with AI generated data using the new draft token flow
   useEffect(() => {
-    console.log("--- [AI PREFILL EFFECT TRIGGERED] ---");
     const token = searchParams.get('draftToken');
-    console.log(`Token from URL: ${token}`);
 
     if (!token || isEditMode) {
-        console.log("Effect exited: No token or in edit mode.");
         return;
     };
 
@@ -138,18 +135,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     (async () => {
         try {
             toast({ id: "ai-prefill-toast", title: "🪄 Loading AI Content..." });
-            console.log(`Calling resolveAiDraftAction with token: ${token}`);
             const res = await resolveAiDraftAction(token);
-            console.log("Received response from action:", res);
             
-            if (isCancelled) {
-                console.log("Effect cancelled after fetch.");
-                return;
-            }
+            if (isCancelled) return;
 
             if (res.success && res.data) {
                 const { title, body_html, tags, sku, price, imageUrl } = res.data;
-                console.log("Data to pre-fill:", { title, body_html, tags, sku, price, imageUrl });
                 
                 // Prefill text fields
                 const newFormValues = {
@@ -161,21 +152,15 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     price,
                     status: "DRAFT", // Always default AI products to Draft
                 };
-                console.log("Resetting form with:", newFormValues);
                 reset(newFormValues);
                 
                 // Fetch the temporary image, convert to a File, and set in the form
-                console.log(`Fetching image from URL: ${imageUrl}`);
                 const response = await fetch(imageUrl);
 
-                if (isCancelled) {
-                     console.log("Effect cancelled after image fetch.");
-                     return;
-                }
+                if (isCancelled) return;
 
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
-                console.log("Image converted to File object:", file);
                 
                 setValue('image', file, { shouldValidate: true, shouldDirty: true });
                 const reader = new FileReader();
@@ -188,7 +173,6 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
                 // Clean the URL
                 const newUrl = window.location.pathname;
-                console.log(`Cleaning URL to: ${newUrl}`);
                 window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
 
             } else {
@@ -198,13 +182,10 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
              if (isCancelled) return;
             console.error("Error in AI pre-fill effect:", error);
             toast({ id: "ai-prefill-toast", variant: "destructive", title: "❌ Error", description: error.message });
-        } finally {
-            console.log("--- [AI PREFILL EFFECT FINISHED] ---");
         }
     })();
 
     return () => {
-        console.log("Effect cleanup function called.");
         isCancelled = true;
     }
   }, [isEditMode, searchParams, setValue, reset, toast, defaultValues]);

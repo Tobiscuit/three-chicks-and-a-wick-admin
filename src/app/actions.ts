@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/genai";
 import { fetchShopify } from '@/services/shopify';
+import { uploadFileToGoogleAI } from "@/lib/google-ai";
 
 
 // Per Gemini SDK best practices, this helper function correctly formats a
@@ -360,23 +361,45 @@ type ProductCreateResponse = {
 
 
 export async function generateProductFromImageAction(
-    { imageDataUrl, price, creatorNotes }: { imageDataUrl:string, price: string, creatorNotes: string }
+    formData: FormData,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
-    console.log("--- [SERVER ACTION]: generateProductFromImageAction TRIGGERED ---");
-    console.log(`Received creatorNotes: ${creatorNotes}`);
-    console.log(`Received price: ${price}`);
-    console.log(`Received imageDataUrl (length): ${imageDataUrl.length}`);
+    const imageFile = formData.get('imageFile') as File | null;
+    const creatorNotes = formData.get('creatorNotes') as string | null;
+    const price = formData.get('price') as string | null;
 
+    if (!imageFile || !creatorNotes || !price) {
+        return { success: false, error: 'Missing required fields.' };
+    }
+    
     if (!process.env.GEMINI_API_KEY) {
         return { success: false, error: "Gemini API key is not configured." };
     }
-    console.log(`[Text Generation Action] Using Gemini API Key ending in: ...${process.env.GEMINI_API_KEY.slice(-4)}`);
 
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        console.log(`[AI Product Gen] Starting...`);
+        const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+        
+        // --- Step 1: Parallel Uploads ---
+        console.log("[AI Product Gen] Uploading image to Google AI and Firebase Storage...");
+        const [googleAiUploadResponse, tempImagePath] = await Promise.all([
+            uploadFileToGoogleAI(imageBuffer, imageFile.type),
+            (async () => {
+                const tempPath = `tmp-product-images/${uuidv4()}.${imageFile.name.split('.').pop() || 'webp'}`;
+                const file = adminStorage.bucket().file(tempPath);
+                await file.save(imageBuffer, { contentType: imageFile.type });
+                return tempPath;
+            })()
+        ]);
+        
+        const fileUri = googleAiUploadResponse.file.uri;
+        if (!fileUri) {
+            throw new Error("Failed to get file URI from Google AI File API.");
+        }
+        console.log(`[AI Product Gen] Uploads complete. Google AI URI: ${fileUri.slice(0, 50)}...`);
 
-        // Correctly use the latest SDK features by passing the system prompt
-        // during model initialization. This is more efficient and robust.
+        // --- Step 2: Call Gemini with the File URI ---
+        console.log("[AI Product Gen] Calling Gemini with file reference...");
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-pro",
             systemInstruction: `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity.
@@ -385,10 +408,6 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        // 1. Convert the image Data URL into the structured "Part" format.
-        const imagePart = fileToGenerativePart(imageDataUrl);
-
-        // 2. Define the user's text prompt as a separate "Part".
         const textPart = `
             Here is the data for a new candle. Please analyze the provided image and use the creator's notes to generate the creative text fields for the Shopify product JSON.
 
@@ -406,31 +425,27 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             }
             \`\`\`
         `;
-        
-        // 3. Send the text and image parts together in a single multimodal request.
-        const result = await model.generateContent([textPart, imagePart]);
-        
-        const response = await result.response;
-        const text = response.text();
-        console.log("===== AI RESPONSE TEXT =====", text);
+        const filePart = { fileData: { mimeType: imageFile.type, fileUri } };
 
+        const result = await model.generateContent([textPart, filePart]);
+        const responseText = result.response.text();
+        
         let creativeData;
         try {
-            creativeData = JSON.parse(text);
-            console.log("===== PARSED CREATIVE DATA =====", creativeData);
-        } catch (e: any) {
-            console.error("===== FAILED TO PARSE AI RESPONSE =====");
-            console.error("Raw Text:", text);
-            console.error("Parsing Error:", e.message);
-            throw new Error("The AI returned an invalid response. Please try again.");
+            creativeData = JSON.parse(responseText);
+        } catch (e) {
+            console.error("[AI Product Gen] Failed to parse Gemini JSON response:", responseText);
+            throw new Error("AI returned invalid JSON.");
         }
-        
-        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price);
+        console.log("[AI Product Gen] Gemini call successful.");
+
+        // --- Step 3: Stash Data in Firestore ---
+        const stashResult = await stashAiGeneratedProductAction(creativeData, price, tempImagePath);
 
         if (!stashResult.success || !stashResult.token) {
             throw new Error(stashResult.error || "Failed to stash AI-generated data.");
         }
-
+        console.log(`[AI Product Gen] Stashing complete. Token: ${stashResult.token}`);
         return { success: true, token: stashResult.token };
 
     } catch (error: any) {
@@ -442,29 +457,17 @@ Your task is to transform raw data into a partial Shopify product listing, focus
 
 export async function stashAiGeneratedProductAction(
     creativeData: any,
-    imageDataUrl: string,
-    price: string
+    price: string,
+    tempImagePath: string,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
-        // Step 1: Upload the image to Firebase Storage to get a public URL
-        const bucket = adminStorage.bucket();
-        const fileName = `product-images/ai-generated/${uuidv4()}.webp`;
-        const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
-        
-        await bucket.file(fileName).save(imageBuffer, {
-            metadata: { contentType: 'image/webp' },
-            public: true,
-        });
-        const publicImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-
-        // Step 2: Stash the creative data and the public image URL in Firestore
         const token = uuidv4();
         const docRef = adminDb.collection('aiProductDrafts').doc(token);
 
         await docRef.set({
             ...creativeData,
             price,
-            publicImageUrl, // Stash the short URL, not the raw data
+            tempImagePath, // Stash the temporary firebase path, not a public URL
             createdAt: new Date(),
         });
 

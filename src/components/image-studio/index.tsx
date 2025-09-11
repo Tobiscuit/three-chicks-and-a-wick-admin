@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus } from "lucide-react";
-import { generateImageAction, getGalleryImagesAction } from "@/app/actions";
+import { generateImageAction, getGalleryImagesAction, generateProductFromImageAction } from "@/app/actions";
 import { storage, auth } from "@/lib/firebase";
 import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { ref as storageRef, uploadString } from "firebase/storage";
@@ -527,40 +527,23 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
 
     const onSubmit = async (values: AddProductModalValues) => {
         setIsGenerating(true);
+        console.log("[Client] AddProductModal submitted. Calling server action...");
         try {
-            // Step 1: Get the Firebase Auth token for the API route
-            const user = auth.currentUser;
-            if (!user) {
-                // This should ideally be handled by an auth provider wrapper,
-                // but as a fallback we'll try to sign in.
-                await signInAnonymously(auth);
-                if (!auth.currentUser) {
-                  throw new Error("Authentication is required to perform this action.");
-                }
-            }
-            const idToken = await auth.currentUser!.getIdToken();
-
-            // Step 2: Convert the Data URL to a File
+            // Step 1: Convert the Data URL to a File
             const imageFile = await dataUrlToFile(generatedImage, `ai-generated-${Date.now()}.webp`);
             
-            // Step 3: Prepare the form data for the API POST request
+            // Step 2: Prepare the form data for the Server Action
             const formData = new FormData();
-            formData.append('imageFile', imageFile); // Match the name in the API route
+            formData.append('imageFile', imageFile);
             formData.append('price', values.price);
             formData.append('creatorNotes', values.creatorNotes);
             
-            // Step 4: Call the new API route
-            const response = await fetch('/api/image-studio/generate-details', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${idToken}`,
-                },
-                body: formData,
-            });
+            // Step 3: Call the rewritten Server Action
+            const result = await generateProductFromImageAction(formData);
+            console.log("[Client] Server action returned:", result);
 
-            const result = await response.json();
 
-            if (response.ok && result.success && result.token) {
+            if (result.success && result.token) {
                 toast({
                     title: "Content Generation Started!",
                     description: "Redirecting you to the new product page to finalize...",
@@ -570,6 +553,7 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
                 throw new Error(result.error || "Failed to start content generation.");
             }
         } catch (error: any) {
+            console.error("[Client] Error calling server action:", error);
             toast({
                 variant: "destructive",
                 title: "Generation Failed",

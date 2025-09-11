@@ -64,7 +64,6 @@ threechicksandawick-admin-panel
 │   │   │   │   └── generate-details
 │   │   │   ├── image-studio
 │   │   │   │   └── generate-details
-│   │   │   │   │   └── route.ts
 │   │   │   ├── sse
 │   │   │   │   └── inventory
 │   │   │   │   │   └── route.ts
@@ -180,6 +179,7 @@ threechicksandawick-admin-panel
 │   │   └── shopify.ts
 ├── storage.rules
 ├── tailwind.config.ts
+├── test-gemini.mjs
 ├── test-inventory-webhook.ps1
 ├── test-webhook.ps1
 ├── tsconfig.json
