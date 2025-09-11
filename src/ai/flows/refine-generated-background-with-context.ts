@@ -9,8 +9,7 @@
  * - RefineGeneratedBackgroundWithContextOutput - The return type for the refineGeneratedBackgroundWithContext function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { defineFlow, generate, z } from 'genkit';
 import type { Part } from 'genkit';
 
 const RefineGeneratedBackgroundWithContextInputSchema = z.object({
@@ -53,7 +52,7 @@ export async function refineGeneratedBackgroundWithContext(
   return refineGeneratedBackgroundWithContextFlow(input);
 }
 
-const refineGeneratedBaclgroundWithContextFlow = ai.defineFlow(
+const refineGeneratedBaclgroundWithContextFlow = defineFlow(
   {
     name: 'refineGeneratedBackgroundWithContextFlow',
     inputSchema: RefineGeneratedBackgroundWithContextInputSchema,
@@ -83,7 +82,7 @@ const refineGeneratedBaclgroundWithContextFlow = ai.defineFlow(
     promptParts.unshift({ text: promptText });
 
 
-    const {media} = await ai.generate({
+    const {media} = await generate({
       model: 'googleai/gemini-2.5-pro',
       prompt: promptParts,
       config: {

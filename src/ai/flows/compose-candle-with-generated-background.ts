@@ -8,9 +8,8 @@
  * - ComposeCandleWithGeneratedBackgroundOutput - The return type for the composeCandleWithGeneratedBackground function.
  */
 
-import {ai} from '@/ai/genkit';
+import { defineFlow, generate, z } from 'genkit';
 import { buildImageStudioSystemMessage, buildImageStudioUserMessage } from '@/ai/prompts';
-import {z} from 'genkit';
 import type { Part } from 'genkit';
 
 const ComposeCandleWithGeneratedBackgroundInputSchema = z.object({
@@ -45,7 +44,7 @@ export async function composeCandleWithGeneratedBackground(input: ComposeCandleW
   return composeCandleWithGeneratedBackgroundFlow(input);
 }
 
-const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
+const composeCandleWithGeneratedBackgroundFlow = defineFlow(
   {
     name: 'composeCandleWithGeneratedBackgroundFlow',
     inputSchema: ComposeCandleWithGeneratedBackgroundInputSchema,
@@ -81,7 +80,7 @@ const composeCandleWithGeneratedBackgroundFlow = ai.defineFlow(
       totalParts: promptParts.length,
     });
 
-    const {media} = await ai.generate({
+    const {media} = await generate({
       model: 'googleai/gemini-2.5-pro',
       prompt: promptParts,
       config: {

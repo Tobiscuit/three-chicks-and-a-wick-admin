@@ -8,8 +8,7 @@
  * - GenerateCustomCandleBackgroundOutput - The return type for the generateCustomCandleBackground function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { defineFlow, generate, z } from 'genkit';
 import wav from 'wav';
 import type { Part } from 'genkit';
 
@@ -48,7 +47,7 @@ export async function generateCustomCandleBackground(
   return generateCustomCandleBackgroundFlow(input);
 }
 
-const generateCustomCandleBackgroundFlow = ai.defineFlow(
+const generateCustomCandleBackgroundFlow = defineFlow(
   {
     name: 'generateCustomCandleBackgroundFlow',
     inputSchema: GenerateCustomCandleBackgroundInputSchema,
@@ -56,7 +55,7 @@ const generateCustomCandleBackgroundFlow = ai.defineFlow(
   },
   async input => {
     // Step 1: Generate the background image from the text prompt.
-    const { media: backgroundMedia } = await ai.generate({
+    const { media: backgroundMedia } = await generate({
         model: 'googleai/imagen-4.0-fast-generate-001',
         prompt: `Create a photorealistic, high-end, professional e-commerce product background. It should be beautifully lit, slightly out of focus, and suitable for a luxury brand. The background should contain a surface for a product to sit on. The user's request is: ${input.backgroundPrompt}`
     });
@@ -89,7 +88,7 @@ const generateCustomCandleBackgroundFlow = ai.defineFlow(
     promptParts.unshift({ text: promptText });
 
 
-    const { media: compositionMedia } = await ai.generate({
+    const { media: compositionMedia } = await generate({
       model: 'googleai/gemini-2.5-pro',
       prompt: promptParts,
       config: {
