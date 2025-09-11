@@ -367,6 +367,7 @@ export async function generateProductFromImageAction(
     if (!process.env.GEMINI_API_KEY) {
         return { success: false, error: "Gemini API key is not configured." };
     }
+    console.log(`[Text Generation Action] Using Gemini API Key ending in: ...${process.env.GEMINI_API_KEY.slice(-4)}`);
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);

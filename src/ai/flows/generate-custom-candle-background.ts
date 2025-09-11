@@ -90,7 +90,7 @@ const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
 
     const { media: compositionMedia } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
+      model: 'googleai/gemini-2.5-pro',
       prompt: promptParts,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],

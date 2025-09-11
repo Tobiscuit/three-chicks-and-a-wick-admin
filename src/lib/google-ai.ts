@@ -4,6 +4,11 @@ import { GoogleGenerativeAI } from '@google/genai';
 // It handles uploading a file (provided as a buffer) and returns the API's
 // response, which includes the all-important `fileUri` for use in prompts.
 export async function uploadFileToGoogleAI(fileBuffer: Buffer, mimeType: string) {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API key is not configured.");
+  }
+  console.log(`[File API Upload] Using Gemini API Key ending in: ...${process.env.GEMINI_API_KEY.slice(-4)}`);
+
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const fileApi = genAI.getGenerativeModel({ model: "gemini-pro" }).files; // Use a basic model just to access the API
 

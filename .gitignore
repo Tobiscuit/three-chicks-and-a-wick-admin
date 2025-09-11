@@ -98,3 +98,5 @@ temp
 *.tar
 *.tar.gz
 *.rar
+
+.cursor-workspace/

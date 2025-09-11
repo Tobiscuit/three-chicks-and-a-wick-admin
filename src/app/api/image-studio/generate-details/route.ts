@@ -60,6 +60,8 @@ export async function POST(request: Request) {
 
         // --- Step 2: Call Gemini with the File URI ---
         console.log("[API Route] Calling Gemini 2.5 Pro with file reference...");
+        if (!process.env.GEMINI_API_KEY) throw new Error("Gemini API key not configured.");
+        console.log(`[API Route - Text Gen] Using Gemini API Key ending in: ...${process.env.GEMINI_API_KEY.slice(-4)}`);
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-pro",
