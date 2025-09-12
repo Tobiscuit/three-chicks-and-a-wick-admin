@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from 'genkit/ai';
+import { Part } from 'genkit';
 
 const CandleAndContextSchema = z.object({
   background: z.string().describe('The user-provided background description'),
