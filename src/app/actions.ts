@@ -10,7 +10,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
 import { z } from 'zod';
-import { Part } from '@google/generative-ai';
+import { Part } from 'genkit';
 
 
 type ActionResult = {
