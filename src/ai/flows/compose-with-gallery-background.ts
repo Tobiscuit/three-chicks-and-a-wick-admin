@@ -35,7 +35,6 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] Starting composition with gallery background...');
       
-      const context: Part[] = [galleryImage, candleImage1];
       let composePrompt = `
         Your task is to perform a photorealistic composition.
         You will be given two images: a background image and a product image.
@@ -47,8 +46,12 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
+      const promptParts: Part[] = [];
+      promptParts.push({ text: composePrompt });
+      promptParts.push(galleryImage);
+      promptParts.push(candleImage1);
+
       if (candleImage2) {
-        context.push(candleImage2);
         composePrompt = `
           Your task is to perform a photorealistic composition.
           You will be given three images: a background, a primary product image, and a secondary product image for reference.
@@ -59,14 +62,16 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
           **Output only the final, composed image containing the primary product.**
           **Do not include any text, commentary, markdown, or any other content besides the image itself.**
         `;
+        // Overwrite the prompt and add the third image
+        promptParts[0] = { text: composePrompt };
+        promptParts.push(candleImage2);
       }
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImage), candleImage1: redactData(candleImage1), candleImage2: candleImage2 ? redactData(candleImage2) : undefined }, null, 2));
+      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify(promptParts.map(redactData), null, 2));
 
       const finalImageResponse = await ai.generate({
-        prompt: composePrompt,
+        prompt: promptParts,
         model: modelName,
-        context: context,
       });
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
