@@ -43,7 +43,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Raw background response:', JSON.stringify(bgImageResponse, null, 2));
 
-      const bgImagePart = bgImageResponse.message.content.find(p => p.media)?.media;
+      let bgImagePart = bgImageResponse.message.content.find(p => p.media)?.media;
 
       if (!bgImagePart) {
         console.error('[Flow] Failed to extract media from background response.');
@@ -51,6 +51,18 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
         console.error(`[Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not generate background image. AI response did not contain media.');
       }
+
+      if (bgImagePart.url?.startsWith('data:')) {
+        const [meta, base64] = bgImagePart.url.split(',');
+        const mimeType = /data:(.*?);base64/.exec(meta || '')?.[1] || 'image/png';
+        bgImagePart = {
+          inlineData: {
+            data: base64,
+            mimeType,
+          }
+        };
+      }
+
       console.log('[Flow] Step 1 SUCCESS: Background generated.');
 
       console.log('[Flow] Step 2: Composing final image...');
@@ -64,7 +76,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
 
-      const finalImagePart = finalImageResponse.message.content.find(p => p.media)?.media;
+      let finalImagePart = finalImageResponse.message.content.find(p => p.media)?.media;
 
       if (!finalImagePart) {
         console.error('[Flow] Failed to extract media from final image response.');
@@ -72,6 +84,18 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
         console.error(`[Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
+      
+      if (finalImagePart.url?.startsWith('data:')) {
+        const [meta, base64] = finalImagePart.url.split(',');
+        const mimeType = /data:(.*?);base64/.exec(meta || '')?.[1] || 'image/png';
+        finalImagePart = {
+          inlineData: {
+            data: base64,
+            mimeType,
+          }
+        };
+      }
+
       console.log('[Flow] Step 2 SUCCESS: Final image composed.');
 
       return finalImagePart;

@@ -46,7 +46,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
 
       // Manually find the media part in the response
-      const finalImagePart = finalImageResponse.message.content.find(p => p.media)?.media;
+      let finalImagePart = finalImageResponse.message.content.find(p => p.media)?.media;
 
       if (!finalImagePart) {
         console.error('[Compose Flow] Failed to extract media from final image response.');
@@ -54,6 +54,19 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         console.error(`[Compose Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
+
+      // Normalize the response: Genkit can return a URL or inlineData. Actions expect inlineData.
+      if (finalImagePart.url?.startsWith('data:')) {
+        const [meta, base64] = finalImagePart.url.split(',');
+        const mimeType = /data:(.*?);base64/.exec(meta || '')?.[1] || 'image/png';
+        finalImagePart = {
+          inlineData: {
+            data: base64,
+            mimeType,
+          }
+        };
+      }
+
       console.log('[Compose Flow] SUCCESS: Final image composed.');
 
       return finalImagePart;
