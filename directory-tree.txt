@@ -46,6 +46,7 @@ threechicksandawick-admin-panel
 │   ├── ai
 │   │   ├── dev.ts
 │   │   ├── flows
+│   │   │   ├── compose-with-gallery-background.ts
 │   │   │   ├── generate-business-strategy.ts
 │   │   │   ├── generate-custom-candle-background.ts
 │   │   │   └── refine-generated-background-with-context.ts
