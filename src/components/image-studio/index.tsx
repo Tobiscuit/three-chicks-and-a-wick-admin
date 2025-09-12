@@ -350,7 +350,7 @@ export function ImageStudio() {
                               <FormLabel>Background Prompt</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="e.g., a serene beach at sunset with soft waves"
+                                  placeholder="Describe the background you want to create..."
                                   {...field}
                                   disabled={backgroundType !== 'generate'}
                                 />
