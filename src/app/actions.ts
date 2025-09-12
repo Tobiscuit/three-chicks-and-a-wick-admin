@@ -2,6 +2,7 @@
 "use server";
 
 import { generateCustomCandleBackgroundFlow } from '@/ai/flows/generate-custom-candle-background';
+import { composeWithGalleryBackgroundFlow } from '@/ai/flows/compose-with-gallery-background';
 import { adminAuth, adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
@@ -143,6 +144,61 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
             return { error: "The AI image service is temporarily unavailable. Please try again later." };
         }
         return { error: "An unexpected error occurred during image generation." };
+    }
+}
+
+type ComposeWithGalleryInput = {
+  galleryBackgroundUrl: string;
+  angle1: string; // data URL
+}
+
+export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUrl?: string; error?: string }> {
+    try {
+        const { galleryBackgroundUrl, angle1 } = input;
+
+        // Fetch the gallery image data
+        const response = await fetch(galleryBackgroundUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch gallery image. Status: ${response.status}`);
+        }
+        const galleryImageBuffer = Buffer.from(await response.arrayBuffer());
+        const galleryImageMimeType = response.headers.get('content-type') || 'image/webp';
+
+        const galleryImagePart = {
+          inlineData: {
+            data: galleryImageBuffer.toString('base64'),
+            mimeType: galleryImageMimeType,
+          }
+        };
+
+        const angle1MimeType = angle1.match(/data:(.*);base64/)?.[1] || 'image/webp';
+        const angle1Base64 = angle1.split(',')[1];
+        if (!angle1Base64) {
+            return { error: 'Invalid primary image data.' };
+        }
+
+        const angle1Part = {
+          inlineData: {
+            data: angle1Base64,
+            mimeType: angle1MimeType,
+          }
+        };
+
+        const resultPart = await composeWithGalleryBackgroundFlow({
+            candleImage: angle1Part,
+            galleryImage: galleryImagePart,
+        });
+
+        if (!resultPart?.inlineData) {
+            return { error: 'The AI did not return a valid composite image.' };
+        }
+
+        const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
+        return { imageDataUrl };
+
+    } catch (error: any) {
+        console.error("[composeWithGalleryAction Error]", error);
+        return { error: `An unexpected error occurred during image composition: ${error.message}` };
     }
 }
 

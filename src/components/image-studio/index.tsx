@@ -28,7 +28,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus } from "lucide-react";
-import { generateImageAction, getGalleryImagesAction, generateProductFromImageAction } from "@/app/actions";
+import {
+  generateImageAction,
+  getGalleryImagesAction,
+  generateProductFromImageAction,
+  composeWithGalleryAction,
+} from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "../ui/scroll-area";
@@ -236,26 +241,34 @@ export function ImageStudio() {
     setGeneratedImage(null);
 
     try {
-        const angle1 = await resizeAndToDataUrl(values.primaryProductImage);
+      let result: { imageDataUri?: string; error?: string };
+
+      const angle1 = await resizeAndToDataUrl(values.primaryProductImage);
+
+      if (values.backgroundType === 'generate') {
         const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
-        const background = values.backgroundType === 'gallery' ? values.selectedBackgroundUrl! : values.backgroundPrompt!;
-
-        const result = await generateImageAction({
-            background,
-            angle1,
-            angle2,
-            context: values.contextualDetails
+        result = await generateImageAction({
+          background: values.backgroundPrompt!,
+          angle1,
+          angle2,
+          context: values.contextualDetails,
         });
-
-        if (result.imageDataUri) {
-            setGeneratedImage(result.imageDataUri);
-            toast({
-                title: "Image Generated",
-                description: "Your new product image is ready.",
-            });
-        } else {
-            throw new Error(result.error || "An unknown error occurred.");
-        }
+      } else { // Gallery
+        result = await composeWithGalleryAction({
+          galleryBackgroundUrl: values.selectedBackgroundUrl!,
+          angle1,
+        });
+      }
+      
+      if (result.imageDataUri) {
+          setGeneratedImage(result.imageDataUri);
+          toast({
+              title: "Image Generated",
+              description: "Your new product image is ready.",
+          });
+      } else {
+          throw new Error(result.error || "An unknown error occurred.");
+      }
     } catch (error: any) {
         console.error("Generation failed:", error);
         toast({
