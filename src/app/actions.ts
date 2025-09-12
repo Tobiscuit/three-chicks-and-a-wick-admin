@@ -194,7 +194,9 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
         }
 
         const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
-        return { imageDataUrl };
+        const result = { imageDataUri: imageDataUrl };
+        console.log('[composeWithGalleryAction] Returning success object with image data URI.');
+        return result;
 
     } catch (error: any) {
         console.error("[composeWithGalleryAction Error]", error);
