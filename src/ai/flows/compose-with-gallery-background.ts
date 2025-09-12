@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from 'genkit/ai';
+import { Part } from 'genkit';
 
 const ComposeWithGallerySchema = z.object({
   candleImage1: z.custom<Part>().describe('The primary user-uploaded candle image'),
