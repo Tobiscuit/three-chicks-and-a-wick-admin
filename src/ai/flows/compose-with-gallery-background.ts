@@ -35,7 +35,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
-        model: 'googleai/gemini-2.5-pro',
+        model: 'googleai/imagen-2',
         context: [galleryImage, candleImage],
       });
 
