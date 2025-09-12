@@ -45,9 +45,13 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
 
-      const finalImagePart = finalImageResponse.media();
+      // Manually find the media part in the response
+      const finalImagePart = finalImageResponse.message.content.find(p => p.media)?.media;
+
       if (!finalImagePart) {
         console.error('[Compose Flow] Failed to extract media from final image response.');
+        const textResponse = finalImageResponse.text();
+        console.error(`[Compose Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
       console.log('[Compose Flow] SUCCESS: Final image composed.');
