@@ -21,6 +21,10 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   },
   async ({ candleImage, galleryImage }) => {
     try {
+      const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
+      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
+      console.log(`[Compose Flow] Using image model: ${modelName}`);
+
       console.log('[Compose Flow] Starting composition with gallery background...');
       const composePrompt = `
         Your task is to perform a photorealistic composition.
@@ -35,7 +39,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
-        model: 'googleai/imagen-3',
+        model: modelName,
         context: [galleryImage, candleImage],
       });
 
