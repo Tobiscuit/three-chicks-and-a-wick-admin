@@ -94,14 +94,16 @@ export async function checkAuthorization(idToken: string | null) {
 
 const toDataURL = (buffer: Buffer, mimeType: string) => `data:${mimeType};base64,${buffer.toString("base64")}`;
 
-export async function generateImageAction(prevState: any, formData: FormData): Promise<{ imageDataUrl?: string; error?: string }> {
+type GenerateImageInput = {
+  background: string;
+  angle1: string; // data URL
+  angle2?: string; // data URL
+  context?: string;
+}
+
+export async function generateImageAction(input: GenerateImageInput): Promise<{ imageDataUrl?: string; error?: string }> {
     try {
-        const validated = imageGenSchema.safeParse({
-            background: formData.get('background'),
-            angle1: formData.get('angle1'),
-            angle2: formData.get('angle2'),
-            context: formData.get('context') || undefined,
-        });
+        const validated = imageGenSchema.safeParse(input);
 
         if (!validated.success) {
             return { error: validated.error.errors.map(e => e.message).join(', ') };
@@ -109,28 +111,35 @@ export async function generateImageAction(prevState: any, formData: FormData): P
 
         const { background, angle1, angle2, context } = validated.data;
 
+        const angle1MimeType = angle1.match(/data:(.*);base64/)?.[1] || 'image/webp';
+        const angle1Base64 = angle1.split(',')[1];
+        
+        if (!angle1Base64) {
+            return { error: 'Invalid primary image data.' };
+        }
+
         const angle1Part = {
-      inlineData: {
-        data: angle1.split(',')[1],
-        mimeType: angle1.match(/data:(.*);base64/)?.[1] || 'image/webp',
-      }
-    }
+          inlineData: {
+            data: angle1Base64,
+            mimeType: angle1MimeType,
+          }
+        }
 
-    const resultPart = await generateCustomCandleBackgroundFlow({
-        background: background,
-        candleImage: angle1Part,
-    });
+        const resultPart = await generateCustomCandleBackgroundFlow({
+            background: background,
+            candleImage: angle1Part,
+        });
 
-    if (!resultPart?.inlineData) {
-        return { error: 'The AI did not return a valid image.' };
-    }
+        if (!resultPart?.inlineData) {
+            return { error: 'The AI did not return a valid image.' };
+        }
 
-    const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
+        const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
 
-    return { imageDataUrl: imageDataUrl };
-  } catch (error: any) {
-    console.error('[generateImageAction Error]', error);
-    if (error.message.includes('500') || error.message.includes('503')) {
+        return { imageDataUrl };
+    } catch (error: any) {
+        console.error("[generateImageAction Error]", error);
+        if (error.message.includes('500') || error.message.includes('503')) {
             return { error: "The AI image service is temporarily unavailable. Please try again later." };
         }
         return { error: "An unexpected error occurred during image generation." };
@@ -312,10 +321,14 @@ type ProductCreateResponse = {
     };
 };
 
+type GenerateProductInput = {
+    imageDataUrl: string;
+    price: string;
+    creatorNotes: string;
+}
 
 export async function generateProductFromImageAction(
-    prevState: any,
-    formData: FormData
+    input: GenerateProductInput
 ): Promise<{ token?: string; error?: string }> {
 
     if (!process.env.GEMINI_API_KEY) {
@@ -329,9 +342,7 @@ export async function generateProductFromImageAction(
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const creatorNotes = formData.get('creatorNotes') as string;
-        const price = formData.get('price') as string;
-        const imageDataUrl = formData.get('imageDataUrl') as string;
+        const { creatorNotes, price, imageDataUrl } = input;
 
         if (!creatorNotes || !price || !imageDataUrl) {
             return { error: "Missing required fields for product generation." };

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useForm, useFormState } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Image from "next/image";
@@ -28,56 +28,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus } from "lucide-react";
-import { generateImageAction, getGalleryImagesAction, stashProductPrefillImage, createPrefillUploadUrl, generateProductFromImageAction } from "@/app/actions";
-import { storage, auth } from "@/lib/firebase";
-import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
-import { ref as storageRef, uploadString } from "firebase/storage";
-import { v4 as uuidv4 } from 'uuid';
+import { generateImageAction, getGalleryImagesAction, generateProductFromImageAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "../ui/scroll-area";
-import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useInventoryStatus } from "@/hooks/use-inventory-status";
-import { ShopifyProduct } from "@/types/shopify";
 import CurrencyInput from "../ui/currency-input";
 import { useRouter } from "next/navigation";
-
-
-// Client-side image conversion to WebP (no resizing)
-async function toWebp(file: File, quality: number = 0.8): Promise<File> {
-  let bitmap: ImageBitmap | null = null;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch {
-    // Fallback: read -> blob -> createImageBitmap (avoids new Image())
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    const blobFromDataUrl = await fetch(dataUrl).then(r => r.blob());
-    bitmap = await createImageBitmap(blobFromDataUrl);
-  }
-
-  if (!bitmap) throw new Error("Failed to decode image");
-
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas context not available");
-  ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
-
-  const blob: Blob = await new Promise((res, rej) =>
-    canvas.toBlob(b => (b ? res(b) : rej(new Error("toBlob failed"))), "image/webp", quality)
-  );
-
-  const safeName = file.name.replace(/\.[^.]+$/, ".webp");
-  return new File([blob], safeName, { type: "image/webp" });
-}
 
 const formSchema = z.object({
   primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
@@ -227,27 +184,32 @@ export function ImageStudio() {
         }
    }, [secondaryImageFile]);
 
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     setGeneratedImage(null);
 
-    const formData = new FormData();
-    // Convert to WebP client-side to shrink payloads
-    const primaryWebp = await toWebp(values.primaryProductImage);
-    formData.append('primaryProductImage', primaryWebp);
-    if(values.secondaryProductImage) {
-      const secondaryWebp = await toWebp(values.secondaryProductImage);
-      formData.append('secondaryProductImage', secondaryWebp);
-    }
-    formData.append('backgroundType', values.backgroundType);
-    if(values.backgroundPrompt) formData.append('backgroundPrompt', values.backgroundPrompt);
-    if(values.selectedBackgroundUrl) formData.append('selectedBackgroundUrl', values.selectedBackgroundUrl);
-    if(values.contextualDetails) formData.append('contextualDetails', values.contextualDetails);
-
     try {
-        const result = await generateImageAction(formData);
-        if (result.success && result.imageDataUri) {
+        const angle1 = await fileToDataUrl(values.primaryProductImage);
+        const angle2 = values.secondaryProductImage ? await fileToDataUrl(values.secondaryProductImage) : undefined;
+        const background = values.backgroundType === 'gallery' ? values.selectedBackgroundUrl! : values.backgroundPrompt!;
+
+        const result = await generateImageAction({
+            background,
+            angle1,
+            angle2,
+            context: values.contextualDetails
+        });
+
+        if (result.imageDataUri) {
             setGeneratedImage(result.imageDataUri);
             toast({
                 title: "Image Generated",
@@ -409,7 +371,7 @@ export function ImageStudio() {
             </Card>
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="lg-col-span-3">
             <Card className="sticky top-20">
               <CardHeader>
                 <CardTitle>3. Final Touches &amp; Generation</CardTitle>
@@ -454,31 +416,6 @@ export function ImageStudio() {
                         )}
                     </div>
                 </div>
-                {generatedImage && (
-                  <div className="flex gap-2 pt-2">
-                    <Button type="button" onClick={async ()=>{
-                      try {
-                        // Ensure Firebase auth (anonymous) so Storage rules allow write
-                        await new Promise<void>((resolve, reject) => {
-                          const unsub = onAuthStateChanged(auth, async (user) => {
-                            unsub();
-                            if (user) return resolve();
-                            try { await signInAnonymously(auth); resolve(); } catch (e) { reject(e); }
-                          });
-                        });
-                        // Upload via Firebase client SDK to avoid CORS on signed PUT
-                        const token = uuidv4();
-                        const path = `prefill-product-images/${token}.webp`;
-                        const ref = storageRef(storage, path);
-                        await uploadString(ref, generatedImage, 'data_url');
-                        window.location.href = `/products/new?token=${encodeURIComponent(token)}`;
-                      } catch (e:any) {
-                        console.error('[Add as Product] failed', e);
-                        toast({ variant: 'destructive', title: 'Could not prefill product', description: e.message || 'Upload failed. Please try again.'});
-                      }
-                    }}>Add as Product</Button>
-                  </div>
-                )}
               </CardContent>
               <CardFooter className="flex-col sm:flex-row gap-2">
                 <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
@@ -551,12 +488,12 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
                 creatorNotes: values.creatorNotes,
             });
 
-            if (result.success && result.token) {
+            if (result.token) {
                 toast({
                     title: "Content Generated!",
                     description: "Redirecting you to the new product page to finalize...",
                 });
-                router.push(`/products/new?ai-token=${result.token}`);
+                router.push(`/products/new?draftToken=${result.token}`);
             } else {
                 throw new Error(result.error || "Failed to create product.");
             }
@@ -623,7 +560,7 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
                             <Button variant="outline" onClick={onClose} type="button" disabled={isGenerating}>Cancel</Button>
                             <Button type="submit" disabled={isGenerating}>
                                 {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Generate Product
+                                Generate and Pre-fill
                             </Button>
                         </DialogFooter>
                     </form>
