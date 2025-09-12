@@ -10,6 +10,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchShopify } from '@/services/shopify';
 import { z } from 'zod';
+import { Part } from '@google/generative-ai';
 
 
 type ActionResult = {
@@ -102,7 +103,7 @@ type GenerateImageInput = {
   context?: string;
 }
 
-export async function generateImageAction(input: GenerateImageInput): Promise<{ imageDataUrl?: string; error?: string }> {
+export async function generateImageAction(input: GenerateImageInput): Promise<{ imageDataUri?: string; error?: string }> {
     try {
         const validated = imageGenSchema.safeParse(input);
 
@@ -126,9 +127,24 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
           }
         }
 
+        let angle2Part: Part | undefined = undefined;
+        if (angle2) {
+          const angle2MimeType = angle2.match(/data:(.*);base64/)?.[1] || 'image/webp';
+          const angle2Base64 = angle2.split(',')[1];
+          if (angle2Base64) {
+            angle2Part = {
+              inlineData: {
+                data: angle2Base64,
+                mimeType: angle2MimeType,
+              }
+            };
+          }
+        }
+
         const resultPart = await generateCustomCandleBackgroundFlow({
             background: background,
-            candleImage: angle1Part,
+            candleImage1: angle1Part,
+            candleImage2: angle2Part,
         });
 
         if (!resultPart?.inlineData) {
@@ -137,7 +153,7 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
 
         const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
 
-        return { imageDataUrl };
+        return { imageDataUri: imageDataUrl };
     } catch (error: any) {
         console.error("[generateImageAction Error]", error);
         if (error.message.includes('500') || error.message.includes('503')) {
