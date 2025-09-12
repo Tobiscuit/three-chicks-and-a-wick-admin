@@ -75,20 +75,24 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Step 2: Composing final image...');
       
-      const context: Part[] = [candleImage1, bgImagePart];
       let composePrompt = `Compose the candle image onto the background image. The candle should be centered and well-lit. The final image should look like a professional product photo.`;
 
+      const promptParts: Part[] = [];
+      promptParts.push({ text: composePrompt });
+      promptParts.push(candleImage1);
+      promptParts.push(bgImagePart as Part);
+
       if (candleImage2) {
-        context.push(candleImage2);
         composePrompt = `Compose the first candle image onto the background image. Use the second candle image as a crucial reference for lighting, shadows, and depth. The final composed image should only contain the first candle. The final image should look like a professional product photo.`
+        promptParts[0] = { text: composePrompt };
+        promptParts.push(candleImage2);
       }
 
-      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1), candleImage2: candleImage2 ? redactData(candleImage2) : undefined, bgImagePart: redactData(bgImagePart as Part) }, null, 2));
+      console.log('[Flow] Input Parts for composition:', JSON.stringify(promptParts.map(redactData), null, 2));
 
       const finalImageResponse = await ai.generate({
-        prompt: composePrompt,
+        prompt: promptParts,
         model: modelName,
-        context: context,
       });
 
       console.log('[Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
