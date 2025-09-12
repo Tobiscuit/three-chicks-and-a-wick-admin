@@ -515,8 +515,11 @@ const addProductModalSchema = z.object({
     price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
         message: "Price must be a valid positive number.",
     }),
-    creatorNotes: z.string().min(10, {
-        message: "Please provide some notes about the product (at least 10 characters).",
+    contextualDetails: z.string().min(10, {
+        message: "Please provide some details about the product (at least 10 characters).",
+    }),
+    quantity: z.coerce.number().int().min(0, {
+        message: "Quantity must be a non-negative number.",
     }),
 });
 
@@ -537,7 +540,8 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
             const result = await generateProductFromImageAction({
                 imageDataUrl: generatedImage,
                 price: values.price,
-                creatorNotes: values.creatorNotes,
+                creatorNotes: values.contextualDetails,
+                quantity: values.quantity,
             });
 
             if (result.token) {
@@ -592,10 +596,23 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
                             />
                             <FormField
                                 control={form.control}
-                                name="creatorNotes"
+                                name="quantity"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Creator's Notes</FormLabel>
+                                        <FormLabel>Quantity</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contextualDetails"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Contextual Details</FormLabel>
                                         <FormControl>
                                             <Textarea
                                                 placeholder="e.g., smells like a cozy autumn evening, with notes of spiced pear and cinnamon. Has a crackling wood wick..."

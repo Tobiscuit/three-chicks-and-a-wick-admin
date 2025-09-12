@@ -160,16 +160,22 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             const data = await resolveAiGeneratedProductAction(token);
 
             if (data) {
+                const { title, body_html, tags, sku, price, imageUrl, quantity } = data;
+                
+                // Prefill text fields
                 form.reset({
-                    title: data.title,
-                    description: data.body_html,
-                    price: data.price,
-                    sku: data.sku,
-                    tags: data.tags,
-                    inventory: 0, // Default inventory for new AI products
+                    title: title,
+                    description: body_html,
+                    price: price,
+                    sku: sku,
+                    tags: tags,
+                    inventory: quantity,
+                    status: "DRAFT", // Always default AI products to Draft
                 });
-                if (data.publicImageUrl) {
-                    setImagePreviews([data.publicImageUrl]);
+                
+                // Fetch the temporary image, convert to a File, and set in the form
+                if (imageUrl) {
+                    setImagePreviews([imageUrl]);
                 }
                 toast({ title: "AI Content Loaded!" });
                 // Clean the URL

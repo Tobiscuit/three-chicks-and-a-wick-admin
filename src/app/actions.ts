@@ -351,6 +351,7 @@ type GenerateProductInput = {
     imageDataUrl: string;
     price: string;
     creatorNotes: string;
+    quantity: number;
 }
 
 export async function generateProductFromImageAction(
@@ -368,15 +369,16 @@ export async function generateProductFromImageAction(
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const { creatorNotes, price, imageDataUrl } = input;
+        const { creatorNotes, price, imageDataUrl, quantity } = input;
 
-        if (!creatorNotes || !price || !imageDataUrl) {
+        if (!creatorNotes || !price || !imageDataUrl || quantity === undefined) {
             return { error: "Missing required fields for product generation." };
         }
 
         console.log("===== GENERATING PRODUCT FROM IMAGE =====");
         console.log("Creator Notes:", creatorNotes);
         console.log("Price:", price);
+        console.log("Quantity:", quantity);
 
         const base64Data = imageDataUrl.match(/;base64,(.*)$/)?.[1];
         if (!base64Data) {
@@ -423,7 +425,7 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
-        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price);
+        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity);
 
         if (!stashResult.success || !stashResult.token) {
             throw new Error(stashResult.error || "Failed to stash AI-generated data.");
@@ -450,7 +452,8 @@ Your task is to transform raw data into a partial Shopify product listing, focus
 export async function stashAiGeneratedProductAction(
     creativeData: any,
     imageDataUrl: string,
-    price: string
+    price: string,
+    quantity: number,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
         // Step 1: Upload the image to Firebase Storage to get a public URL
@@ -471,6 +474,7 @@ export async function stashAiGeneratedProductAction(
         await docRef.set({
             ...creativeData,
             price,
+            quantity,
             publicImageUrl, // Stash the short URL, not the raw data
             createdAt: new Date(),
         });
