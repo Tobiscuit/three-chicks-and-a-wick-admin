@@ -24,6 +24,13 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     outputSchema: z.custom<Part>(),
   },
   async ({ background, candleImage }) => {
+    const redactData = (part: Part) => {
+      if (part.inlineData && part.inlineData.data.length > 100) {
+        return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
+      }
+      return part;
+    };
+
     try {
       const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
       const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
@@ -68,7 +75,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       console.log('[Flow] Step 2: Composing final image...');
       const composePrompt = `Compose the candle image onto the background image. The candle should be centered and well-lit. The final image should look like a professional product photo.`;
 
-      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage, bgImagePart }, null, 2));
+      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage: redactData(candleImage), bgImagePart: redactData(bgImagePart as Part) }, null, 2));
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,

@@ -20,11 +20,15 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
     outputSchema: z.custom<Part>(),
   },
   async ({ candleImage, galleryImage }) => {
-    try {
-      const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
-      console.log(`[Compose Flow] Using image model: ${modelName}`);
+    const redactData = (part: Part) => {
+      if (part.inlineData && part.inlineData.data.length > 100) {
+        return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
+      }
+      return part;
+    };
 
+    try {
+      console.log('[Compose Flow] Using image model: googleai/gemini-2.5-flash-image-preview');
       console.log('[Compose Flow] Starting composition with gallery background...');
       const composePrompt = `
         Your task is to perform a photorealistic composition.
@@ -37,11 +41,11 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage, candleImage }, null, 2));
+      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImage), candleImage: redactData(candleImage) }, null, 2));
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
-        model: modelName,
+        model: 'googleai/gemini-2.5-flash-image-preview',
         context: [galleryImage, candleImage],
       });
 
