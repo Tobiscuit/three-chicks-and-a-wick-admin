@@ -22,7 +22,16 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   async ({ candleImage, galleryImage }) => {
     try {
       console.log('[Compose Flow] Starting composition with gallery background...');
-      const composePrompt = `Compose the candle image (second image part) onto the background image (first image part). The candle should be centered and well-lit. The final image should look like a professional product photo.`;
+      const composePrompt = `
+        Your task is to perform a photorealistic composition.
+        You will be given two images: a background image and a product image.
+        Isolate the primary product from the product image, discarding its original background.
+        Realistically place that isolated product onto a surface within the new background image.
+        Ensure the lighting, shadows, and perspective are seamless and consistent.
+
+        **Output only the final, composed image.**
+        **Do not include any text, commentary, markdown, or any other content besides the image itself.**
+      `;
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
