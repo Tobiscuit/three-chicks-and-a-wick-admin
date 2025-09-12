@@ -166,11 +166,12 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
 type ComposeWithGalleryInput = {
   galleryBackgroundUrl: string;
   angle1: string; // data URL
+  angle2?: string; // data URL
 }
 
-export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUrl?: string; error?: string }> {
+export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUri?: string; error?: string }> {
     try {
-        const { galleryBackgroundUrl, angle1 } = input;
+        const { galleryBackgroundUrl, angle1, angle2 } = input;
 
         // Fetch the gallery image data
         const response = await fetch(galleryBackgroundUrl);
@@ -200,8 +201,23 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
           }
         };
 
+        let angle2Part: Part | undefined = undefined;
+        if (angle2) {
+          const angle2MimeType = angle2.match(/data:(.*);base64/)?.[1] || 'image/webp';
+          const angle2Base64 = angle2.split(',')[1];
+          if (angle2Base64) {
+            angle2Part = {
+              inlineData: {
+                data: angle2Base64,
+                mimeType: angle2MimeType,
+              }
+            };
+          }
+        }
+
         const resultPart = await composeWithGalleryBackgroundFlow({
-            candleImage: angle1Part,
+            candleImage1: angle1Part,
+            candleImage2: angle2Part,
             galleryImage: galleryImagePart,
         });
 

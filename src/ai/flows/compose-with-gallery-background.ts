@@ -9,7 +9,8 @@ import { ai } from '@/ai/genkit';
 import { Part } from 'genkit/ai';
 
 const ComposeWithGallerySchema = z.object({
-  candleImage: z.custom<Part>().describe('The user-uploaded candle image'),
+  candleImage1: z.custom<Part>().describe('The primary user-uploaded candle image'),
+  candleImage2: z.custom<Part>().optional().describe('The optional secondary candle image'),
   galleryImage: z.custom<Part>().describe('The pre-existing gallery background image'),
 });
 
@@ -19,7 +20,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
     inputSchema: ComposeWithGallerySchema,
     outputSchema: z.custom<Part>(),
   },
-  async ({ candleImage, galleryImage }) => {
+  async ({ candleImage1, candleImage2, galleryImage }) => {
     const redactData = (part: Part) => {
       if (part.inlineData && part.inlineData.data.length > 100) {
         return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
@@ -28,9 +29,13 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
     };
 
     try {
-      console.log('[Compose Flow] Using image model: googleai/gemini-2.5-flash-image-preview');
+      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
+      console.log(`[Compose Flow] Using image model: ${modelName}`);
+
       console.log('[Compose Flow] Starting composition with gallery background...');
-      const composePrompt = `
+      
+      const context: Part[] = [galleryImage, candleImage1];
+      let composePrompt = `
         Your task is to perform a photorealistic composition.
         You will be given two images: a background image and a product image.
         Isolate the primary product from the product image, discarding its original background.
@@ -41,12 +46,26 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImage), candleImage: redactData(candleImage) }, null, 2));
+      if (candleImage2) {
+        context.push(candleImage2);
+        composePrompt = `
+          Your task is to perform a photorealistic composition.
+          You will be given three images: a background, a primary product image, and a secondary product image for reference.
+          Isolate the product from the primary product image, discarding its original background.
+          Use the secondary product image as a crucial reference for the product's true lighting, shadows, and depth.
+          Realistically place the isolated product (from the primary image) onto a surface within the background image.
+          
+          **Output only the final, composed image containing the primary product.**
+          **Do not include any text, commentary, markdown, or any other content besides the image itself.**
+        `;
+      }
+
+      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImage), candleImage1: redactData(candleImage1), candleImage2: candleImage2 ? redactData(candleImage2) : undefined }, null, 2));
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
-        model: 'googleai/gemini-2.5-flash-image-preview',
-        context: [galleryImage, candleImage],
+        model: modelName,
+        context: context,
       });
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
