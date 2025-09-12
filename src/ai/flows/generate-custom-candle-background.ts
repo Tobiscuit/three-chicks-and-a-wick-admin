@@ -14,7 +14,8 @@ import { Part } from 'genkit/ai';
 
 const CandleAndContextSchema = z.object({
   background: z.string().describe('The user-provided background description'),
-  candleImage: z.custom<Part>().describe('The user-uploaded candle image'),
+  candleImage1: z.custom<Part>().describe('The primary user-uploaded candle image'),
+  candleImage2: z.custom<Part>().optional().describe('The optional secondary candle image'),
 });
 
 export const generateCustomCandleBackgroundFlow = ai.defineFlow(
@@ -23,7 +24,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     inputSchema: CandleAndContextSchema,
     outputSchema: z.custom<Part>(),
   },
-  async ({ background, candleImage }) => {
+  async ({ background, candleImage1, candleImage2 }) => {
     const redactData = (part: Part) => {
       if (part.inlineData && part.inlineData.data.length > 100) {
         return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
@@ -73,14 +74,21 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       console.log('[Flow] Step 1 SUCCESS: Background generated.');
 
       console.log('[Flow] Step 2: Composing final image...');
-      const composePrompt = `Compose the candle image onto the background image. The candle should be centered and well-lit. The final image should look like a professional product photo.`;
+      
+      const context: Part[] = [candleImage1, bgImagePart];
+      let composePrompt = `Compose the candle image onto the background image. The candle should be centered and well-lit. The final image should look like a professional product photo.`;
 
-      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage: redactData(candleImage), bgImagePart: redactData(bgImagePart as Part) }, null, 2));
+      if (candleImage2) {
+        context.push(candleImage2);
+        composePrompt = `Compose the first candle image onto the background image. Use the second candle image as a crucial reference for lighting, shadows, and depth. The final composed image should only contain the first candle. The final image should look like a professional product photo.`
+      }
+
+      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1), candleImage2: candleImage2 ? redactData(candleImage2) : undefined, bgImagePart: redactData(bgImagePart as Part) }, null, 2));
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
         model: modelName,
-        context: [candleImage, bgImagePart],
+        context: context,
       });
 
       console.log('[Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
