@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from 'genkit';
+import { Part } from '@google/generative-ai';
 
 const CandleAndContextSchema = z.object({
   background: z.string().describe('The user-provided background description'),
