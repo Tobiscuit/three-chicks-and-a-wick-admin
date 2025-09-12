@@ -55,7 +55,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       if (!bgImagePart) {
         console.error('[Flow] Failed to extract media from background response.');
-        const textResponse = bgImageResponse.text();
+        const textResponse = bgImageResponse.message?.content?.[0]?.text || '[No text content found in response]';
         console.error(`[Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not generate background image. AI response did not contain media.');
       }
@@ -97,7 +97,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       if (!finalImagePart) {
         console.error('[Flow] Failed to extract media from final image response.');
-        const textResponse = finalImageResponse.text();
+        const textResponse = finalImageResponse.message?.content?.[0]?.text || '[No text content found in response]';
         console.error(`[Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
