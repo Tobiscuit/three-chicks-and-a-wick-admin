@@ -111,47 +111,17 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
             return { error: validated.error.errors.map(e => e.message).join(', ') };
         }
 
-        const { background, angle1, angle2, context } = validated.data;
+        const { background, angle1, angle2 } = validated.data;
 
-        const angle1MimeType = angle1.match(/data:(.*);base64/)?.[1] || 'image/webp';
-        const angle1Base64 = angle1.split(',')[1];
-        
-        if (!angle1Base64) {
-            return { error: 'Invalid primary image data.' };
-        }
-
-        const angle1Part = {
-          inlineData: {
-            data: angle1Base64,
-            mimeType: angle1MimeType,
-          }
-        }
-
-        let angle2Part: Part | undefined = undefined;
-        if (angle2) {
-          const angle2MimeType = angle2.match(/data:(.*);base64/)?.[1] || 'image/webp';
-          const angle2Base64 = angle2.split(',')[1];
-          if (angle2Base64) {
-            angle2Part = {
-              inlineData: {
-                data: angle2Base64,
-                mimeType: angle2MimeType,
-              }
-            };
-          }
-        }
-
-        const resultPart = await generateCustomCandleBackgroundFlow({
+        const imageDataUrl = await generateCustomCandleBackgroundFlow({
             background: background,
-            candleImage1: angle1Part,
-            candleImage2: angle2Part,
+            candleImage1: angle1,
+            candleImage2: angle2,
         });
 
-        if (!resultPart?.inlineData) {
+        if (!imageDataUrl) {
             return { error: 'The AI did not return a valid image.' };
         }
-
-        const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
 
         return { imageDataUri: imageDataUrl };
     } catch (error: any) {
@@ -180,52 +150,18 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
         }
         const galleryImageBuffer = Buffer.from(await response.arrayBuffer());
         const galleryImageMimeType = response.headers.get('content-type') || 'image/webp';
+        const galleryImageDataUrl = `data:${galleryImageMimeType};base64,${galleryImageBuffer.toString('base64')}`;
 
-        const galleryImagePart = {
-          inlineData: {
-            data: galleryImageBuffer.toString('base64'),
-            mimeType: galleryImageMimeType,
-          }
-        };
-
-        const angle1MimeType = angle1.match(/data:(.*);base64/)?.[1] || 'image/webp';
-        const angle1Base64 = angle1.split(',')[1];
-        if (!angle1Base64) {
-            return { error: 'Invalid primary image data.' };
-        }
-
-        const angle1Part = {
-          inlineData: {
-            data: angle1Base64,
-            mimeType: angle1MimeType,
-          }
-        };
-
-        let angle2Part: Part | undefined = undefined;
-        if (angle2) {
-          const angle2MimeType = angle2.match(/data:(.*);base64/)?.[1] || 'image/webp';
-          const angle2Base64 = angle2.split(',')[1];
-          if (angle2Base64) {
-            angle2Part = {
-              inlineData: {
-                data: angle2Base64,
-                mimeType: angle2MimeType,
-              }
-            };
-          }
-        }
-
-        const resultPart = await composeWithGalleryBackgroundFlow({
-            candleImage1: angle1Part,
-            candleImage2: angle2Part,
-            galleryImage: galleryImagePart,
+        const imageDataUrl = await composeWithGalleryBackgroundFlow({
+            candleImage1: angle1,
+            candleImage2: angle2,
+            galleryImage: galleryImageDataUrl,
         });
 
-        if (!resultPart?.inlineData) {
+        if (!imageDataUrl) {
             return { error: 'The AI did not return a valid composite image.' };
         }
 
-        const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
         const result = { imageDataUri: imageDataUrl };
         console.log('[composeWithGalleryAction] Returning success object with image data URI.');
         return result;

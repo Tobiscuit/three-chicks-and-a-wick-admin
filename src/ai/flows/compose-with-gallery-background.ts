@@ -6,31 +6,32 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from '@google/generative-ai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const ComposeWithGallerySchema = z.object({
-  candleImage1: z.custom<Part>().describe('The primary user-uploaded candle image'),
-  candleImage2: z.custom<Part>().optional().describe('The optional secondary candle image'),
-  galleryImage: z.custom<Part>().describe('The pre-existing gallery background image'),
+  candleImage1: z.string().describe('The primary user-uploaded candle image as a data URI'),
+  candleImage2: z.string().optional().describe('The optional secondary candle image as a data URI'),
+  galleryImage: z.string().describe('The pre-existing gallery background image as a data URI'),
 });
 
 export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   {
     name: 'composeWithGalleryBackgroundFlow',
     inputSchema: ComposeWithGallerySchema,
-    outputSchema: z.custom<Part>(),
+    outputSchema: z.string(),
   },
   async ({ candleImage1, candleImage2, galleryImage }) => {
-    const redactData = (part: Part) => {
-      if (part.inlineData && part.inlineData.data.length > 100) {
-        return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
+    
+    const redactData = (uri: string) => {
+      if (uri.length > 100) {
+        return `${uri.substring(0, 50)}...[REDACTED_LENGTH=${uri.length}]`;
       }
-      return part;
+      return uri;
     };
 
     try {
       const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
+      const modelName = useGemini ? 'gemini-2.5-flash-image-preview' : 'imagen-3';
       console.log(`[Compose Flow] Using image model: ${modelName}`);
 
       console.log('[Compose Flow] Starting composition with gallery background...');
@@ -46,10 +47,10 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
-      const promptParts: Part[] = [];
+      const promptParts = [];
       promptParts.push({ text: composePrompt });
-      promptParts.push(galleryImage);
-      promptParts.push(candleImage1);
+      promptParts.push({ media: { url: galleryImage } });
+      promptParts.push({ media: { url: candleImage1 } });
 
       if (candleImage2) {
         composePrompt = `
@@ -64,43 +65,29 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         `;
         // Overwrite the prompt and add the third image
         promptParts[0] = { text: composePrompt };
-        promptParts.push(candleImage2);
+        promptParts.push({ media: { url: candleImage2 } });
       }
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify(promptParts.map(redactData), null, 2));
+      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify(promptParts.map(p => p.text ? p : { media: { url: redactData(p.media.url) } }), null, 2));
 
       const finalImageResponse = await ai.generate({
         prompt: promptParts,
-        model: modelName,
+        model: googleAI.model(modelName),
+        output: { format: 'media' },
       });
-
-      console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
-
-      // Manually find the media part in the response
-      let finalImagePart = finalImageResponse.message.content.find(p => p.media)?.media;
-
-      if (!finalImagePart) {
+      
+      const finalImagePart = finalImageResponse.media;
+      
+      if (!finalImagePart?.url) {
         console.error('[Compose Flow] Failed to extract media from final image response.');
-        const textResponse = finalImageResponse.message?.content?.[0]?.text || '[No text content found in response]';
+        const textResponse = finalImageResponse.text || '[No text content found in response]';
         console.error(`[Compose Flow] AI text response was: "${textResponse}"`);
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
 
-      // Normalize the response: Genkit can return a URL or inlineData. Actions expect inlineData.
-      if (finalImagePart.url?.startsWith('data:')) {
-        const [meta, base64] = finalImagePart.url.split(',');
-        const mimeType = /data:(.*?);base64/.exec(meta || '')?.[1] || 'image/png';
-        finalImagePart = {
-          inlineData: {
-            data: base64,
-            mimeType,
-          }
-        };
-      }
-
       console.log('[Compose Flow] SUCCESS: Final image composed.');
 
-      return finalImagePart;
+      return finalImagePart.url;
     } catch (error: any) {
       console.error("[Compose Flow Error]", error);
       throw new Error(`AI Composition Flow Failed: ${error.message}`);
