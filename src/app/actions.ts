@@ -1,9 +1,8 @@
 
 "use server";
 
-import { composeCandleWithGeneratedBackground } from "@/ai/flows/compose-candle-with-generated-background";
-import { generateCustomCandleBackground } from "@/ai/flows/generate-custom-candle-background";
-import { adminApp, adminAuth, adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
+import { generateCustomCandleBackgroundFlow } from '@/ai/flows/generate-custom-candle-background';
+import { adminAuth, adminStorage } from "@/lib/firebase-admin"; // USE CENTRAL ADMIN SDK
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
@@ -110,17 +109,28 @@ export async function generateImageAction(prevState: any, formData: FormData): P
 
         const { background, angle1, angle2, context } = validated.data;
 
-        const result = await generateCustomCandleBackground({
-            primaryProductPhotoDataUri: angle1,
-            secondaryProductPhotoDataUri: angle2,
-            backgroundPrompt: background,
-            contextualDetails: context,
-        });
+        const angle1Part = {
+      inlineData: {
+        data: angle1.split(',')[1],
+        mimeType: angle1.match(/data:(.*);base64/)?.[1] || 'image/webp',
+      }
+    }
 
-        return { imageDataUrl: result.compositeImageDataUri };
-    } catch (error: any) {
-        console.error("[generateImageAction Error]", error);
-        if (error.message.includes('500') || error.message.includes('503')) {
+    const resultPart = await generateCustomCandleBackgroundFlow({
+        background: background,
+        candleImage: angle1Part,
+    });
+
+    if (!resultPart?.inlineData) {
+        return { error: 'The AI did not return a valid image.' };
+    }
+
+    const imageDataUrl = `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}`;
+
+    return { imageDataUrl: imageDataUrl };
+  } catch (error: any) {
+    console.error('[generateImageAction Error]', error);
+    if (error.message.includes('500') || error.message.includes('503')) {
             return { error: "The AI image service is temporarily unavailable. Please try again later." };
         }
         return { error: "An unexpected error occurred during image generation." };
