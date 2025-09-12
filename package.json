@@ -16,7 +16,7 @@
   "dependencies": {
     "@genkit-ai/firebase": "^1.19.2",
     "@genkit-ai/google-cloud": "^1.19.2",
-    "@genkit-ai/googleai": "^1.19.2",
+    "@genkit-ai/google-genai": "^1.19.2",
     "@genkit-ai/next": "^1.19.2",
     "@google-cloud/secret-manager": "5.5.0",
     "@google/generative-ai": "^0.24.1",

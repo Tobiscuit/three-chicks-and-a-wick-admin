@@ -1,6 +1,8 @@
 threechicksandawick-admin-panel
 ├── .cursor
+│   ├── mcp.json
 │   └── rules
+│   │   └── GENKIT.mdc
 ├── .env
 ├── .env.example
 ├── .env.local
@@ -10,6 +12,7 @@ threechicksandawick-admin-panel
 │   ├── dev.nix
 │   └── icon.png
 ├── .modified
+├── GENKIT.md
 ├── README.md
 ├── candlecraft-studio-yz6sc
 │   ├── functions
