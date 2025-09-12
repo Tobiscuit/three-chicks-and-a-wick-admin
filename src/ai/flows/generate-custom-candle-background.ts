@@ -25,12 +25,16 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
   },
   async ({ background, candleImage }) => {
     try {
+      const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
+      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
+      console.log(`[Flow] Using image model: ${modelName}`);
+
       console.log('[Flow] Step 1: Generating background...');
       const bgPrompt = `Generate a background image for a product photo of a candle. The background should be clean, professional, and visually appealing. The user wants the following style: "${background}". Do not include the candle in the image.`;
 
       const bgImageResponse = await ai.generate({
         prompt: bgPrompt,
-        model: 'googleai/imagen-3',
+        model: modelName,
         config: {
           temperature: 0.9,
           maxOutputTokens: 1024,
@@ -51,7 +55,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
-        model: 'googleai/imagen-3',
+        model: modelName,
         context: [candleImage, bgImagePart],
       });
 
