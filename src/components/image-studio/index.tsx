@@ -244,9 +244,9 @@ export function ImageStudio() {
       let result: { imageDataUri?: string; error?: string };
 
       const angle1 = await resizeAndToDataUrl(values.primaryProductImage);
+      const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
 
       if (values.backgroundType === 'generate') {
-        const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
         result = await generateImageAction({
           background: values.backgroundPrompt!,
           angle1,
@@ -257,6 +257,7 @@ export function ImageStudio() {
         result = await composeWithGalleryAction({
           galleryBackgroundUrl: values.selectedBackgroundUrl!,
           angle1,
+          angle2,
         });
       }
       
