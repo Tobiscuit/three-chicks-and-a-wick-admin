@@ -30,7 +30,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       const bgImageResponse = await ai.generate({
         prompt: bgPrompt,
-        model: 'googleai/imagen-4',
+        model: 'googleai/imagen-3',
         config: {
           temperature: 0.9,
           maxOutputTokens: 1024,
@@ -51,7 +51,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
-        model: 'googleai/imagen-4',
+        model: 'googleai/imagen-3',
         context: [candleImage, bgImagePart],
       });
 
