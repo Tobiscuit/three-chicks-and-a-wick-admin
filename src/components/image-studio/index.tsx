@@ -193,13 +193,51 @@ export function ImageStudio() {
     });
   };
 
+  const resizeAndToDataUrl = (file: File, maxSize = 1024, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const image = new window.Image();
+        image.onload = () => {
+          let { width, height } = image;
+          if (width > height) {
+            if (width > maxSize) {
+              height = Math.round(height * (maxSize / width));
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = Math.round(width * (maxSize / height));
+              height = maxSize;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return reject(new Error('Could not get canvas context'));
+          }
+          ctx.drawImage(image, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/webp', quality);
+          resolve(dataUrl);
+        };
+        image.onerror = reject;
+        image.src = readerEvent.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     setGeneratedImage(null);
 
     try {
-        const angle1 = await fileToDataUrl(values.primaryProductImage);
-        const angle2 = values.secondaryProductImage ? await fileToDataUrl(values.secondaryProductImage) : undefined;
+        const angle1 = await resizeAndToDataUrl(values.primaryProductImage);
+        const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
         const background = values.backgroundType === 'gallery' ? values.selectedBackgroundUrl! : values.backgroundPrompt!;
 
         const result = await generateImageAction({
