@@ -1,0 +1,3 @@
+- Change the image generation model back to `gemini-2.5-flash-image-preview` once the client provides a new API key with the correct quotas.
+- Investigate why the `errorDetails` array is not logging its contents.
+- Restore the "image-only" pre-fill button in the Image Studio.

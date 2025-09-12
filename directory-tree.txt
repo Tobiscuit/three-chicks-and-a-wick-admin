@@ -1,0 +1,195 @@
+threechicksandawick-admin-panel
+├── .cursor
+│   └── rules
+├── .env
+├── .env.example
+├── .env.local
+├── .env.local.example
+├── .firebaserc
+├── .idx
+│   ├── dev.nix
+│   └── icon.png
+├── .modified
+├── README.md
+├── candlecraft-studio-yz6sc
+│   ├── functions
+│   │   ├── .env
+│   │   ├── .env.example
+│   │   ├── package-lock.json
+│   │   └── package.json
+│   └── hosting
+│   │   ├── 404.html
+│   │   └── favicon.ico
+├── components.json
+├── cors.json
+├── docs
+│   └── blueprint.md
+├── download.zip
+├── firebase-debug.log
+├── firebase.json
+├── firestore.rules
+├── functions
+│   ├── .env
+│   ├── .env.example
+│   ├── package-lock.json
+│   └── package.json
+├── hosting
+│   ├── 404.html
+│   └── favicon.ico
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── src
+│   ├── .env
+│   ├── ai
+│   │   ├── dev.ts
+│   │   ├── flows
+│   │   │   ├── generate-business-strategy.ts
+│   │   │   ├── generate-custom-candle-background.ts
+│   │   │   └── refine-generated-background-with-context.ts
+│   │   ├── genkit.ts
+│   │   └── prompts.ts
+│   ├── app
+│   │   ├── actions.ts
+│   │   ├── api
+│   │   │   ├── diagnostic
+│   │   │   │   ├── delete
+│   │   │   │   │   └── [id]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── image--studio
+│   │   │   │   └── generate-details
+│   │   │   ├── image-studio
+│   │   │   │   └── generate-details
+│   │   │   ├── sse
+│   │   │   │   └── inventory
+│   │   │   │   │   └── route.ts
+│   │   │   ├── test-inventory
+│   │   │   │   └── route.ts
+│   │   │   └── webhooks
+│   │   │   │   └── inventory-update
+│   │   │   │   │   └── route.ts
+│   │   ├── dashboard
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── products
+│   │   │   ├── [id]
+│   │   │   │   └── page.tsx
+│   │   │   ├── actions.ts
+│   │   │   ├── new
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── settings
+│   │   │   └── page.tsx
+│   │   └── strategy
+│   │   │   └── page.tsx
+│   ├── components
+│   │   ├── auth
+│   │   │   ├── auth-provider.tsx
+│   │   │   ├── auth-wrapper.tsx
+│   │   │   ├── loading-page.tsx
+│   │   │   └── login-page.tsx
+│   │   ├── dashboard
+│   │   │   ├── dashboard-client.tsx
+│   │   │   ├── sales-chart.tsx
+│   │   │   ├── stats-card.tsx
+│   │   │   └── top-products.tsx
+│   │   ├── image-studio
+│   │   │   └── index.tsx
+│   │   ├── layout
+│   │   │   ├── app-sidebar.tsx
+│   │   │   └── header.tsx
+│   │   ├── product-form
+│   │   │   └── index.tsx
+│   │   ├── products
+│   │   │   ├── product-details.tsx
+│   │   │   └── product-gallery.tsx
+│   │   ├── products-table
+│   │   │   └── index.tsx
+│   │   ├── theme
+│   │   │   ├── theme-provider.tsx
+│   │   │   └── theme-toggle.tsx
+│   │   └── ui
+│   │   │   ├── __tests__
+│   │   │   │   └── currency-input.test.tsx
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── currency-input.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── toaster.tsx
+│   │   │   └── tooltip.tsx
+│   ├── hooks
+│   │   ├── use-inventory-status.tsx
+│   │   ├── use-mobile.tsx
+│   │   ├── use-server-sent-events.tsx
+│   │   └── use-toast.ts
+│   ├── lib
+│   │   ├── __tests__
+│   │   │   └── money.test.ts
+│   │   ├── firebase-admin.ts
+│   │   ├── firebase.ts
+│   │   ├── image.ts
+│   │   ├── money.ts
+│   │   └── utils.ts
+│   ├── services
+│   │   ├── shopify
+│   │   │   └── mutations
+│   │   │   │   └── create-product-with-image.ts
+│   │   └── shopify.ts
+│   └── types
+│   │   └── shopify.ts
+├── storage.rules
+├── tailwind.config.ts
+├── test-inventory-webhook.ps1
+├── test-webhook.ps1
+├── tsconfig.json
+├── vitest.config.ts
+├── vitest.setup.ts
+└── workspace
+│   └── src
+│   │   ├── app
+│   │   │   └── loading.tsx
+│   │   ├── components
+│   │   │   ├── auth
+│   │   │   │   └── loading-page.tsx
+│   │   │   └── image-studio
+│   │   │   │   └── index.tsx
+│   │   └── lib
+│   │   │   └── firebase.ts
