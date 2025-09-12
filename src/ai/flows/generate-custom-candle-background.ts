@@ -75,7 +75,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Step 2: Composing final image...');
       
-      let composePrompt = `Compose the candle image onto the background image. The candle should be centered and well-lit. The final image should look like a professional product photo.`;
+      let composePrompt = `Compose the candle image onto the background image, considering the user's desired style: "${background}". The candle should be centered and well-lit. The final image should look like a professional product photo.`;
 
       const promptParts: Part[] = [];
       promptParts.push({ text: composePrompt });
@@ -83,7 +83,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       promptParts.push(bgImagePart as Part);
 
       if (candleImage2) {
-        composePrompt = `Compose the first candle image onto the background image. Use the second candle image as a crucial reference for lighting, shadows, and depth. The final composed image should only contain the first candle. The final image should look like a professional product photo.`
+        composePrompt = `Compose the first candle image onto the background image, considering the user's desired style: "${background}". Use the second candle image as a crucial reference for lighting, shadows, and depth. The final composed image should only contain the first candle. The final image should look like a professional product photo.`
         promptParts[0] = { text: composePrompt };
         promptParts.push(candleImage2);
       }
