@@ -37,6 +37,8 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
+      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage, candleImage }, null, 2));
+
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
         model: modelName,

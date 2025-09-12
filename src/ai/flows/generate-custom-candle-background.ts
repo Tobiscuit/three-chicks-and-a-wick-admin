@@ -68,6 +68,8 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       console.log('[Flow] Step 2: Composing final image...');
       const composePrompt = `Compose the candle image onto the background image. The candle should be centered and well-lit. The final image should look like a professional product photo.`;
 
+      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage, bgImagePart }, null, 2));
+
       const finalImageResponse = await ai.generate({
         prompt: composePrompt,
         model: modelName,
