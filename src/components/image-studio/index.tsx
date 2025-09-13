@@ -429,22 +429,23 @@ export function ImageStudio() {
                 <CardTitle>3. Final Touches &amp; Generation</CardTitle>
                 <CardDescription>Add optional details and generate your final image.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="contextualDetails"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contextual Details (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., a subtle pattern of vanilla beans" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="space-y-2">
+              <CardContent className="grid gap-4">
+                <div className="grid gap-2">
+                    <FormField
+                      control={form.control}
+                      name="contextualDetails"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contextual Details (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., a subtle pattern of vanilla beans" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                <div className="grid gap-2">
                     <FormLabel>Result</FormLabel>
                     <div className="aspect-[4/3] w-full rounded-lg border bg-card-foreground/5 flex items-center justify-center overflow-hidden">
                         {isSubmitting ? (
