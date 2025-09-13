@@ -37,7 +37,8 @@ import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy, 
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
-import { resolveProductPrefillImage, resolveAiGeneratedProductAction } from "@/app/actions";
+import { resolveAiDraftAction } from "@/app/actions";
+import { useSearchParams } from "next/navigation";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -76,6 +77,7 @@ function generateSku(title: string): string {
 
 export function ProductForm({ collections, initialData = null }: ProductFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images?.edges.map(e => e.node.url) || []);
@@ -121,7 +123,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     defaultValues,
   });
   
-  const { setValue, getValues, formState } = form;
+  const { setValue, getValues, formState, reset } = form;
   // Prefill image by token (from Image Studio)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -147,57 +149,58 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   // Prefill form with AI generated data
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('ai-token');
-    if (!token || isEditMode) return;
-
-    if (hasFetchedAiData.current) return; // Prevent multiple fetches
+    const token = searchParams.get('draftToken');
+    if (!token || isEditMode || hasFetchedAiData.current) return;
 
     (async () => {
         try {
-            hasFetchedAiData.current = true; // Set flag immediately
-            toast({ title: "Loading AI Content..." });
-            const data = await resolveAiGeneratedProductAction(token);
+            hasFetchedAiData.current = true; // Prevent multiple fetches
+            toast({ id: 'prefill-toast', title: "🪄 Loading AI Content..." });
+            
+            const res = await resolveAiDraftAction(token);
 
-            if (data) {
-                const { title, body_html, tags, sku, price, imageUrl, quantity } = data;
+            if (res.success && res.data) {
+                const { title, body_html, tags, sku, price, quantity, imageUrl } = res.data;
                 
-                // Prefill text fields
-                form.reset({
-                    title: title,
+                // Prefill text and quantity fields
+                reset({
+                    ...defaultValues,
+                    title,
                     description: body_html,
-                    price: price,
-                    sku: sku,
-                    tags: tags,
+                    price,
+                    sku,
+                    tags,
                     inventory: quantity,
-                    status: "DRAFT", // Always default AI products to Draft
+                    status: "DRAFT",
                 });
                 
-                // Fetch the temporary image, convert to a File, and set in the form
-                if (imageUrl) {
-                    setImagePreviews([imageUrl]);
-                }
-                toast({ title: "AI Content Loaded!" });
+                // Fetch the temporary image, convert it to a File, and set it in the form
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
+                
+                // This mimics the manual upload flow
+                const reader = new FileReader();
+                reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result as string]);
+                reader.readAsDataURL(file);
+
+                toast.update('prefill-toast', { title: "✅ AI Content Loaded!", description: "Review and save your new product." });
+                
                 // Clean the URL
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
             } else {
-                toast({
-                    title: "Error: Could not load AI content",
-                    description: "The AI-generated draft could not be found. It may have expired.",
-                    variant: "destructive",
-                });
+                throw new Error(res.error || "Could not load AI content.");
             }
-        } catch (error) {
-            console.error('Failed to resolve AI token', error);
-            toast({
+        } catch (error: any) {
+            toast.update('prefill-toast', {
                 variant: "destructive",
-                title: "Error",
-                description: "Could not load AI content.",
+                title: "❌ Error Loading AI Content",
+                description: error.message,
             });
         }
     })();
-  }, [form, isEditMode, toast]);
+  }, [isEditMode, searchParams, reset, defaultValues, toast]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
