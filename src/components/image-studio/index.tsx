@@ -287,13 +287,15 @@ export function ImageStudio() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-          <div className="space-y-8 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          
+          {/* Column 1: Image Uploads */}
+          <div className="space-y-8">
             <Card>
               <CardHeader>
                 <CardTitle>1. Upload Product Images</CardTitle>
                 <CardDescription>
-                  Provide one or two angles of your product for the most accurate results.
+                  Provide one or two angles of your product.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4">
@@ -304,7 +306,7 @@ export function ImageStudio() {
                       <ImageUploadArea
                         field={field}
                         preview={primaryPreview}
-                        label="Primary Image (Required)"
+                        label="Primary"
                       />
                     )}
                   />
@@ -315,13 +317,16 @@ export function ImageStudio() {
                        <ImageUploadArea
                         field={field}
                         preview={secondaryPreview}
-                        label="Additional Angle (Optional)"
+                        label="Secondary"
                       />
                     )}
                   />
               </CardContent>
             </Card>
+          </div>
 
+          {/* Column 2: Background Selection */}
+          <div className="space-y-8">
             <Card>
               <CardHeader>
                 <CardTitle>2. Choose Background</CardTitle>
@@ -423,7 +428,8 @@ export function ImageStudio() {
             </Card>
           </div>
 
-          <div className="lg-col-span-3">
+          {/* Column 3: Final Touches & Result */}
+          <div className="md:col-span-1">
             <Card className="sticky top-20">
               <CardHeader>
                 <CardTitle>3. Final Touches &amp; Generation</CardTitle>
