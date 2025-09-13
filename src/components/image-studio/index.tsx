@@ -429,6 +429,7 @@ export function ImageStudio() {
                 <CardTitle>3. Final Touches &amp; Generation</CardTitle>
                 <CardDescription>Add optional details and generate your final image.</CardDescription>
               </CardHeader>
+
               <CardContent className="grid gap-4">
                 <div className="grid gap-2">
                     <FormField
@@ -470,7 +471,7 @@ export function ImageStudio() {
                     </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex-col sm:flex-row gap-2">
+              <CardFooter className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
                   {isSubmitting ? (
                     <>
