@@ -9,8 +9,13 @@ import { Part } from 'genkit';
 
 // Helper to convert a Data URL string into a Genkit Part object
 function dataUrlToPart(dataUrl: string): Part {
+    if (!dataUrl || typeof dataUrl !== 'string') {
+        throw new Error('Invalid data URL: dataUrl is undefined or not a string');
+    }
+    
     const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
     if (!match) {
+        console.error('Invalid data URL format:', dataUrl.substring(0, 100) + '...');
         throw new Error('Invalid data URL format for generative part.');
     }
     return {
