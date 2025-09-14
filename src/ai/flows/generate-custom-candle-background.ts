@@ -49,7 +49,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
     try {
       const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
+      const modelName = useGemini ? 'vertexai/gemini-2.5-flash-image-preview' : 'vertexai/imagen-3';
       console.log(`[Flow] Using image model: ${modelName}`);
 
       console.log('[Flow] Step 1: Generating background...');
