@@ -287,6 +287,32 @@ type ProductData = {
     imageUrls: string[];
 };
 
+// Modern, simplified function using publishablePublishToCurrentChannel (2025-07 API)
+async function publishProductToOnlineStore(productId: string) {
+  const mutation = `
+    mutation publishablePublishToCurrentChannel($id: ID!) {
+      publishablePublishToCurrentChannel(id: $id) {
+        publishable {
+          availablePublicationsCount {
+            count
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  const result = await fetchShopify<any>(mutation, { id: productId });
+  const userErrors = result.publishablePublishToCurrentChannel.userErrors;
+  if (userErrors && userErrors.length > 0) {
+    console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
+  } else {
+    console.log(`Successfully published product ${productId} to the Online Store channel.`);
+  }
+}
+
 export async function createProduct(productData: ProductData) {
   // 1. Create the product (title, tags, status)
   const createProductMutation = `
@@ -400,6 +426,14 @@ export async function createProduct(productData: ProductData) {
   });
   if (setMetafieldResult.metafieldsSet.userErrors?.length) {
     console.warn(`Metafield set failed: ${JSON.stringify(setMetafieldResult.metafieldsSet.userErrors)}`);
+  }
+
+  // --- FINAL STEP: Publish the new product to the Online Store sales channel ---
+  try {
+    await publishProductToOnlineStore(productId);
+  } catch (error) {
+    // Log a warning but don't fail the whole creation process if publishing fails
+    console.warn("Product was created but failed to publish to the Online Store channel.", error);
   }
 
   return { product: { id: productId } };
