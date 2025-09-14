@@ -10,7 +10,21 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { Part } from 'genkit';
+
+// Helper to convert a Data URL string into a Genkit Part object
+function dataUrlToPart(dataUrl: string): Part {
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid data URL format for generative part.');
+    }
+    return {
+        inlineData: {
+            mimeType: match[1],
+            data: match[2]
+        }
+    };
+}
 
 const CandleAndContextSchema = z.object({
   background: z.string().describe('The user-provided background description'),
@@ -22,20 +36,20 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
   {
     name: 'generateCustomCandleBackgroundFlow',
     inputSchema: CandleAndContextSchema,
-    outputSchema: z.string(),
+    outputSchema: z.custom<Part>(),
   },
   async ({ background, candleImage1, candleImage2 }) => {
     
-    const redactData = (uri: string) => {
-      if (uri.length > 100) {
-        return `${uri.substring(0, 50)}...[REDACTED_LENGTH=${uri.length}]`;
+    const redactData = (part: Part) => {
+      if (part.inlineData && part.inlineData.data.length > 100) {
+        return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
       }
-      return uri;
+      return part;
     };
 
     try {
       const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'gemini-2.5-flash-image-preview' : 'imagen-3';
+      const modelName = useGemini ? 'googleai/gemini-2.5-flash-image-preview' : 'googleai/imagen-3';
       console.log(`[Flow] Using image model: ${modelName}`);
 
       console.log('[Flow] Step 1: Generating background...');
@@ -43,16 +57,14 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       const bgImageResponse = await ai.generate({
         prompt: bgPrompt,
-        model: googleAI.model(modelName),
+        model: modelName,
         output: { format: 'media' },
       });
 
       const bgImagePart = bgImageResponse.media;
 
       if (!bgImagePart?.url) {
-        console.error('[Flow] Failed to extract media from background response.');
-        const textResponse = bgImageResponse.text || '[No text content found in response]';
-        console.error(`[Flow] AI text response was: "${textResponse}"`);
+        // Handle error if media is not returned
         throw new Error('Could not generate background image. AI response did not contain media.');
       }
 
@@ -60,39 +72,36 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Step 2: Composing final image...');
       
+      const candleImage1Part = dataUrlToPart(candleImage1);
+      const bgImageFinalPart = dataUrlToPart(bgImagePart.url);
+
+      const context: Part[] = [candleImage1Part, bgImageFinalPart];
       let composePrompt = `Compose the candle image onto the background image, considering the user's desired style: "${background}". The candle should be centered and well-lit. The final image should look like a professional product photo.`;
 
-      const promptParts = [];
-      promptParts.push({ text: composePrompt });
-      promptParts.push({ media: { url: candleImage1 } });
-      promptParts.push({ media: { url: bgImagePart.url } });
-
       if (candleImage2) {
+        const candleImage2Part = dataUrlToPart(candleImage2);
+        context.push(candleImage2Part);
         composePrompt = `Compose the first candle image onto the background image, considering the user's desired style: "${background}". Use the second candle image as a crucial reference for lighting, shadows, and depth. The final composed image should only contain the first candle. The final image should look like a professional product photo.`
-        promptParts[0] = { text: composePrompt };
-        promptParts.push({ media: { url: candleImage2 } });
       }
 
-      console.log('[Flow] Input Parts for composition:', JSON.stringify(promptParts.map(p => p.text ? p : { media: { url: redactData(p.media.url) } }), null, 2));
+      console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined, bgImagePart: redactData(bgImageFinalPart) }, null, 2));
 
       const finalImageResponse = await ai.generate({
-        prompt: promptParts,
-        model: googleAI.model(modelName),
-        output: { format: 'media' },
+        prompt: composePrompt,
+        model: modelName,
+        context: context,
       });
 
-      const finalImagePart = finalImageResponse.media;
+      const finalImagePart = finalImageResponse.media();
 
-      if (!finalImagePart?.url) {
-        console.error('[Flow] Failed to extract media from final image response.');
-        const textResponse = finalImageResponse.text || '[No text content found in response]';
-        console.error(`[Flow] AI text response was: "${textResponse}"`);
+      if (!finalImagePart) {
+        // Handle error if media is not returned
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
 
       console.log('[Flow] Step 2 SUCCESS: Final image composed.');
 
-      return finalImagePart.url;
+      return finalImagePart;
     } catch (error: any) {
       console.error("[Flow Error] An error occurred in generateCustomCandleBackgroundFlow:", error);
       throw new Error(`AI Flow Failed: ${error.message}`);
