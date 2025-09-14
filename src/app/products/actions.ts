@@ -27,6 +27,7 @@ const productSchema = z.object({
     price: z.string(),
     tags: z.string(),
     sku: z.string(),
+    status: z.string(), // ADD THIS LINE - This was the missing piece!
     imageUrls: z.array(z.string().url()).optional().nullable(),
 });
 
@@ -64,12 +65,12 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
 
         console.log("--- Starting Multi-Step Product Update ---");
 
-        // Step 1: Update core product details (ONLY valid fields)
-        console.log("Step 1: Updating core details (title, tags, status)...");
+        // Step 1: Update core product details (including the now-present status)
+        console.log(`Step 1: Updating core details with status: ${product.status}`);
         await updateProduct(productId, {
             title: product.title,
             tags: product.tags,
-            status: product.status, // THE FIX: Add the status field
+            status: product.status, // This will now correctly pass the status
         });
 
         // Step 2: Update the description using its separate metafield mutation
