@@ -6,7 +6,21 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { Part } from 'genkit';
+
+// Helper to convert a Data URL string into a Genkit Part object
+function dataUrlToPart(dataUrl: string): Part {
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid data URL format for generative part.');
+    }
+    return {
+        inlineData: {
+            mimeType: match[1],
+            data: match[2]
+        }
+    };
+}
 
 const ComposeWithGallerySchema = z.object({
   candleImage1: z.string().describe('The primary user-uploaded candle image as a data URI'),
@@ -18,20 +32,20 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   {
     name: 'composeWithGalleryBackgroundFlow',
     inputSchema: ComposeWithGallerySchema,
-    outputSchema: z.string(),
+    outputSchema: z.custom<Part>(),
   },
   async ({ candleImage1, candleImage2, galleryImage }) => {
     
-    const redactData = (uri: string) => {
-      if (uri.length > 100) {
-        return `${uri.substring(0, 50)}...[REDACTED_LENGTH=${uri.length}]`;
+    const redactData = (part: Part) => {
+      if (part.inlineData?.data?.length > 100) {
+        return `${part.inlineData.data.substring(0, 50)}...[REDACTED_LENGTH=${part.inlineData.data.length}]`;
       }
-      return uri;
+      return part;
     };
 
     try {
       const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'gemini-2.5-flash-image-preview' : 'imagen-3';
+      const modelName = useGemini ? 'googleai/gemini-2-flash-image-preview' : 'googleai/imagen-3';
       console.log(`[Compose Flow] Using image model: ${modelName}`);
 
       console.log('[Compose Flow] Starting composition with gallery background...');
@@ -47,12 +61,15 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
-      const promptParts = [];
-      promptParts.push({ text: composePrompt });
-      promptParts.push({ media: { url: galleryImage } });
-      promptParts.push({ media: { url: candleImage1 } });
+      // Convert data URIs to Parts inside the flow
+      const galleryImagePart = dataUrlToPart(galleryImage);
+      const candleImage1Part = dataUrlToPart(candleImage1);
+
+      const context: Part[] = [galleryImagePart, candleImage1Part];
 
       if (candleImage2) {
+        const candleImage2Part = dataUrlToPart(candleImage2);
+        context.push(candleImage2Part);
         composePrompt = `
           Your task is to perform a photorealistic composition.
           You will be given three images: a background, a primary product image, and a secondary product image for reference.
@@ -63,18 +80,17 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
           **Output only the final, composed image containing the primary product.**
           **Do not include any text, commentary, markdown, or any other content besides the image itself.**
         `;
-        // Overwrite the prompt and add the third image
-        promptParts[0] = { text: composePrompt };
-        promptParts.push({ media: { url: candleImage2 } });
       }
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify(promptParts.map(p => p.text ? p : { media: { url: redactData(p.media.url) } }), null, 2));
+      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImagePart), candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined }, null, 2));
 
       const finalImageResponse = await ai.generate({
-        prompt: promptParts,
-        model: googleAI.model(modelName),
-        output: { format: 'media' },
+        prompt: composePrompt,
+        model: modelName,
+        context: context,
       });
+
+      console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
       
       const finalImagePart = finalImageResponse.media;
       
@@ -87,7 +103,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] SUCCESS: Final image composed.');
 
-      return finalImagePart.url;
+      return finalImagePart;
     } catch (error: any) {
       console.error("[Compose Flow Error]", error);
       throw new Error(`AI Composition Flow Failed: ${error.message}`);
