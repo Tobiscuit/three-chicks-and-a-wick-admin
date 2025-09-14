@@ -153,11 +153,14 @@ const GET_PRODUCT_BY_ID_QUERY = `
       title
       handle
       status
-      description
       productType
       tags
       totalInventory
       onlineStoreUrl
+      # This is the new part that fetches our custom description
+      description: metafield(namespace: "custom", key: "description") {
+        value
+      }
       featuredImage {
         url(transform: {maxWidth: 1024, maxHeight: 1024})
       }
@@ -199,12 +202,24 @@ const GET_PRODUCT_BY_ID_QUERY = `
 `;
 
 type GetProductByIdResponse = {
-    product: ShopifyProduct | null;
+    // The shape of the response changes slightly because of the metafield
+    product: {
+        description: { value: string } | null;
+    } & Omit<ShopifyProduct, 'description'> | null;
 };
 
 export async function getProductById(id: string): Promise<ShopifyProduct | null> {
     const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
-    return response.product;
+    if (!response.product) return null;
+
+    // We need to reshape the product object to match our expected ShopifyProduct type
+    const { description: descriptionMetafield, ...restOfProduct } = response.product;
+    const product: ShopifyProduct = {
+        ...restOfProduct,
+        description: descriptionMetafield?.value || "", // Extract the value from the metafield
+    };
+    
+    return product;
 }
 
 
