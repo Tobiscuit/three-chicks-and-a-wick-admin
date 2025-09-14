@@ -38,6 +38,7 @@ import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
 import { resolveProductPrefillImage, resolveAiGeneratedProductAction } from "@/app/actions";
+import { resolveAiDraftAction } from "@/app/actions";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -121,7 +122,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     defaultValues,
   });
   
-  const { setValue, getValues, formState } = form;
+  const { setValue, getValues, formState, reset } = form;
   // Prefill image by token (from Image Studio)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -147,39 +148,55 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   // Prefill form with AI generated data
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('ai-token');
-    if (!token || isEditMode) return;
+    const searchParams = new URLSearchParams(window.location.search);
+    console.log("--- [AI PREFILL] Effect triggered ---");
+    const token = searchParams.get('draftToken');
+    console.log(`[AI PREFILL] Found draftToken: ${token}`);
 
-    if (hasFetchedAiData.current) return; // Prevent multiple fetches
+    if (!token || isEditMode || hasFetchedAiData.current) {
+      console.log(`[AI PREFILL] Bailing out. Conditions: token=${!!token}, isEditMode=${isEditMode}, hasFetched=${hasFetchedAiData.current}`);
+      return;
+    }
 
     (async () => {
         try {
-            hasFetchedAiData.current = true; // Set flag immediately
+            hasFetchedAiData.current = true; // Prevent multiple fetches
             toast({ id: 'prefill-toast', title: "🪄 Loading AI Content..." });
-            const response = await resolveAiGeneratedProductAction(token);
+            
+            console.log(`[AI PREFILL] Calling resolveAiDraftAction with token...`);
+            const res = await resolveAiDraftAction(token);
+            console.log("[AI PREFILL] Received response from action:", res);
 
-            if (response.success && response.data) {
-                const { title, body_html, tags, sku, price, quantity, imageUrl } = response.data;
+            if (res.success && res.data) {
+                const { title, body_html, tags, sku, price, quantity, imageUrl } = res.data;
+                console.log("[AI PREFILL] Data successfully destructured:", { title, sku, price, quantity });
                 
                 // Prefill text and quantity fields
-                form.reset({
-                    title: title,
+                reset({
+                    ...defaultValues,
+                    title,
                     description: body_html,
-                    price: price,
-                    sku: sku,
-                    tags: tags,
+                    price,
+                    sku,
+                    tags,
                     inventory: quantity,
-                    status: "DRAFT", // Always default AI products to Draft
+                    status: "DRAFT",
                 });
+                console.log("[AI PREFILL] form.reset() called.");
                 
                 // Fetch the temporary image, convert it to a File, and set it in the form
-                const imageFetchResponse = await fetch(imageUrl);
-                const blob = await imageFetchResponse.blob();
+                console.log(`[AI PREFILL] Fetching image from URL: ${imageUrl}`);
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
+                console.log("[AI PREFILL] Image converted to File object:", file);
                 
+                // This mimics the manual upload flow
                 const reader = new FileReader();
-                reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result as string]);
+                reader.onloadend = () => {
+                  console.log("[AI PREFILL] FileReader finished. Setting image preview.");
+                  setImagePreviews(prev => [...prev, reader.result as string]);
+                }
                 reader.readAsDataURL(file);
 
                 toast.update('prefill-toast', { title: "✅ AI Content Loaded!", description: "Review and save your new product." });
@@ -187,10 +204,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 // Clean the URL
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
+                console.log(`[AI PREFILL] URL cleaned. Pre-fill process complete.`);
             } else {
-                throw new Error(response.error || "Could not load AI content.");
+                throw new Error(res.error || "Could not load AI content.");
             }
         } catch (error: any) {
+            console.error("[AI PREFILL] Error caught:", error);
             toast.update('prefill-toast', {
                 variant: "destructive",
                 title: "❌ Error Loading AI Content",
@@ -198,7 +217,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             });
         }
     })();
-  }, [isEditMode, form, toast]);
+  }, [isEditMode, reset, defaultValues, toast]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
