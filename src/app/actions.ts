@@ -152,17 +152,44 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
         const galleryImageMimeType = response.headers.get('content-type') || 'image/webp';
         const galleryImageDataUrl = `data:${galleryImageMimeType};base64,${galleryImageBuffer.toString('base64')}`;
 
-        const imageDataUrl = await composeWithGalleryBackgroundFlow({
-            candleImage1: angle1,
-            candleImage2: angle2,
+        const angle1MimeType = angle1.match(/data:(.*);base64/)?.[1] || 'image/webp';
+        const angle1Base64 = angle1.split(',')[1];
+        if (!angle1Base64) {
+            return { error: 'Invalid primary image data.' };
+        }
+
+        const angle1Part = {
+          inlineData: {
+            data: angle1Base64,
+            mimeType: angle1MimeType,
+          }
+        };
+
+        let angle2Part: Part | undefined = undefined;
+        if (angle2) {
+          const angle2MimeType = angle2.match(/data:(.*);base64/)?.[1] || 'image/webp';
+          const angle2Base64 = angle2.split(',')[1];
+          if (angle2Base64) {
+            angle2Part = {
+              inlineData: {
+                data: angle2Base64,
+                mimeType: angle2MimeType,
+              }
+            };
+          }
+        }
+
+        const resultPart = await composeWithGalleryBackgroundFlow({
+            candleImage1: angle1Part,
+            candleImage2: angle2Part,
             galleryImage: galleryImageDataUrl,
         });
 
-        if (!imageDataUrl) {
+        if (!resultPart?.inlineData) {
             return { error: 'The AI did not return a valid composite image.' };
         }
 
-        const result = { imageDataUri: imageDataUrl };
+        const result = { imageDataUri: resultPart.inlineData.data };
         console.log('[composeWithGalleryAction] Returning success object with image data URI.');
         return result;
 
