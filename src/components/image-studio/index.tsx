@@ -225,7 +225,7 @@ export function ImageStudio() {
             return reject(new Error('Could not get canvas context'));
           }
           ctx.drawImage(image, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/webp', quality);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
           resolve(dataUrl);
         };
         image.onerror = reject;

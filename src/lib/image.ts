@@ -16,11 +16,11 @@ export async function toWebpAndResize(
   ctx.drawImage(bitmap, 0, 0, targetW, targetH);
 
   const blob: Blob = await new Promise((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/webp', quality);
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', quality);
   });
 
-  const safeName = file.name.replace(/\.[^.]+$/, '.webp');
-  return new File([blob], safeName, { type: 'image/webp' });
+  const safeName = file.name.replace(/\.[^.]+$/, '.jpg');
+  return new File([blob], safeName, { type: 'image/jpeg' });
 }
 
 

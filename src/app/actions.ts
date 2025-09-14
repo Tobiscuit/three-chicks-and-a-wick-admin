@@ -154,7 +154,7 @@ async function firebaseUrlToDataUrl(url: string): Promise<string> {
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         
         // Determine MIME type from response headers or URL
-        const contentType = response.headers.get('content-type') || 'image/webp';
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
         
         return `data:${contentType};base64,${base64}`;
     } catch (error) {
@@ -208,7 +208,7 @@ export async function stashProductPrefillImage(dataUri: string): Promise<Prefill
     }
     const [meta, base64] = dataUri.split(',');
     const mimeMatch = /data:(.*?);base64/.exec(meta || '');
-    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const mimeType = mimeMatch?.[1] || 'image/jpeg';
     const ext = mimeType.split('/')[1] || 'webp';
     const token = uuidv4();
     const fileName = `prefill-product-images/${token}.${ext}`;
@@ -411,7 +411,7 @@ export async function generateProductFromImageAction(
         const imagePart = {
             inlineData: {
                 data: base64Data,
-                mimeType: 'image/webp'
+                mimeType: 'image/jpeg'
             }
         };
 
@@ -485,7 +485,7 @@ export async function stashAiGeneratedProductAction(
         const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
         
         await bucket.file(fileName).save(imageBuffer, {
-            metadata: { contentType: 'image/webp' },
+            metadata: { contentType: 'image/jpeg' },
             public: true,
         });
         const publicImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
@@ -558,7 +558,7 @@ async function uploadImageToFirebase(imageDataUrl: string, token: string): Promi
     const fileName = `product-images/${token}-upload.webp`;
     const [meta, base64] = imageDataUrl.split(',');
     const mimeMatch = /data:(.*?);base64/.exec(meta || '');
-    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const mimeType = mimeMatch?.[1] || 'image/jpeg';
     const buffer = Buffer.from(base64, 'base64');
 
     await bucket.file(fileName).save(buffer, {
