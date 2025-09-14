@@ -102,37 +102,16 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImagePart), candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined }, null, 2));
 
-      // Define the structured data payload with explicit roles
-      const payload: {
-        prompt: string;
-        background: Part;
-        product: Part;
-        product_reference?: Part; // Optional reference image
-      } = {
-        prompt: composePrompt,
-        background: galleryImagePart,
-        product: candleImage1Part,
-      };
-
-      // Add the optional second image if it exists
-      if (candleImage2) {
-        const candleImage2Part = dataUrlToPart(candleImage2);
-        payload.product_reference = candleImage2Part;
-      }
-
-      console.log('[Compose Flow] About to call ai.generate with structured payload.');
-      console.log('[Compose Flow] Payload structure:', {
-        hasPrompt: !!payload.prompt,
-        hasBackground: !!payload.background,
-        hasProduct: !!payload.product,
-        hasProductReference: !!payload.product_reference
-      });
+      console.log('[Compose Flow] About to call ai.generate with simple prompt structure.');
+      console.log('[Compose Flow] Context array length:', context.length);
+      console.log('[Compose Flow] Context MIME types:', context.map(part => part.inlineData?.mimeType));
       
       const finalImageResponse = await ai.generate({
         model: modelName,
-        prompt: [{
-          data: payload // Pass the entire structured payload as a 'data' part
-        }],
+        prompt: [
+          { text: composePrompt },
+          ...context
+        ],
       });
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
