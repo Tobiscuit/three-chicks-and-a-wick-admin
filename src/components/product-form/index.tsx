@@ -170,31 +170,33 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 const { title, body_html, tags, sku, price, quantity, publicImageUrl } = res.data;
                 console.log("[AI PREFILL] Data successfully destructured:", { title, sku, price, quantity });
                 
-                // Prefill text and quantity fields
-                reset({
-                    ...defaultValues,
-                    title,
-                    description: body_html,
-                    price,
-                    sku,
-                    tags,
-                    inventory: quantity,
-                    status: "DRAFT",
-                });
-                console.log("[AI PREFILL] form.reset() called.");
-                
-                // Fetch the temporary image, convert it to a File, and set it in the form
+                // --- FIX 1: ENABLE SAVE BUTTON ---
+                // Use setValue to populate fields and mark the form as dirty
+                setValue('title', title, { shouldDirty: true });
+                setValue('description', body_html, { shouldDirty: true });
+                setValue('price', String(price), { shouldDirty: true });
+                setValue('sku', sku, { shouldDirty: true });
+                setValue('tags', tags, { shouldDirty: true });
+                setValue('inventory', quantity, { shouldDirty: true });
+                setValue('status', 'DRAFT', { shouldDirty: true });
+
+                // --- FIX 2: SAVE THE IMAGE CORRECTLY ---
+                // Fetch the image, convert it to a data URL, then upload it to get a public URL for Shopify
                 console.log(`[AI PREFILL] Fetching image from URL: ${publicImageUrl}`);
                 const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
                 console.log("[AI PREFILL] Image converted to File object:", file);
                 
-                // This mimics the manual upload flow
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                  console.log("[AI PREFILL] FileReader finished. Setting image preview.");
-                  setImagePreviews(prev => [...prev, reader.result as string]);
+                reader.onloadend = async () => {
+                  const dataUrl = reader.result as string;
+                  // Upload the data URL to get a public URL that Shopify can use
+                  const finalPublicUrl = await uploadImageAction(dataUrl);
+                  if (finalPublicUrl) {
+                    // Set the public URL in the preview state, which is used for saving
+                    setImagePreviews(prev => [finalPublicUrl, ...prev]);
+                  }
                 }
                 reader.readAsDataURL(file);
 
@@ -216,7 +218,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             });
         }
     })();
-  }, [isEditMode, reset, defaultValues, toast]);
+  }, [isEditMode, setValue, defaultValues, toast]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
