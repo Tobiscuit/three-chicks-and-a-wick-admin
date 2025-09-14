@@ -1,11 +1,6 @@
-
 'use server';
 /**
  * @fileOverview Generates custom backgrounds for candle photos using text prompts.
- *
- * - generateCustomCandleBackground - A function that handles the background generation process.
- * - GenerateCustomCandleBackgroundInput - The input type for the generateCustomCandleBackground function.
- * - GenerateCustomCandleBackgroundOutput - The return type for the generateCustomCandleBackground function.
  */
 
 import { z } from 'zod';
@@ -64,7 +59,6 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const bgImagePart = bgImageResponse.media;
 
       if (!bgImagePart?.url) {
-        // Handle error if media is not returned
         throw new Error('Could not generate background image. AI response did not contain media.');
       }
 
@@ -95,7 +89,6 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const finalImagePart = finalImageResponse.media();
 
       if (!finalImagePart) {
-        // Handle error if media is not returned
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
 
@@ -108,5 +101,3 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     }
   }
 );
-
-    
