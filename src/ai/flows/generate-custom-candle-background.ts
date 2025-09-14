@@ -48,8 +48,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     };
 
     try {
-      const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'vertexai/gemini-2.5-flash-image-preview' : 'vertexai/imagen-3';
+      const modelName = 'googleai/gemini-2.5-flash-image-preview';
       console.log(`[Flow] Using image model: ${modelName}`);
 
       console.log('[Flow] Step 1: Generating background...');
@@ -90,37 +89,32 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined, bgImagePart: redactData(bgImageFinalPart) }, null, 2));
 
-      // Define the structured data payload with explicit roles
-      const payload: {
-        prompt: string;
-        background: Part;
-        product: Part;
-        product_reference?: Part; // Optional reference image
-      } = {
-        prompt: composePrompt,
-        background: bgImageFinalPart,
-        product: candleImage1Part,
-      };
+      // Build the prompt array with the new URL-based syntax
+      const prompt = [
+        { text: composePrompt },
+        { media: { url: bgImageFinal } }, // Pass the full data URL string
+        { media: { url: candleImage1 } }, // Pass the full data URL string
+      ];
 
-      // Add the optional second image if it exists
       if (candleImage2) {
-        const candleImage2Part = dataUrlToPart(candleImage2);
-        payload.product_reference = candleImage2Part;
+        prompt.push({ media: { url: candleImage2 } }); // Add the optional image
       }
 
-      console.log('[Flow] About to call ai.generate with structured payload.');
-      console.log('[Flow] Payload structure:', {
-        hasPrompt: !!payload.prompt,
-        hasBackground: !!payload.background,
-        hasProduct: !!payload.product,
-        hasProductReference: !!payload.product_reference
+      console.log('[Flow] About to call ai.generate with URL-based media parts.');
+      console.log('[Flow] Prompt structure:', {
+        textPrompt: !!prompt[0].text,
+        mediaCount: prompt.filter(p => p.media).length,
+        backgroundImage: bgImageFinal.substring(0, 50) + '...',
+        candleImage1: candleImage1.substring(0, 50) + '...',
+        candleImage2: candleImage2 ? candleImage2.substring(0, 50) + '...' : 'none'
       });
       
       const finalImageResponse = await ai.generate({
         model: modelName,
-        prompt: [{
-          data: payload // Pass the entire structured payload as a 'data' part
-        }],
+        prompt: prompt,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
       });
 
       // Extract media from the nested response structure

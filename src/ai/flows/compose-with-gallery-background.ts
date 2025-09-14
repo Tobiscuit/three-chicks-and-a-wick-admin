@@ -49,8 +49,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
     };
 
     try {
-      const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'vertexai/gemini-2.5-flash-image-preview' : 'vertexai/imagen-3';
+      const modelName = 'googleai/gemini-2.5-flash-image-preview';
       console.log(`[Compose Flow] Using image model: ${modelName}`);
 
       console.log('[Compose Flow] Starting composition with gallery background...');
@@ -66,20 +65,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
-      // Convert data URIs to Parts inside the flow
-      console.log('[Compose Flow] Converting data URLs to Parts...');
-      console.log('[Compose Flow] galleryImage type:', typeof galleryImage, 'length:', galleryImage?.length);
-      console.log('[Compose Flow] candleImage1 type:', typeof candleImage1, 'length:', candleImage1?.length);
-      console.log('[Compose Flow] candleImage2 type:', typeof candleImage2, 'length:', candleImage2?.length);
-      
-      const galleryImagePart = dataUrlToPart(galleryImage);
-      const candleImage1Part = dataUrlToPart(candleImage1);
-
-      const context: Part[] = [galleryImagePart, candleImage1Part];
-
       if (candleImage2) {
-        const candleImage2Part = dataUrlToPart(candleImage2);
-        context.push(candleImage2Part);
         composePrompt = `
           Your task is to perform a photorealistic composition.
           You will be given three images: a background, a primary product image, and a secondary product image for reference.
@@ -92,26 +78,32 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         `;
       }
 
-      console.log('[Compose Flow] Context array length:', context.length);
-      console.log('[Compose Flow] Context array items:', context.map((part, index) => ({
-        index,
-        hasInlineData: !!part.inlineData,
-        mimeType: part.inlineData?.mimeType,
-        dataLength: part.inlineData?.data?.length
-      })));
+      // Build the prompt array with the new URL-based syntax
+      const prompt = [
+        { text: composePrompt },
+        { media: { url: galleryImage } }, // Pass the full data URL string
+        { media: { url: candleImage1 } }, // Pass the full data URL string
+      ];
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImagePart), candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined }, null, 2));
+      if (candleImage2) {
+        prompt.push({ media: { url: candleImage2 } }); // Add the optional image
+      }
 
-      console.log('[Compose Flow] About to call ai.generate with simple prompt structure.');
-      console.log('[Compose Flow] Context array length:', context.length);
-      console.log('[Compose Flow] Context MIME types:', context.map(part => part.inlineData?.mimeType));
+      console.log('[Compose Flow] Calling ai.generate with URL-based media parts.');
+      console.log('[Compose Flow] Prompt structure:', {
+        textPrompt: !!prompt[0].text,
+        mediaCount: prompt.filter(p => p.media).length,
+        galleryImage: galleryImage.substring(0, 50) + '...',
+        candleImage1: candleImage1.substring(0, 50) + '...',
+        candleImage2: candleImage2 ? candleImage2.substring(0, 50) + '...' : 'none'
+      });
       
       const finalImageResponse = await ai.generate({
         model: modelName,
-        prompt: [
-          { text: composePrompt },
-          ...context
-        ],
+        prompt: prompt,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
       });
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
