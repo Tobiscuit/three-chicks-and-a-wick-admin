@@ -92,8 +92,19 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         `;
       }
 
+      console.log('[Compose Flow] Context array length:', context.length);
+      console.log('[Compose Flow] Context array items:', context.map((part, index) => ({
+        index,
+        hasInlineData: !!part.inlineData,
+        mimeType: part.inlineData?.mimeType,
+        dataLength: part.inlineData?.data?.length
+      })));
+
       console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImagePart), candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined }, null, 2));
 
+      console.log('[Compose Flow] About to call ai.generate with context:', context.length, 'items');
+      console.log('[Compose Flow] Context items before map:', context.map((part, i) => ({ index: i, part: !!part, inlineData: !!part?.inlineData })));
+      
       const finalImageResponse = await ai.generate({
         model: modelName,
         prompt: [
