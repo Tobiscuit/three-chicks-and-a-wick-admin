@@ -90,12 +90,37 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined, bgImagePart: redactData(bgImageFinalPart) }, null, 2));
 
+      // Define the structured data payload with explicit roles
+      const payload: {
+        prompt: string;
+        background: Part;
+        product: Part;
+        product_reference?: Part; // Optional reference image
+      } = {
+        prompt: composePrompt,
+        background: bgImageFinalPart,
+        product: candleImage1Part,
+      };
+
+      // Add the optional second image if it exists
+      if (candleImage2) {
+        const candleImage2Part = dataUrlToPart(candleImage2);
+        payload.product_reference = candleImage2Part;
+      }
+
+      console.log('[Flow] About to call ai.generate with structured payload.');
+      console.log('[Flow] Payload structure:', {
+        hasPrompt: !!payload.prompt,
+        hasBackground: !!payload.background,
+        hasProduct: !!payload.product,
+        hasProductReference: !!payload.product_reference
+      });
+      
       const finalImageResponse = await ai.generate({
         model: modelName,
-        prompt: [
-          { text: composePrompt },
-          ...context
-        ],
+        prompt: [{
+          data: payload // Pass the entire structured payload as a 'data' part
+        }],
       });
 
       // Extract media from the nested response structure
