@@ -10,8 +10,13 @@ import { Part } from 'genkit';
 
 // Helper to convert a Data URL string into a Genkit Part object
 function dataUrlToPart(dataUrl: string): Part {
+    if (!dataUrl || typeof dataUrl !== 'string') {
+        throw new Error('Invalid data URL: dataUrl is undefined or not a string');
+    }
+    
     const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
     if (!match) {
+        console.error('Invalid data URL format:', dataUrl.substring(0, 100) + '...');
         throw new Error('Invalid data URL format for generative part.');
     }
     return {
@@ -62,6 +67,11 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
       `;
 
       // Convert data URIs to Parts inside the flow
+      console.log('[Compose Flow] Converting data URLs to Parts...');
+      console.log('[Compose Flow] galleryImage type:', typeof galleryImage, 'length:', galleryImage?.length);
+      console.log('[Compose Flow] candleImage1 type:', typeof candleImage1, 'length:', candleImage1?.length);
+      console.log('[Compose Flow] candleImage2 type:', typeof candleImage2, 'length:', candleImage2?.length);
+      
       const galleryImagePart = dataUrlToPart(galleryImage);
       const candleImage1Part = dataUrlToPart(candleImage1);
 
