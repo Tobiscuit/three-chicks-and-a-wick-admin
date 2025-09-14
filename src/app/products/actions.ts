@@ -9,6 +9,7 @@ import {
     createProduct,
     updateProduct,
     deleteProduct,
+    getPrimaryLocationId,
     quickUpdateInventory,
 } from '@/services/shopify';
 import { adminDb } from '@/lib/firebase-admin';
