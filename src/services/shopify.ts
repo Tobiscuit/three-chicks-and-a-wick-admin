@@ -405,32 +405,57 @@ export async function createProduct(productData: ProductData) {
   return { product: { id: productId } };
 }
 
-export async function updateProduct(productId: string, productInput: any) {
+export async function updateProduct(productId: string, productInput: { title?: string, tags?: string, status?: string }) {
     const updateProductMutation = `
         mutation productUpdate($input: ProductInput!) {
             productUpdate(input: $input) {
-                product {
-                    id
-                }
-                userErrors {
-                    field
-                    message
-                }
+                product { id }
+                userErrors { field message }
             }
         }
     `;
     
-    // For now, we only support updating core fields, not variants or images in this simplified flow
-    const { variants, images, ...coreInput } = productInput;
-    coreInput.id = productId;
+    // This input object now ONLY contains fields valid for the productUpdate mutation
+    const validProductInput = {
+        id: productId,
+        ...productInput
+    };
 
-    const result = await fetchShopify<any>(updateProductMutation, { input: coreInput });
+    const result = await fetchShopify<any>(updateProductMutation, { input: validProductInput });
     const userErrors = result.productUpdate.userErrors;
 
      if (userErrors && userErrors.length > 0) {
         throw new Error(`Product update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
     }
     
+    return result;
+}
+
+export async function updateProductDescription(productId: string, description: string) {
+    const setMetafieldMutation = `
+        mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+                metafields { id }
+                userErrors { field message }
+            }
+        }
+    `;
+    const result = await fetchShopify<any>(setMetafieldMutation, {
+        metafields: [{
+            ownerId: productId,
+            namespace: "custom",
+            key: "description",
+            type: "multi_line_text_field",
+            value: description
+        }]
+    });
+    const userErrors = result.metafieldsSet.userErrors;
+
+    if (userErrors && userErrors.length > 0) {
+        console.warn(`Metafield update failed: ${JSON.stringify(userErrors)}`);
+        throw new Error(`Description update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
+    }
+
     return result;
 }
 

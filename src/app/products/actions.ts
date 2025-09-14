@@ -8,6 +8,7 @@ import { z } from 'zod';
 import {
     createProduct,
     updateProduct,
+    updateProductDescription,
     deleteProduct,
     getPrimaryLocationId,
     updateInventoryQuantity,
@@ -51,33 +52,38 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
 
 export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
-        // Note: A full update would require a multi-step process similar to create.
-        // This is a simplified version for core details only.
         const product = productSchema.parse(formData);
-        if (!product.id) {
+        const productId = product.id;
+        if (!productId) {
             throw new Error('Product ID is required for updates.');
         }
 
-        const locationId = await getPrimaryLocationId();
-        if (!locationId) {
-            throw new Error("Could not determine primary location for inventory update.");
-        }
+        console.log("--- Starting Multi-Step Product Update ---");
 
-        if (product.inventoryItemId && typeof product.inventory === 'number') {
-            await updateInventoryQuantity(product.inventoryItemId, product.inventory, locationId);
-        }
-
-        console.log("--- Updating Product ---");
-        console.log("Description being sent to Shopify service:", product.description);
-        
-        const result = await updateProduct(product.id, {
+        // Step 1: Update core product details (ONLY valid fields)
+        console.log("Step 1: Updating core details (title, tags, status)...");
+        await updateProduct(productId, {
             title: product.title,
             tags: product.tags,
-            description: product.description, // Include description in the update
+            // You may need to add 'status: product.status' here if you want to update status
         });
 
-        // Update Firestore for real-time UI
+        // Step 2: Update the description using its separate metafield mutation
+        if (product.description) {
+            console.log("Step 2: Updating description via metafield...");
+            await updateProductDescription(productId, product.description);
+        }
+
+        // Step 3: Update inventory (this logic was already correct)
         if (product.inventoryItemId && typeof product.inventory === 'number') {
+            console.log("Step 3: Updating inventory...");
+            const locationId = await getPrimaryLocationId();
+            if (!locationId) {
+                throw new Error("Could not determine primary location for inventory update.");
+            }
+            await updateInventoryQuantity(product.inventoryItemId, product.inventory, locationId);
+            
+            // Also update Firestore for real-time UI
             const docId = encodeShopifyId(product.inventoryItemId);
             await adminDb.collection('inventoryStatus').doc(docId).set({
                 quantity: product.inventory,
@@ -86,8 +92,11 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
             }, { merge: true });
         }
 
+        // Note: Logic for updating price, SKU, images would go here as additional steps if needed.
+
+        console.log("--- Product Update Successful ---");
         revalidatePath('/products');
-        return { success: true, product: result };
+        return { success: true };
     } catch (error) {
         console.error('Error updating product:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
