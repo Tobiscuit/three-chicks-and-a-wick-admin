@@ -100,7 +100,6 @@ type GenerateImageInput = {
   background: string;
   angle1: string; // data URL
   angle2?: string; // data URL
-  context?: string;
 }
 
 export async function generateImageAction(input: GenerateImageInput): Promise<{ imageDataUri?: string; error?: string }> {
@@ -111,19 +110,24 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
             return { error: validated.error.errors.map(e => e.message).join(', ') };
         }
 
-        const { background, angle1, angle2 } = validated.data;
+        const { background, angle1, angle2, context } = validated.data;
 
-        const resultPart = await generateCustomCandleBackgroundFlow({
+        const imageDataUrl = await generateCustomCandleBackgroundFlow({
             background: background,
             candleImage1: angle1,
             candleImage2: angle2,
         });
 
-        if (!resultPart?.inlineData) {
+        if (!imageDataUrl) {
             return { error: 'The AI did not return a valid image.' };
         }
 
-        return { imageDataUri: resultPart.inlineData.data };
+        const resultPart = dataUrlToPart(imageDataUrl);
+        if (!resultPart?.inlineData) {
+          return { error: 'The AI did not return a valid image.'}
+        }
+
+        return { imageDataUri: `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}` };
     } catch (error: any) {
         console.error("[generateImageAction Error]", error);
         if (error.message.includes('500') || error.message.includes('503')) {
@@ -143,26 +147,22 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
     try {
         const { galleryBackgroundUrl, angle1, angle2 } = input;
 
-        // Fetch the gallery image data
-        const response = await fetch(galleryBackgroundUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch gallery image. Status: ${response.status}`);
-        }
-        const galleryImageBuffer = Buffer.from(await response.arrayBuffer());
-        const galleryImageMimeType = response.headers.get('content-type') || 'image/webp';
-        const galleryImageDataUrl = `data:${galleryImageMimeType};base64,${galleryImageBuffer.toString('base64')}`;
-
-        const resultPart = await composeWithGalleryBackgroundFlow({
+        const imageDataUrl = await composeWithGalleryBackgroundFlow({
             candleImage1: angle1,
             candleImage2: angle2,
-            galleryImage: galleryImageDataUrl,
+            galleryImage: galleryBackgroundUrl,
         });
 
-        if (!resultPart?.inlineData) {
+        if (!imageDataUrl) {
             return { error: 'The AI did not return a valid composite image.' };
         }
+        
+        const resultPart = dataUrlToPart(imageDataUrl);
+        if (!resultPart?.inlineData) {
+          return { error: 'The AI did not return a valid composite image.'}
+        }
 
-        const result = { imageDataUri: resultPart.inlineData.data };
+        const result = { imageDataUri: `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}` };
         console.log('[composeWithGalleryAction] Returning success object with image data URI.');
         return result;
 
@@ -552,3 +552,4 @@ const imageGenSchema = z.object({
     angle2: z.string().optional(),
     context: z.string().optional(),
 });
+
