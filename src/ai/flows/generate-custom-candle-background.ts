@@ -56,7 +56,8 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
         output: { format: 'media' },
       });
 
-      const bgImagePart = bgImageResponse.media;
+      // Extract media from the nested response structure
+      const bgImagePart = bgImageResponse.message?.content?.[0]?.media;
 
       if (!bgImagePart?.url) {
         throw new Error('Could not generate background image. AI response did not contain media.');
@@ -86,9 +87,10 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
         context: context,
       });
 
-      const finalImagePart = finalImageResponse.media();
+      // Extract media from the nested response structure
+      const finalImagePart = finalImageResponse.message?.content?.[0]?.media;
 
-      if (!finalImagePart) {
+      if (!finalImagePart?.url) {
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
 
