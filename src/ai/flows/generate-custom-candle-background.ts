@@ -94,7 +94,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
         model: modelName,
         prompt: [
           { text: composePrompt },
-          ...context.map(part => ({ media: part }))
+          ...context
         ],
       });
 
