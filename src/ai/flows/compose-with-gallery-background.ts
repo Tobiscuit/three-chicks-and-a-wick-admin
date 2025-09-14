@@ -85,9 +85,11 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
       console.log('[Compose Flow] Input Parts for composition:', JSON.stringify({ galleryImage: redactData(galleryImagePart), candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined }, null, 2));
 
       const finalImageResponse = await ai.generate({
-        prompt: composePrompt,
         model: modelName,
-        context: context,
+        prompt: [
+          { text: composePrompt },
+          ...context.map(part => ({ media: part }))
+        ],
       });
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
