@@ -10,6 +10,7 @@ import {
     updateProduct,
     deleteProduct,
     getPrimaryLocationId,
+    updateInventoryQuantity,
     quickUpdateInventory,
 } from '@/services/shopify';
 import { adminDb } from '@/lib/firebase-admin';
@@ -66,10 +67,13 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
             await updateInventoryQuantity(product.inventoryItemId, product.inventory, locationId);
         }
 
+        console.log("--- Updating Product ---");
+        console.log("Description being sent to Shopify service:", product.description);
+        
         const result = await updateProduct(product.id, {
             title: product.title,
             tags: product.tags,
-            // description is now a metafield and needs to be updated separately.
+            description: product.description, // Include description in the update
         });
 
         // Update Firestore for real-time UI
