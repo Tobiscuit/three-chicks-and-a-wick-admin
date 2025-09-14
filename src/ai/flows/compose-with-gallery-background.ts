@@ -92,7 +92,8 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
       
-      const finalImagePart = finalImageResponse.media;
+      // Extract media from the nested response structure
+      const finalImagePart = finalImageResponse.message?.content?.[0]?.media;
       
       if (!finalImagePart?.url) {
         console.error('[Compose Flow] Failed to extract media from final image response.');
