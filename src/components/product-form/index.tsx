@@ -134,7 +134,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         if (!res.success || !res.url) return;
         const response = await fetch(res.url);
         const blob = await response.blob();
-        const rawFile = new File([blob], `prefill-${Date.now()}.webp`, { type: blob.type || 'image/webp' });
+        const rawFile = new File([blob], `prefill-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
         console.log('[ProductForm prefill] original bytes:', rawFile.size);
         const optimized = await toWebpAndResize(rawFile, 1600, 0.82);
         console.log('[ProductForm prefill] optimized bytes:', optimized.size);
@@ -188,7 +188,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 console.log(`[AI PREFILL] Fetching image from URL: ${imageUrl}`);
                 const response = await fetch(imageUrl);
                 const blob = await response.blob();
-                const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
+                const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
                 console.log("[AI PREFILL] Image converted to File object:", file);
                 
                 // This mimics the manual upload flow
