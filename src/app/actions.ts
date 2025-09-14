@@ -543,7 +543,8 @@ export async function resolveAiGeneratedProductAction(
         // We destructure it out, since the form doesn't need it anyway.
         const { createdAt, ...rest } = data;
 
-        return rest;
+        // Wrap the successful data in a consistent object shape
+        return { success: true, data: rest };
     } catch (error: any) {
         console.error("[resolveAiGeneratedProductAction Error]", error);
         return { success: false, error: "Failed to resolve AI-generated product data." };

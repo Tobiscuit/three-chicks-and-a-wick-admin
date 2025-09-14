@@ -38,7 +38,6 @@ import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { toWebpAndResize } from "@/lib/image";
 import { resolveProductPrefillImage, resolveAiGeneratedProductAction } from "@/app/actions";
-import { resolveAiDraftAction } from "@/app/actions";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -163,12 +162,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             hasFetchedAiData.current = true; // Prevent multiple fetches
             toast({ id: 'prefill-toast', title: "🪄 Loading AI Content..." });
             
-            console.log(`[AI PREFILL] Calling resolveAiDraftAction with token...`);
-            const res = await resolveAiDraftAction(token);
+            console.log(`[AI PREFILL] Calling resolveAiGeneratedProductAction with token...`);
+            const res = await resolveAiGeneratedProductAction(token);
             console.log("[AI PREFILL] Received response from action:", res);
 
             if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, quantity, imageUrl } = res.data;
+                const { title, body_html, tags, sku, price, quantity, publicImageUrl } = res.data;
                 console.log("[AI PREFILL] Data successfully destructured:", { title, sku, price, quantity });
                 
                 // Prefill text and quantity fields
@@ -185,8 +184,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 console.log("[AI PREFILL] form.reset() called.");
                 
                 // Fetch the temporary image, convert it to a File, and set it in the form
-                console.log(`[AI PREFILL] Fetching image from URL: ${imageUrl}`);
-                const response = await fetch(imageUrl);
+                console.log(`[AI PREFILL] Fetching image from URL: ${publicImageUrl}`);
+                const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
                 console.log("[AI PREFILL] Image converted to File object:", file);
