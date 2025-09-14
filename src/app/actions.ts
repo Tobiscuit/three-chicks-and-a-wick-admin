@@ -180,12 +180,12 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
             return { error: 'The AI did not return a valid composite image.' };
         }
         
-        // The AI flow returns a Part object, so we need to extract the data URL from it
-        if (!imageDataUrl.inlineData) {
+        // The AI flow returns a Part object with a url property
+        if (!imageDataUrl.url) {
           return { error: 'The AI did not return a valid composite image.'}
         }
 
-        const result = { imageDataUri: `data:${imageDataUrl.inlineData.mimeType};base64,${imageDataUrl.inlineData.data}` };
+        const result = { imageDataUri: imageDataUrl.url };
         console.log('[composeWithGalleryAction] Returning success object with image data URI.');
         return result;
 
