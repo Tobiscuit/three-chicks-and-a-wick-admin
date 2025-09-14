@@ -150,13 +150,13 @@ async function firebaseUrlToDataUrl(url: string): Promise<string> {
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.statusText}`);
         }
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        
+        // Determine MIME type from response headers or URL
+        const contentType = response.headers.get('content-type') || 'image/webp';
+        
+        return `data:${contentType};base64,${base64}`;
     } catch (error) {
         console.error('Error converting Firebase URL to data URL:', error);
         throw new Error(`Failed to convert Firebase URL to data URL: ${error}`);
