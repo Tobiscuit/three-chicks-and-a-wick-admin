@@ -10,10 +10,13 @@ import { Part } from 'genkit';
 
 // Helper to convert a Data URL string into a Genkit Part object
 function dataUrlToPart(dataUrl: string): Part {
+    console.log('[dataUrlToPart] Input dataUrl:', dataUrl.substring(0, 100) + '...');
     const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
     if (!match) {
+        console.error('[dataUrlToPart] Failed to match data URL format. Full URL:', dataUrl);
         throw new Error('Invalid data URL format for generative part.');
     }
+    console.log('[dataUrlToPart] Successfully parsed data URL. MimeType:', match[1]);
     return {
         inlineData: {
             mimeType: match[1],
