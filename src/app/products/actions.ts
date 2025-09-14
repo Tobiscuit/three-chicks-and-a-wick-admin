@@ -53,6 +53,10 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
 export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
         const product = productSchema.parse(formData);
+        console.log("--- UPDATE ACTION (Server-Side) ---");
+        console.log("Status received by action:", product.status);
+        console.log("Full product data received:", product);
+        
         const productId = product.id;
         if (!productId) {
             throw new Error('Product ID is required for updates.');
@@ -65,7 +69,7 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
         await updateProduct(productId, {
             title: product.title,
             tags: product.tags,
-            // You may need to add 'status: product.status' here if you want to update status
+            status: product.status, // THE FIX: Add the status field
         });
 
         // Step 2: Update the description using its separate metafield mutation

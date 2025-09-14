@@ -302,6 +302,9 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   async function onSubmit(data: ProductFormValues) {
     setIsSubmitting(true);
+    console.log("--- FORM SUBMITTED (Client-Side) ---");
+    console.log("Status being sent from form:", data.status);
+    console.log("Full form data:", data);
 
     const formData = new FormData();
     if (isEditMode && initialData) {
