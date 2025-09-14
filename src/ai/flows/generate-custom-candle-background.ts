@@ -91,8 +91,8 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       // Extract media from the nested response structure
       // The media might be at content[0] or content[1], so we need to find it
-      const content = finalImageResponse.message?.content || [];
-      const finalImagePart = content.find((item: any) => item.media)?.media;
+      const finalContent = finalImageResponse.message?.content || [];
+      const finalImagePart = finalContent.find((item: any) => item.media)?.media;
 
       if (!finalImagePart?.url) {
         throw new Error('Could not compose final image. AI response did not contain media.');
