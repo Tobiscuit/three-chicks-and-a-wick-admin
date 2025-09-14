@@ -160,7 +160,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     (async () => {
         try {
             hasFetchedAiData.current = true; // Prevent multiple fetches
-            toast({ id: 'prefill-toast', title: "🪄 Loading AI Content..." });
+            toast({ title: "🪄 Loading AI Content..." });
             
             console.log(`[AI PREFILL] Calling resolveAiGeneratedProductAction with token...`);
             const res = await resolveAiGeneratedProductAction(token);
@@ -200,7 +200,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 }
                 reader.readAsDataURL(file);
 
-                toast.update('prefill-toast', { title: "✅ AI Content Loaded!", description: "Review and save your new product." });
+                toast({ title: "✅ AI Content Loaded!", description: "Review and save your new product." });
                 
                 // Clean the URL
                 const newUrl = window.location.pathname;
@@ -211,7 +211,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             }
         } catch (error: any) {
             console.error("[AI PREFILL] Error caught:", error);
-            toast.update('prefill-toast', {
+            toast({
                 variant: "destructive",
                 title: "❌ Error Loading AI Content",
                 description: error.message,
@@ -241,7 +241,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         const newPreviews = await Promise.all(
             Array.from(files).map(file => {
                 return new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
+        const reader = new FileReader();
                     reader.onloadend = () => resolve(reader.result as string);
                     reader.onerror = reject;
                     reader.readAsDataURL(file);
@@ -269,10 +269,10 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         try {
             const uploadPromises = Array.from(files).map(async file => {
                 const imageDataUrl = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
+        const reader = new FileReader();
                     reader.onloadend = () => resolve(reader.result as string);
                     reader.onerror = reject;
-                    reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
                 });
                 return await uploadImageAction(imageDataUrl);
             });
@@ -488,8 +488,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                 accept="image/*"
                                 multiple
                             />
-                        </FormControl>
-                        <FormMessage />
+                            </FormControl>
+                            <FormMessage />
                     </CardContent>
                 </Card>
                 <Card>
