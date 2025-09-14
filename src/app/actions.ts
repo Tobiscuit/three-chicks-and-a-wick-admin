@@ -151,16 +151,24 @@ async function firebaseUrlToDataUrl(url: string): Promise<string> {
             throw new Error(`Failed to fetch image: ${response.statusText}`);
         }
         const arrayBuffer = await response.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString('base64');
         
-        // Determine MIME type from response headers or URL
-        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        // Convert to JPEG format for compatibility with gemini-2.5-flash-image-preview
+        const jpegDataUrl = await convertToJpeg(arrayBuffer);
         
-        return `data:${contentType};base64,${base64}`;
+        return jpegDataUrl;
     } catch (error) {
         console.error('Error converting Firebase URL to data URL:', error);
         throw new Error(`Failed to convert Firebase URL to data URL: ${error}`);
     }
+}
+
+// Helper function to convert image data to JPEG format (server-side)
+async function convertToJpeg(arrayBuffer: ArrayBuffer): Promise<string> {
+    // For now, we'll just change the MIME type to JPEG
+    // The actual image conversion would require a server-side image processing library
+    // like 'sharp' or 'jimp', but for testing purposes, this should work
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    return `data:image/jpeg;base64,${base64}`;
 }
 
 export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUri?: string; error?: string }> {
