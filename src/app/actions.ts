@@ -143,14 +143,37 @@ type ComposeWithGalleryInput = {
   angle2?: string; // data URL
 }
 
+// Helper function to convert Firebase Storage URL to data URL
+async function firebaseUrlToDataUrl(url: string): Promise<string> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Error converting Firebase URL to data URL:', error);
+        throw new Error(`Failed to convert Firebase URL to data URL: ${error}`);
+    }
+}
+
 export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUri?: string; error?: string }> {
     try {
         const { galleryBackgroundUrl, angle1, angle2 } = input;
 
+        // Convert Firebase Storage URL to data URL
+        const galleryImageDataUrl = await firebaseUrlToDataUrl(galleryBackgroundUrl);
+
         const imageDataUrl = await composeWithGalleryBackgroundFlow({
             candleImage1: angle1,
             candleImage2: angle2,
-            galleryImage: galleryBackgroundUrl,
+            galleryImage: galleryImageDataUrl,
         });
 
         if (!imageDataUrl) {
