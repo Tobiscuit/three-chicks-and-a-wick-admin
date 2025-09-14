@@ -51,8 +51,10 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const bgPrompt = `Generate a background image for a product photo of a candle. The background should be clean, professional, and visually appealing. The user wants the following style: "${background}". Do not include the candle in the image.`;
 
       const bgImageResponse = await ai.generate({
-        prompt: bgPrompt,
         model: modelName,
+        prompt: [
+          { text: bgPrompt }
+        ],
         output: { format: 'media' },
       });
 
@@ -84,9 +86,11 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined, bgImagePart: redactData(bgImageFinalPart) }, null, 2));
 
       const finalImageResponse = await ai.generate({
-        prompt: composePrompt,
         model: modelName,
-        context: context,
+        prompt: [
+          { text: composePrompt },
+          ...context.map(part => ({ media: part }))
+        ],
       });
 
       // Extract media from the nested response structure
