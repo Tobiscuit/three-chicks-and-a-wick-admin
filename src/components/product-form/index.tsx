@@ -148,30 +148,22 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   // Prefill form with AI generated data
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    console.log("--- [AI PREFILL] Effect triggered ---");
     const token = searchParams.get('draftToken');
-    console.log(`[AI PREFILL] Found draftToken: ${token}`);
 
     if (!token || isEditMode || hasFetchedAiData.current) {
-      console.log(`[AI PREFILL] Bailing out. Conditions: token=${!!token}, isEditMode=${isEditMode}, hasFetched=${hasFetchedAiData.current}`);
       return;
     }
 
     (async () => {
         try {
-            hasFetchedAiData.current = true; // Prevent multiple fetches
+            hasFetchedAiData.current = true;
             toast({ title: "🪄 Loading AI Content..." });
             
-            console.log(`[AI PREFILL] Calling resolveAiGeneratedProductAction with token...`);
             const res = await resolveAiGeneratedProductAction(token);
-            console.log("[AI PREFILL] Received response from action:", res);
 
             if (res.success && res.data) {
                 const { title, body_html, tags, sku, price, quantity, publicImageUrl } = res.data;
-                console.log("[AI PREFILL] Data successfully destructured:", { title, sku, price, quantity });
                 
-                // --- FIX 1: ENABLE SAVE BUTTON ---
-                // Use setValue to populate fields and mark the form as dirty
                 setValue('title', title, { shouldDirty: true });
                 setValue('description', body_html, { shouldDirty: true });
                 setValue('price', String(price), { shouldDirty: true });
@@ -180,32 +172,27 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 setValue('inventory', quantity, { shouldDirty: true });
                 setValue('status', 'DRAFT', { shouldDirty: true });
 
-                // --- FIX 2: SAVE THE IMAGE CORRECTLY ---
-                // Fetch the image, convert it to a data URL, then upload it to get a public URL for Shopify
-                console.log(`[AI PREFILL] Fetching image from URL: ${publicImageUrl}`);
                 const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
-                console.log("[AI PREFILL] Image converted to File object:", file);
                 
                 const reader = new FileReader();
                 reader.onloadend = async () => {
                   const dataUrl = reader.result as string;
-                  // Upload the data URL to get a public URL that Shopify can use
                   const finalPublicUrl = await uploadImageAction(dataUrl);
                   if (finalPublicUrl) {
-                    // Set the public URL in the preview state, which is used for saving
                     setImagePreviews(prev => [finalPublicUrl, ...prev]);
                   }
                 }
                 reader.readAsDataURL(file);
 
-                toast({ title: "✅ AI Content Loaded!", description: "Review and save your new product." });
+                toast({ 
+                  title: "✅ AI Content Loaded!", 
+                  description: "Review and save your new product." 
+                });
                 
-                // Clean the URL
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
-                console.log(`[AI PREFILL] URL cleaned. Pre-fill process complete.`);
             } else {
                 throw new Error(res.error || "Could not load AI content.");
             }
