@@ -289,13 +289,15 @@ async function getOnlineStorePublicationId(): Promise<string> {
 
 async function publishProductToChannel(productId: string) {
   const publicationId = await getOnlineStorePublicationId();
+  
+  // This is the corrected mutation string with a valid return payload
   const mutation = `
     mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
       publishablePublish(id: $id, input: $input) {
         publishable {
           ... on Product {
             id
-            isPublished
+            status
           }
         }
         userErrors {
@@ -305,10 +307,12 @@ async function publishProductToChannel(productId: string) {
       }
     }
   `;
+
   const result = await fetchShopify<any>(mutation, {
     id: productId,
     input: [{ publicationId }]
   });
+
   const userErrors = result.publishablePublish.userErrors;
   if (userErrors && userErrors.length > 0) {
       console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
