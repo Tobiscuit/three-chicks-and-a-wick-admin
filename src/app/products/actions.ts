@@ -38,6 +38,7 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
             tags: product.tags || '',
             price: product.price,
             sku: product.sku,
+            status: product.status,
             imageUrls: product.imageUrls || [],
         });
         revalidatePath('/products');
@@ -71,6 +72,10 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
 
         // Step 3: Update inventory
         if (product.inventoryItemId && typeof product.inventory === 'number') {
+            
+            // --- ADD THIS LOG ---
+            console.log(`[SERVER] updateProductAction: Updating inventory for item ${product.inventoryItemId} to quantity ${product.inventory}`);
+
             const locationId = await getPrimaryLocationId();
             if (!locationId) {
                 throw new Error("Could not determine primary location for inventory update.");
@@ -115,6 +120,9 @@ export async function quickUpdateInventoryAction({
     quantity: number;
 }) {
     try {
+        // --- ADD THIS LOG ---
+        console.log(`[SERVER] quickUpdateInventoryAction: Updating inventory for item ${inventoryItemId} to quantity ${quantity}`);
+
         const locationId = await getPrimaryLocationId();
         if (!locationId) {
             throw new Error("Could not determine primary location for inventory update.");

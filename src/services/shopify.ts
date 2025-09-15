@@ -562,6 +562,10 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
             }
         }
     `;
+    
+    // --- ADD THIS LOG ---
+    console.log(`[SERVICE] Sending to Shopify: Set inventory for item ${inventoryItemId} at location ${locationId} to quantity ${quantity}`);
+    
     const variables = {
         input: {
             name: "available",

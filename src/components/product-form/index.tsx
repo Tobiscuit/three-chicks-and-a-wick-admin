@@ -227,6 +227,9 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   async function onSubmit(data: ProductFormValues) {
     setIsSubmitting(true);
     
+    // --- ADD THIS LOG ---
+    console.log(`[CLIENT] Form submitted. Inventory value: ${data.inventory}`);
+    
     try {
       const action = isEditMode ? updateProductAction : addProductAction;
       const result = await action({
