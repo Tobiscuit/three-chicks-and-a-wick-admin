@@ -242,14 +242,14 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
 
 export async function getPrimaryLocationId(): Promise<string | null> {
   const query = `
-    query {
-      locations(first: 1, query: "isPrimary:true") {
-        edges {
+  query {
+    locations(first: 1, query: "isPrimary:true") {
+      edges {
           node { id }
-        }
       }
     }
-  `;
+  }
+`;
   try {
     const response = await fetchShopify<any>(query);
     return response.locations.edges[0]?.node.id || null;
@@ -265,6 +265,7 @@ type ProductData = {
     tags: string;
     price: string;
     sku: string;
+    status: string; // ADD THIS LINE - Critical for form status
     imageUrls: string[];
 };
 
@@ -282,8 +283,26 @@ async function getOnlineStorePublicationId(): Promise<string> {
     }
   `;
   const result = await fetchShopify<any>(query);
-  const onlineStore = result.publications.edges.find((e: any) => e.node.name === 'Online Store');
-  if (!onlineStore) throw new Error("Online Store publication channel not found.");
+  
+  // Log all available channels for debugging
+  console.log('--- AVAILABLE SALES CHANNELS ---');
+  result.publications.edges.forEach((e: any) => {
+    console.log(`Channel: "${e.node.name}" (ID: ${e.node.id})`);
+  });
+  console.log('--- END SALES CHANNELS ---');
+  
+  // Try multiple possible names for the main storefront
+  const possibleNames = ['Online Store', 'Web', 'Website', 'Storefront', 'Main Store', 'Headless'];
+  const onlineStore = result.publications.edges.find((e: any) => 
+    possibleNames.some(name => e.node.name.toLowerCase().includes(name.toLowerCase()))
+  );
+  
+  if (!onlineStore) {
+    console.error('Available channels:', result.publications.edges.map((e: any) => e.node.name));
+    throw new Error(`No suitable publication channel found. Available channels: ${result.publications.edges.map((e: any) => e.node.name).join(', ')}`);
+  }
+  
+  console.log(`Using channel: "${onlineStore.node.name}" (ID: ${onlineStore.node.id})`);
   return onlineStore.node.id;
 }
 
@@ -333,7 +352,7 @@ export async function createProduct(productData: ProductData) {
   const productInput = {
     title: productData.title,
     tags: productData.tags,
-    status: "DRAFT"
+    status: productData.status  // Use the status from the form
   };
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
   const productId = createProductResult.productCreate.product?.id;
@@ -504,15 +523,15 @@ export async function listAllSalesChannels() {
   const query = `
     query GetPublications {
       publications(first: 25) {
-        edges {
-          node {
-            id
-            name
-          }
+            edges {
+                node {
+                    id
+                    name
+                }
+            }
         }
-      }
     }
-  `;
+`;
   try {
     const result = await fetchShopify<any>(query);
     const publications = result.publications.edges.map((e: any) => e.node);
