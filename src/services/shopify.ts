@@ -339,7 +339,8 @@ type ProductData = {
     tags: string;
     price: string;
     sku: string;
-    status: string; // ADD THIS LINE - Critical for form status
+    status: string;
+    inventory: number; // Ensure this is part of the type
     imageUrls: string[];
 };
 
@@ -416,6 +417,7 @@ async function publishProductToChannel(productId: string) {
 }
 
 export async function createProduct(productData: ProductData) {
+  // 1. Create the product shell (title, tags, status)
   const createProductMutation = `
     mutation productCreate($input: ProductInput!) {
       productCreate(input: $input) {
@@ -427,12 +429,13 @@ export async function createProduct(productData: ProductData) {
   const productInput = {
     title: productData.title,
     tags: productData.tags,
-    status: productData.status  // Use the status from the form
+    status: productData.status
   };
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
   const productId = createProductResult.productCreate.product?.id;
   if (!productId) throw new Error(`Product create failed: ${JSON.stringify(createProductResult.productCreate.userErrors)}`);
 
+  // 2. Get the default variant and its inventoryItemId
   const getVariantQuery = `
     query getProductVariant($id: ID!) {
       product(id: $id) {
@@ -451,7 +454,8 @@ export async function createProduct(productData: ProductData) {
   const variantNode = getVariantResult.product.variants.edges[0]?.node;
   if (!variantNode) throw new Error("No default variant found");
   const { id: variantId, inventoryItem: { id: inventoryItemId } } = variantNode;
-
+  
+  // 3. Update the variant's price
   const updateVariantMutation = `
     mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
       productVariantsBulkUpdate(productId: $productId, variants: $variants) {
@@ -465,19 +469,36 @@ export async function createProduct(productData: ProductData) {
     variants: [{ id: variantId, price: productData.price }]
   });
 
-  const updateInventoryMutation = `
+  // --- Step from Shopify Docs: Enable Inventory Tracking ---
+  // 4. Update the inventory item to set the SKU and explicitly enable tracking.
+  const updateInventoryItemMutation = `
     mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
       inventoryItemUpdate(id: $id, input: $input) {
-        inventoryItem { id sku }
+        inventoryItem { id sku tracked }
         userErrors { field message }
       }
     }
   `;
-  await fetchShopify<any>(updateInventoryMutation, {
+  await fetchShopify<any>(updateInventoryItemMutation, {
     id: inventoryItemId,
-    input: { sku: productData.sku }
+    input: {
+      sku: productData.sku,
+      tracked: true // Explicitly enable tracking as required.
+    }
   });
 
+  // --- Step from Shopify Docs: Set Inventory Quantity ---
+  // 5. Set the absolute inventory quantity now that tracking is enabled.
+  if (typeof productData.inventory === 'number') {
+      const locationId = await getPrimaryLocationId();
+      if (!locationId) {
+          throw new Error("Could not determine primary location to set inventory.");
+      }
+      // This function correctly uses the inventorySetQuantities mutation.
+      await updateInventoryQuantity(inventoryItemId, productData.inventory, locationId);
+  }
+  
+  // 6. Attach images
   if (productData.imageUrls.length > 0) {
     const createMediaMutation = `
         mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
@@ -493,8 +514,10 @@ export async function createProduct(productData: ProductData) {
     });
   }
 
+  // 7. Set the description via metafield
   await updateProductDescription(productId, productData.description);
-
+  
+  // 8. Publish the product to the sales channel
   try {
     await publishProductToChannel(productId);
   } catch (error) {
