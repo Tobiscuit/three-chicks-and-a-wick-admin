@@ -2,7 +2,8 @@
 
 import { ShopifyProduct } from "@/types/shopify";
 
-// A service for interacting with the Shopify Admin GraphQL API.
+export type { ShopifyProduct };
+
 type ShopifyGraphQLResponse<T> = {
   data: T;
   errors?: { message: string, field?: string[] }[];
@@ -14,45 +15,13 @@ export type ShopifyCollection = {
     handle: string;
 }
 
-export type ShopifyOrder = {
-    id: string;
-    name: string;
-    processedAt: string;
-    totalPriceSet: {
-        shopMoney: {
-            amount: string;
-            currencyCode: string;
-        }
-    };
-    lineItems: {
-        edges: {
-            node: {
-                title: string;
-                quantity: number;
-                product: {
-                    id: string | null;
-                } | null;
-            }
-        }[]
-    }
-}
-
 const SHOPIFY_API_URL = process.env.SHOPIFY_STORE_URL!;
 const SHOPIFY_ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN!;
 
 export async function fetchShopify<T>(query: string, variables?: Record<string, any>): Promise<T> {
-  
   if (!SHOPIFY_API_URL || !SHOPIFY_ADMIN_TOKEN) {
     throw new Error('Shopify environment variables are not set.');
   }
-
-  // console.log("--- Shopify API Call ---");
-  // console.log("Query:", query.trim().replace(/\s+/g, ' '));
-  // if (variables) {
-  //   console.log("Variables:", JSON.stringify(variables, null, 2));
-  // }
-  // console.log("------------------------");
-
   try {
     const response = await fetch(SHOPIFY_API_URL, {
       method: 'POST',
@@ -64,66 +33,16 @@ export async function fetchShopify<T>(query: string, variables?: Record<string, 
       cache: 'no-store',
       next: { revalidate: 0 }
     });
-
     const result: ShopifyGraphQLResponse<T> = await response.json();
-    
     if (result.errors) {
         console.error("[Shopify Service] GraphQL Errors:", JSON.stringify(result.errors, null, 2));
         throw new Error(`GraphQL Error: ${result.errors.map(e => e.message).join('\n')}`);
     }
-    
     return result.data;
-
   } catch (error: any) {
     console.error("[Shopify Service] Unhandled fetch error:", error);
     throw error;
   }
-}
-
-const GET_PRODUCTS_QUERY = `
-  query getProducts($first: Int!) {
-    products(first: $first, sortKey: TITLE, reverse: false) {
-      edges {
-        node {
-          id
-          title
-          handle
-          status
-          totalInventory
-          tags
-          featuredImage {
-            url(transform: {maxWidth: 512, maxHeight: 512})
-          }
-          priceRange: priceRangeV2 {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          variants(first: 1) {
-            edges {
-              node {
-                inventoryItem { id }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type GetProductsResponse = {
-  products: {
-    edges: {
-      node: ShopifyProduct;
-    }[];
-  };
-};
-
-export async function getProducts(count: number = 25): Promise<ShopifyProduct[]> {
-  const response = await fetchShopify<GetProductsResponse>(GET_PRODUCTS_QUERY, { first: count });
-  return response.products.edges.map(edge => edge.node);
 }
 
 const GET_PRODUCT_BY_ID_QUERY = `
@@ -197,54 +116,18 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
     return product;
 }
 
-const GET_COLLECTIONS_QUERY = `
-  query getCollections($first: Int!) {
-    collections(first: $first, sortKey: TITLE) {
-      edges {
-        node {
-          id
-          title
-          handle
-        }
-      }
-    }
-  }
-`;
-
-type GetCollectionsResponse = {
-    collections: {
-        edges: {
-            node: ShopifyCollection;
-        }[];
-    };
-};
-
-export async function getCollections(count: number = 50): Promise<ShopifyCollection[]> {
-    const response = await fetchShopify<GetCollectionsResponse>(GET_COLLECTIONS_QUERY, { first: count });
-    return response.collections.edges.map(edge => edge.node);
-}
-
-const GET_PRIMARY_LOCATION_ID_QUERY = `
-  query {
-    locations(first: 1, query: "isPrimary:true") {
-      edges {
-        node {
-          id
-        }
-      }
-    }
-  }
-`;
-
-type GetLocationResponse = {
-  locations: {
-    edges: { node: { id: string } }[]
-  }
-}
-
 export async function getPrimaryLocationId(): Promise<string | null> {
+  const query = `
+    query {
+      locations(first: 1, query: "isPrimary:true") {
+        edges {
+          node { id }
+        }
+      }
+    }
+  `;
   try {
-    const response = await fetchShopify<GetLocationResponse>(GET_PRIMARY_LOCATION_ID_QUERY);
+    const response = await fetchShopify<any>(query);
     return response.locations.edges[0]?.node.id || null;
   } catch (error) {
     console.error("Failed to fetch primary location ID:", error);
@@ -261,7 +144,6 @@ type ProductData = {
     imageUrls: string[];
 };
 
-// Helper 1: Finds the ID of your "Online Store" sales channel.
 async function getOnlineStorePublicationId(): Promise<string> {
   const query = `
     query {
@@ -281,16 +163,12 @@ async function getOnlineStorePublicationId(): Promise<string> {
   return onlineStore.node.id;
 }
 
-// Helper 2: Publishes a product to a specific channel ID.
 async function publishProductToChannel(productId: string) {
   const publicationId = await getOnlineStorePublicationId();
-  
-  // This is the corrected mutation string
   const mutation = `
     mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
       publishablePublish(id: $id, input: $input) {
         publishable {
-          # This is the corrected return payload
           ... on Product {
             id
             isPublished
@@ -303,12 +181,10 @@ async function publishProductToChannel(productId: string) {
       }
     }
   `;
-
   const result = await fetchShopify<any>(mutation, {
     id: productId,
     input: [{ publicationId }]
   });
-
   const userErrors = result.publishablePublish.userErrors;
   if (userErrors && userErrors.length > 0) {
       console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
@@ -335,8 +211,8 @@ export async function createProduct(productData: ProductData) {
   const productId = createProductResult.productCreate.product?.id;
   if (!productId) throw new Error(`Product create failed: ${JSON.stringify(createProductResult.productCreate.userErrors)}`);
 
-  const getProductQuery = `
-    query getProductById($id: ID!) {
+  const getVariantQuery = `
+    query getProductVariant($id: ID!) {
       product(id: $id) {
         variants(first: 1) {
           edges {
@@ -349,11 +225,10 @@ export async function createProduct(productData: ProductData) {
       }
     }
   `;
-  const getProductResult = await fetchShopify<any>(getProductQuery, { id: productId });
-  const variantNode = getProductResult.product.variants.edges[0]?.node;
+  const getVariantResult = await fetchShopify<any>(getVariantQuery, { id: productId });
+  const variantNode = getVariantResult.product.variants.edges[0]?.node;
   if (!variantNode) throw new Error("No default variant found");
-  const variantId = variantNode.id;
-  const inventoryItemId = variantNode.inventoryItem.id;
+  const { id: variantId, inventoryItem: { id: inventoryItemId } } = variantNode;
 
   const updateVariantMutation = `
     mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
@@ -396,23 +271,7 @@ export async function createProduct(productData: ProductData) {
     });
   }
 
-  const setMetafieldMutation = `
-    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-            metafields { id }
-            userErrors { field message }
-        }
-    }
-  `;
-  await fetchShopify<any>(setMetafieldMutation, {
-    metafields: [{
-        ownerId: productId,
-        namespace: "custom",
-        key: "description",
-        type: "multi_line_text_field",
-        value: productData.description
-    }]
-  });
+  await updateProductDescription(productId, productData.description);
 
   try {
     await publishProductToChannel(productId);
@@ -498,7 +357,8 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
     await fetchShopify<any>(mutation, variables);
 }
 
-const PRODUCT_DELETE_MUTATION = `
+export async function deleteProduct(productId: string) {
+  const mutation = `
   mutation productDelete($input: ProductDeleteInput!) {
     productDelete(input: $input) {
       deletedProductId
@@ -506,17 +366,6 @@ const PRODUCT_DELETE_MUTATION = `
     }
   }
 `;
-
-type ProductDeleteResponse = {
-  productDelete: {
-    deletedProductId: string | null;
-    userErrors: { field?: string[]; message: string }[];
-  };
-};
-
-export async function deleteProduct(productId: string): Promise<ProductDeleteResponse> {
-  const variables = { input: { id: productId } };
-  return fetchShopify<ProductDeleteResponse>(PRODUCT_DELETE_MUTATION, variables);
+  const result = await fetchShopify<any>(mutation, { input: { id: productId } });
+  return result.productDelete;
 }
-
-// ... other functions like getOrders, getBusinessSnapshot can remain as they were ...
