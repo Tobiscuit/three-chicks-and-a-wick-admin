@@ -251,7 +251,6 @@ export function ImageStudio() {
           background: values.backgroundPrompt!,
           angle1,
           angle2,
-          context: values.contextualDetails,
         });
       } else { // Gallery
         result = await composeWithGalleryAction({
@@ -423,7 +422,7 @@ export function ImageStudio() {
             </Card>
           </div>
 
-          <div className="lg-col-span-3">
+          <div className="lg:col-span-3">
             <Card className="sticky top-20">
               <CardHeader>
                 <CardTitle>3. Final Touches &amp; Generation</CardTitle>
@@ -469,8 +468,8 @@ export function ImageStudio() {
                     </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex-col sm:flex-row gap-2">
-                <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
+              <CardFooter className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="flex-1 min-w-0">
                   {isSubmitting ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -482,7 +481,7 @@ export function ImageStudio() {
                     </>
                   )}
                 </Button>
-                <Button variant="secondary" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:w-auto" onClick={() => {
+                <Button variant="secondary" type="button" disabled={!generatedImage || isSubmitting} className="flex-1 min-w-0" onClick={() => {
                   if(!generatedImage) return;
                   const link = document.createElement('a');
                   link.href = generatedImage;
@@ -493,7 +492,7 @@ export function ImageStudio() {
                 }}>
                   <Download className="mr-2"/> Download
                 </Button>
-                 <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:w-auto" onClick={() => setShowAddProductModal(true)}>
+                 <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="flex-1 min-w-0" onClick={() => setShowAddProductModal(true)}>
                     <PackagePlus className="mr-2"/> Add as Product with AI
                 </Button>
               </CardFooter>
