@@ -305,6 +305,10 @@ async function publishProductToOnlineStore(productId: string) {
     }
   `;
   const result = await fetchShopify<any>(mutation, { id: productId });
+  
+  // --- ADD THIS DETAILED LOG ---
+  console.log('--- DIAGNOSTIC --- Full response from publishablePublishToCurrentChannel:', JSON.stringify(result, null, 2));
+
   const userErrors = result.publishablePublishToCurrentChannel.userErrors;
   if (userErrors && userErrors.length > 0) {
     console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
@@ -329,8 +333,12 @@ export async function createProduct(productData: ProductData) {
     status: "DRAFT"
   };
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
+  console.log('--- DIAGNOSTIC --- Product creation result:', JSON.stringify(createProductResult, null, 2));
+  
   const productId = createProductResult.productCreate.product?.id;
   if (!productId) throw new Error(`Product create failed: ${JSON.stringify(createProductResult.productCreate.userErrors)}`);
+  
+  console.log(`--- DIAGNOSTIC --- Product created successfully with ID: ${productId}`);
 
   // 2. Get the default variant and inventoryItemId
   const getProductQuery = `
@@ -429,6 +437,7 @@ export async function createProduct(productData: ProductData) {
   }
 
   // --- FINAL STEP: Publish the new product to the Online Store sales channel ---
+  console.log(`--- DIAGNOSTIC --- Attempting to publish product ${productId} to the Online Store channel...`);
   try {
     await publishProductToOnlineStore(productId);
   } catch (error) {
