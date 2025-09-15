@@ -261,14 +261,34 @@ type ProductData = {
     imageUrls: string[];
 };
 
-async function publishProductToOnlineStore(productId: string) {
-  const mutation = `
-    mutation publishablePublishToCurrentChannel($id: ID!) {
-      publishablePublishToCurrentChannel(id: $id) {
-        publishable {
-          availablePublicationsCount {
-            count
+// Helper 1: Finds the ID of your "Online Store" sales channel.
+async function getOnlineStorePublicationId(): Promise<string> {
+  const query = `
+    query {
+      publications(first: 10) {
+        edges {
+          node {
+            id
+            name
           }
+        }
+      }
+    }
+  `;
+  const result = await fetchShopify<any>(query);
+  const onlineStore = result.publications.edges.find((e: any) => e.node.name === 'Online Store');
+  if (!onlineStore) throw new Error("Online Store publication channel not found.");
+  return onlineStore.node.id;
+}
+
+// Helper 2: Publishes a product to a specific channel ID.
+async function publishProductToChannel(productId: string) {
+  const publicationId = await getOnlineStorePublicationId();
+  const mutation = `
+    mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
+      publishablePublish(id: $id, input: $input) {
+        publishable {
+          availablePublicationCount
         }
         userErrors {
           field
@@ -277,12 +297,16 @@ async function publishProductToOnlineStore(productId: string) {
       }
     }
   `;
-  const result = await fetchShopify<any>(mutation, { id: productId });
-  const userErrors = result.publishablePublishToCurrentChannel.userErrors;
+  const result = await fetchShopify<any>(mutation, {
+    id: productId,
+    input: [{ publicationId }]
+  });
+
+  const userErrors = result.publishablePublish.userErrors;
   if (userErrors && userErrors.length > 0) {
-    console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
+      console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
   } else {
-    console.log(`Successfully published product ${productId} to the Online Store channel.`);
+      console.log(`Successfully published product ${productId} to the Online Store.`);
   }
 }
 
@@ -384,7 +408,7 @@ export async function createProduct(productData: ProductData) {
   });
 
   try {
-    await publishProductToOnlineStore(productId);
+    await publishProductToChannel(productId);
   } catch (error) {
     console.warn("Product was created but failed to publish to the Online Store channel.", error);
   }
