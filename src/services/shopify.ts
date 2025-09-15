@@ -4,6 +4,32 @@ import { ShopifyProduct } from "@/types/shopify";
 
 export type { ShopifyProduct };
 
+export type ShopifyOrder = {
+  id: string;
+  name: string;
+  createdAt: string;
+  processedAt: string;
+  totalPriceSet: {
+    shopMoney: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  lineItems: {
+    edges: Array<{
+      node: {
+        id: string;
+        title: string;
+        quantity: number;
+        product?: {
+          id: string;
+          title: string;
+        };
+      };
+    }>;
+  };
+};
+
 type ShopifyGraphQLResponse<T> = {
   data: T;
   errors?: { message: string, field?: string[] }[];
@@ -180,6 +206,54 @@ type GetProductsResponse = {
         };
     };
 };
+
+export async function getOrders(first: number = 50, after?: string): Promise<ShopifyOrder[]> {
+  const query = `
+    query getOrders($first: Int!, $after: String) {
+      orders(first: $first, after: $after, sortKey: CREATED_AT, reverse: true) {
+        edges {
+          node {
+            id
+            name
+            createdAt
+            processedAt
+            totalPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            lineItems(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  quantity
+                  product {
+                    id
+                    title
+                  }
+                }
+              }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await fetchShopify<any>(query, { first, after });
+    return result.orders.edges.map((edge: any) => edge.node);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    throw error;
+  }
+}
 
 export async function getProducts(first: number = 50, after?: string): Promise<ShopifyProduct[]> {
     const response = await fetchShopify<GetProductsResponse>(GET_PRODUCTS_QUERY, { first, after });
