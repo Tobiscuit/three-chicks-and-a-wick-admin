@@ -487,18 +487,29 @@ export async function createProduct(productData: ProductData) {
     }
   });
 
-  // --- Step from Shopify Docs: Set Inventory Quantity ---
-  // 5. Set the absolute inventory quantity now that tracking is enabled.
-  if (typeof productData.inventory === 'number') {
-      const locationId = await getPrimaryLocationId();
-      if (!locationId) {
-          throw new Error("Could not determine primary location to set inventory.");
+  // --- THIS IS THE NEW, CRUCIAL STEP ---
+  // Step 5: Activate the inventory item at the primary location
+  const locationId = await getPrimaryLocationId();
+  if (!locationId) {
+      throw new Error("Could not determine primary location to activate inventory.");
+  }
+  const inventoryActivateMutation = `
+    mutation inventoryActivate($inventoryItemId: ID!, $locationId: ID!) {
+      inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId) {
+        inventoryLevel { id }
+        userErrors { field message }
       }
-      // This function correctly uses the inventorySetQuantities mutation.
+    }
+  `;
+  await fetchShopify<any>(inventoryActivateMutation, { inventoryItemId, locationId });
+  // --- END OF NEW STEP ---
+
+  // Step 6: Set the absolute inventory quantity now that it's activated
+  if (typeof productData.inventory === 'number') {
       await updateInventoryQuantity(inventoryItemId, productData.inventory, locationId);
   }
   
-  // 6. Attach images
+  // Step 7: Attach images
   if (productData.imageUrls.length > 0) {
     const createMediaMutation = `
         mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
@@ -514,10 +525,10 @@ export async function createProduct(productData: ProductData) {
     });
   }
 
-  // 7. Set the description via metafield
+  // Step 8: Set the description via metafield
   await updateProductDescription(productId, productData.description);
   
-  // 8. Publish the product to the sales channel
+  // Step 9: Publish the product to the sales channel
   try {
     await publishProductToChannel(productId);
   } catch (error) {
