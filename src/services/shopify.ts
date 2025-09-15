@@ -497,3 +497,37 @@ export async function deleteProduct(productId: string) {
   const result = await fetchShopify<any>(mutation, { input: { id: productId } });
   return result.productDelete;
 }
+
+// ADD THIS ENTIRE NEW FUNCTION
+export async function listAllSalesChannels() {
+  console.log(`--- DIAGNOSTIC --- Fetching all sales channels (Publications)...`);
+  const query = `
+    query GetPublications {
+      publications(first: 25) {
+        edges {
+          node {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+  try {
+    const result = await fetchShopify<any>(query);
+    const publications = result.publications.edges.map((e: any) => e.node);
+
+    console.log('--- DIAGNOSTIC: SALES CHANNEL REPORT ---');
+    if (publications.length === 0) {
+      console.log('No sales channels found.');
+    } else {
+      console.log(JSON.stringify(publications, null, 2));
+    }
+    console.log('--- END SALES CHANNEL REPORT ---');
+    
+    return publications;
+  } catch (error) {
+    console.error("Error fetching sales channels:", error);
+    return null;
+  }
+}

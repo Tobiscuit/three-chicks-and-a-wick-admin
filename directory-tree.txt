@@ -182,6 +182,7 @@ threechicksandawick-admin-panel
 │   │   │   ├── [id]
 │   │   │   │   └── page.tsx
 │   │   │   ├── actions.ts
+│   │   │   ├── diagnostic-actions.ts
 │   │   │   ├── new
 │   │   │   │   └── page.tsx
 │   │   │   └── page.tsx
@@ -200,6 +201,7 @@ threechicksandawick-admin-panel
 │   │   │   ├── sales-chart.tsx
 │   │   │   ├── stats-card.tsx
 │   │   │   └── top-products.tsx
+│   │   ├── diagnostic-button.tsx
 │   │   ├── image-studio
 │   │   │   └── index.tsx
 │   │   ├── layout

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
+import { DiagnosticButton } from '@/components/diagnostic-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,9 +69,23 @@ async function ProductsData() {
 export default function ProductsPage() {
     return (
         <AuthWrapper>
-           <Suspense fallback={<ProductsTableSkeleton />}>
-                <ProductsData />
-           </Suspense>
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-semibold">Products</h1>
+                    <div className="flex gap-2">
+                        <DiagnosticButton />
+                        <Button asChild>
+                            <Link href="/products/new">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Product
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+                <Suspense fallback={<ProductsTableSkeleton />}>
+                    <ProductsData />
+                </Suspense>
+            </div>
         </AuthWrapper>
     );
 }
