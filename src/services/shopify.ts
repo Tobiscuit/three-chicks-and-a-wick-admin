@@ -193,6 +193,42 @@ export async function getProducts(first: number = 50, after?: string): Promise<S
     });
 }
 
+const GET_COLLECTIONS_QUERY = `
+  query getCollections($first: Int!, $after: String) {
+    collections(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          title
+          handle
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+type GetCollectionsResponse = {
+    collections: {
+        edges: Array<{
+            node: ShopifyCollection;
+        }>;
+        pageInfo: {
+            hasNextPage: boolean;
+            endCursor: string;
+        };
+    };
+};
+
+export async function getCollections(first: number = 50, after?: string): Promise<ShopifyCollection[]> {
+    const response = await fetchShopify<GetCollectionsResponse>(GET_COLLECTIONS_QUERY, { first, after });
+    
+    return response.collections.edges.map(({ node }) => node);
+}
+
 export async function getProductById(id: string): Promise<ShopifyProduct | null> {
     const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
     if (!response.product) return null;

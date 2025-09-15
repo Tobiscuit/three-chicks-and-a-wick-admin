@@ -1,12 +1,12 @@
 
 import { Suspense } from 'react';
 import { ProductsTable, ProductsTableSkeleton } from '@/components/products-table';
-import { getProducts } from '@/services/shopify.ts';
+import { getProducts } from '@/services/shopify';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import type { ShopifyProduct } from '@/services/shopify.ts';
+import type { ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 
 export const dynamic = 'force-dynamic';
