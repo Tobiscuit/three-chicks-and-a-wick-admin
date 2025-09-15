@@ -16,7 +16,6 @@ import { adminDb } from '@/lib/firebase-admin';
 import { encodeShopifyId } from '@/lib/utils';
 import { FieldValue } from 'firebase-admin/firestore';
 
-// FIX: Added the 'status' field to the schema
 const productSchema = z.object({
     id: z.string().optional(),
     inventoryItemId: z.string().optional(),
@@ -50,7 +49,6 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
     }
 }
 
-// FIX: Completely refactored to handle Shopify's multi-step update process
 export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
         const product = productSchema.parse(formData);
@@ -58,8 +56,6 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
         if (!productId) {
             throw new Error('Product ID is required for updates.');
         }
-
-        console.log("--- Starting Multi-Step Product Update ---");
 
         // Step 1: Update core product details (title, tags, status)
         await updateProduct(productId, {
@@ -89,7 +85,6 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
             }, { merge: true });
         }
         
-        console.log("--- Product Update Successful ---");
         revalidatePath('/products');
         return { success: true };
 
@@ -112,7 +107,6 @@ export async function deleteProductAction(productId: string) {
     }
 }
 
-// FIX: Corrected quickUpdateInventoryAction to fetch locationId and call the right function
 export async function quickUpdateInventoryAction({
     inventoryItemId,
     quantity,
