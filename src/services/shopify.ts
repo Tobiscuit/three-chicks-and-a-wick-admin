@@ -284,11 +284,17 @@ async function getOnlineStorePublicationId(): Promise<string> {
 // Helper 2: Publishes a product to a specific channel ID.
 async function publishProductToChannel(productId: string) {
   const publicationId = await getOnlineStorePublicationId();
+  
+  // This is the corrected mutation string
   const mutation = `
     mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
       publishablePublish(id: $id, input: $input) {
         publishable {
-          availablePublicationCount
+          # This is the corrected return payload
+          ... on Product {
+            id
+            isPublished
+          }
         }
         userErrors {
           field
@@ -297,6 +303,7 @@ async function publishProductToChannel(productId: string) {
       }
     }
   `;
+
   const result = await fetchShopify<any>(mutation, {
     id: productId,
     input: [{ publicationId }]
