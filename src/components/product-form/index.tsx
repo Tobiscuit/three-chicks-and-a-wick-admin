@@ -71,6 +71,11 @@ function generateSku(title: string): string {
 }
 
 export function ProductForm({ collections, initialData = null }: ProductFormProps) {
+  
+  // --- ADD THIS LOG ---
+  console.log("[CLIENT Form] initialData received on page load:", initialData);
+  console.log("[CLIENT Form] Inventory value from initialData:", initialData?.totalInventory);
+
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
