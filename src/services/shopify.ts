@@ -555,6 +555,16 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
     const mutation = `
         mutation InventorySetQuantities($input: InventorySetQuantitiesInput!) {
             inventorySetQuantities(input: $input) {
+                inventoryAdjustmentGroup {
+                    id
+                    changes {
+                        name
+                        delta
+                        quantityAfterChange
+                    }
+                    reason
+                    referenceDocumentUri
+                }
                 userErrors {
                     field
                     message
@@ -580,7 +590,21 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
             ],
         },
     };
-    await fetchShopify<any>(mutation, variables);
+    const result = await fetchShopify<any>(mutation, variables);
+    
+    // Check for user errors
+    if (result.inventorySetQuantities.userErrors && result.inventorySetQuantities.userErrors.length > 0) {
+        const errors = result.inventorySetQuantities.userErrors.map((e: any) => e.message).join(', ');
+        throw new Error(`Inventory update failed: ${errors}`);
+    }
+    
+    // Log successful update
+    if (result.inventorySetQuantities.inventoryAdjustmentGroup) {
+        console.log(`[SERVICE] Inventory successfully updated. Adjustment ID: ${result.inventorySetQuantities.inventoryAdjustmentGroup.id}`);
+        console.log(`[SERVICE] New quantity: ${result.inventorySetQuantities.inventoryAdjustmentGroup.changes[0]?.quantityAfterChange}`);
+    }
+    
+    return result;
 }
 
 export async function deleteProduct(productId: string) {
