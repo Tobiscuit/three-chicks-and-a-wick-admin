@@ -105,6 +105,94 @@ type GetProductByIdResponse = {
     } & Omit<ShopifyProduct, 'description'> | null;
 };
 
+const GET_PRODUCTS_QUERY = `
+  query getProducts($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          title
+          handle
+          status
+          productType
+          tags
+          totalInventory
+          onlineStoreUrl
+          description: metafield(namespace: "custom", key: "description") {
+            value
+          }
+          featuredImage {
+            url(transform: {maxWidth: 1024, maxHeight: 1024})
+          }
+          images(first: 10) {
+            edges {
+              node {
+                url(transform: {maxWidth: 1024, maxHeight: 1024})
+                altText
+              }
+            }
+          }
+          priceRange: priceRangeV2 {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          variants(first: 1) {
+            edges {
+              node {
+                id
+                sku
+                inventoryItem {
+                  id
+                }
+              }
+            }
+          }
+          collections(first: 10) {
+            edges {
+                node {
+                    id
+                    title
+                }
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+type GetProductsResponse = {
+    products: {
+        edges: Array<{
+            node: {
+                description: { value: string } | null;
+            } & Omit<ShopifyProduct, 'description'>;
+        }>;
+        pageInfo: {
+            hasNextPage: boolean;
+            endCursor: string;
+        };
+    };
+};
+
+export async function getProducts(first: number = 50, after?: string): Promise<ShopifyProduct[]> {
+    const response = await fetchShopify<GetProductsResponse>(GET_PRODUCTS_QUERY, { first, after });
+    
+    return response.products.edges.map(({ node }) => {
+        const { description: descriptionMetafield, ...restOfProduct } = node;
+        return {
+            ...restOfProduct,
+            description: descriptionMetafield?.value || "",
+        };
+    });
+}
+
 export async function getProductById(id: string): Promise<ShopifyProduct | null> {
     const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
     if (!response.product) return null;
