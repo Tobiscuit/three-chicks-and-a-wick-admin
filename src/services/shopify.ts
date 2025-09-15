@@ -269,10 +269,12 @@ type ProductData = {
     imageUrls: string[];
 };
 
-async function getOnlineStorePublicationId(): Promise<string> {
+// REPLACEMENT for getOnlineStorePublicationId
+// This new version can find multiple channels by their names.
+async function getPublicationIds(channelNames: string[]): Promise<string[]> {
   const query = `
-    query {
-      publications(first: 10) {
+    query getPublications {
+      publications(first: 25) {
         edges {
           node {
             id
@@ -283,40 +285,37 @@ async function getOnlineStorePublicationId(): Promise<string> {
     }
   `;
   const result = await fetchShopify<any>(query);
+  const allPublications = result.publications.edges.map((e: any) => e.node);
   
-  // Log all available channels for debugging
-  console.log('--- AVAILABLE SALES CHANNELS ---');
-  result.publications.edges.forEach((e: any) => {
-    console.log(`Channel: "${e.node.name}" (ID: ${e.node.id})`);
-  });
-  console.log('--- END SALES CHANNELS ---');
-  
-  // Try multiple possible names for the main storefront
-  const possibleNames = ['Online Store', 'Web', 'Website', 'Storefront', 'Main Store', 'Headless'];
-  const onlineStore = result.publications.edges.find((e: any) => 
-    possibleNames.some(name => e.node.name.toLowerCase().includes(name.toLowerCase()))
-  );
-  
-  if (!onlineStore) {
-    console.error('Available channels:', result.publications.edges.map((e: any) => e.node.name));
-    throw new Error(`No suitable publication channel found. Available channels: ${result.publications.edges.map((e: any) => e.node.name).join(', ')}`);
+  const publicationIds = allPublications
+    .filter((p: { name: string }) => channelNames.includes(p.name))
+    .map((p: { id: string }) => p.id);
+
+  if (publicationIds.length === 0) {
+    console.warn("Could not find any of the requested sales channels:", channelNames);
   }
   
-  console.log(`Using channel: "${onlineStore.node.name}" (ID: ${onlineStore.node.id})`);
-  return onlineStore.node.id;
+  return publicationIds;
 }
 
+// REPLACEMENT for publishProductToChannel
+// This new version publishes a product to all the channels we find.
 async function publishProductToChannel(productId: string) {
-  const publicationId = await getOnlineStorePublicationId();
-  
-  // This is the corrected mutation with a valid return payload for API 2025-07
+  // Define all the channels you want to publish to here
+  const channelsToPublish = ['Online Store', 'Threechicksandawick Headless'];
+  const publicationIds = await getPublicationIds(channelsToPublish);
+
+  if (publicationIds.length === 0) {
+      console.warn(`No valid publication channels found to publish product ${productId}`);
+      return; // Stop if no channels were found
+  }
+
   const mutation = `
     mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
       publishablePublish(id: $id, input: $input) {
         publishable {
           ... on Product {
             id
-            title
             status
           }
         }
@@ -328,16 +327,17 @@ async function publishProductToChannel(productId: string) {
     }
   `;
 
+  // The 'input' is now an array of all the channel IDs we want to publish to
   const result = await fetchShopify<any>(mutation, {
     id: productId,
-    input: [{ publicationId }]
+    input: publicationIds.map(id => ({ publicationId: id }))
   });
 
   const userErrors = result.publishablePublish.userErrors;
   if (userErrors && userErrors.length > 0) {
       console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
   } else {
-      console.log(`Successfully published product ${productId} to the Online Store.`);
+      console.log(`Successfully published product ${productId} to ${publicationIds.length} channel(s).`);
   }
 }
 
