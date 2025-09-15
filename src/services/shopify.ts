@@ -309,13 +309,14 @@ async function getOnlineStorePublicationId(): Promise<string> {
 async function publishProductToChannel(productId: string) {
   const publicationId = await getOnlineStorePublicationId();
   
-  // This is the corrected mutation string with a valid return payload
+  // This is the corrected mutation with a valid return payload for API 2025-07
   const mutation = `
     mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
       publishablePublish(id: $id, input: $input) {
         publishable {
           ... on Product {
             id
+            title
             status
           }
         }
