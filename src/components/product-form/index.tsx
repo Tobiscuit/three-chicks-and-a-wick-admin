@@ -96,7 +96,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
       price: priceString,
       sku: initialData?.variants.edges[0]?.node.sku || "",
       inventory: initialData?.totalInventory || 0,
-      status: initialData?.status || "DRAFT",
+      status: initialData?.status || "ACTIVE",
       productType: initialData?.productType || "Candle",
       collections: initialData?.collections?.edges.map((e: any) => e.node.id) || [],
       tags: initialData?.tags.join(', ') || "",
@@ -139,7 +139,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 setValue('sku', sku, { shouldDirty: true });
                 setValue('tags', tags, { shouldDirty: true });
                 setValue('inventory', quantity, { shouldDirty: true });
-                setValue('status', 'DRAFT', { shouldDirty: true });
+                setValue('status', 'ACTIVE', { shouldDirty: true });
 
                 const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
