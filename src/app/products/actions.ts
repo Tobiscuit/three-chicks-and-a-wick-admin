@@ -39,6 +39,7 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
             price: product.price,
             sku: product.sku,
             status: product.status,
+            inventory: product.inventory || 0,
             imageUrls: product.imageUrls || [],
         });
         revalidatePath('/products');
