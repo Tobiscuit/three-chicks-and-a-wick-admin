@@ -28,9 +28,12 @@ import {
   Edit,
   ExternalLink,
   ClipboardCopy,
-  Pencil
+  Pencil,
+  Check,
+  X
 } from "lucide-react";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
+import { useProductImage } from "@/hooks/use-product-image";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
 import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -175,12 +178,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     onClick={() => handleRowClick(product.id)}
                   >
                     <TableCell className="hidden sm:table-cell">
-                      <Image
-                        alt={product.title}
-                        className="aspect-square rounded-md object-cover"
-                        height="64"
-                        src={product.featuredImage?.url || 'https://placehold.co/64x64'}
-                        width="64"
+                      <ProductImageCell 
+                        productId={product.id}
+                        fallbackImageUrl={product.featuredImage?.url}
                       />
                     </TableCell>
                     <TableCell className="font-medium max-w-[150px] truncate">{product.title}</TableCell>
@@ -336,12 +336,10 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
     <AlertDialog>
       <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
         <div className="relative">
-          <Image
-            alt={product.title}
-            className="aspect-square object-cover w-full transition-transform group-hover:scale-105"
-            height="300"
-            src={product.featuredImage?.url || 'https://placehold.co/300x300'}
-            width="300"
+          <ProductImageCell 
+            productId={product.id}
+            fallbackImageUrl={product.featuredImage?.url}
+            isCardView={true}
           />
           <div className="absolute top-2 right-2">
               <DropdownMenu>
@@ -430,7 +428,7 @@ function QuickEditModal({ product, onClose }: { product: ShopifyProduct; onClose
     }
     setIsSaving(true);
     try {
-      const result = await quickUpdateInventoryAction(inventoryItemId, quantity);
+      const result = await quickUpdateInventoryAction({ inventoryItemId, quantity });
       if (result.success) {
         toast({ title: "Success", description: `Inventory for "${product.title}" updated.` });
         onClose();
@@ -490,5 +488,38 @@ function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string
         <span className="text-xs text-red-600">⚠️</span>
       )}
     </span>
+  );
+}
+
+function ProductImageCell({ productId, fallbackImageUrl, isCardView = false }: { productId: string; fallbackImageUrl?: string; isCardView?: boolean }) {
+  const { imageUrl, status } = useProductImage(productId);
+  
+  const displayImageUrl = imageUrl || fallbackImageUrl || (isCardView ? 'https://placehold.co/300x300' : 'https://placehold.co/64x64');
+  
+  return (
+    <div className="relative">
+      <Image
+        alt="Product"
+        className={isCardView ? "aspect-square object-cover w-full transition-transform group-hover:scale-105" : "aspect-square rounded-md object-cover"}
+        height={isCardView ? 300 : 64}
+        src={displayImageUrl}
+        width={isCardView ? 300 : 64}
+      />
+      {status === 'syncing' && (
+        <div className="absolute inset-0 bg-black/20 rounded-md flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {status === 'confirmed' && (
+        <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+          <Check className="w-2 h-2 text-white" />
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+          <X className="w-2 h-2 text-white" />
+        </div>
+      )}
+    </div>
   );
 }
