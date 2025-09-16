@@ -11,12 +11,14 @@ import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { DiagnosticButton } from '@/components/diagnostic-button';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Disable caching completely
 
 async function ProductsData() {
     let products: ShopifyProduct[] = [];
     let error: string | null = null;
 
     try {
+        // Add cache busting to ensure fresh data
         const rawProducts = await getProducts();
         
         products = rawProducts.map(product => {
