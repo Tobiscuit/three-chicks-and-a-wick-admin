@@ -51,11 +51,16 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
         // Write to Firestore for real-time updates
         if (result.product?.id) {
             const productDocId = encodeShopifyId(result.product.id);
+            
+            // Write image data
             await adminDb.collection('productImages').doc(productDocId).set({
                 imageUrl: product.imageUrls?.[0] || null,
                 status: 'confirmed',
                 updatedAt: FieldValue.serverTimestamp(),
             }, { merge: true });
+            
+            // Note: Inventory data will be written by the createProduct function
+            // which already handles inventoryStatus updates via updateInventoryQuantity
         }
         
         revalidatePath('/products');

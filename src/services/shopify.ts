@@ -1,6 +1,9 @@
 'use server';
 
 import { ShopifyProduct } from "@/types/shopify";
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { encodeShopifyId } from '@/lib/utils';
 
 export type { ShopifyProduct };
 
@@ -348,17 +351,17 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
                 query getInventoryLevels($id: ID!) {
                     inventoryItem(id: $id) {
                         inventoryLevels(first: 5) {
-                            edges {
-                                node {
-                                    id
+      edges {
+        node {
+          id
                                     available
                                     location { id }
                                 }
-                            }
-                        }
-                    }
-                }
-            `;
+        }
+      }
+    }
+  }
+`;
             const inventoryLevelsResult = await fetchShopify<any>(inventoryLevelsQuery, { id: inventoryItemId });
             const locationId = await getPrimaryLocationId();
             
@@ -519,7 +522,7 @@ export async function createProduct(productData: ProductData) {
   const variantNode = getVariantResult.product.variants.edges[0]?.node;
   if (!variantNode) throw new Error("No default variant found");
   const { id: variantId, inventoryItem: { id: inventoryItemId } } = variantNode;
-  
+
   // 3. Update the variant's price
   const updateVariantMutation = `
     mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
@@ -572,6 +575,14 @@ export async function createProduct(productData: ProductData) {
   // Step 6: Set the absolute inventory quantity now that it's activated
   if (typeof productData.inventory === 'number') {
       await updateInventoryQuantity(inventoryItemId, productData.inventory, locationId);
+      
+      // Also write to Firestore for real-time updates
+      const docId = encodeShopifyId(inventoryItemId);
+      await adminDb.collection('inventoryStatus').doc(docId).set({
+          quantity: productData.inventory,
+          status: 'confirmed',
+          updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
   }
   
   // Step 7: Add product to selected collections
