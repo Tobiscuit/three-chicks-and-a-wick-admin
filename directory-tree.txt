@@ -260,6 +260,7 @@ threechicksandawick-admin-panel
 │   ├── hooks
 │   │   ├── use-inventory-status.tsx
 │   │   ├── use-mobile.tsx
+│   │   ├── use-product-image.tsx
 │   │   ├── use-server-sent-events.tsx
 │   │   └── use-toast.ts
 │   ├── lib

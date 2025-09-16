@@ -98,6 +98,15 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
                     }, { merge: true });
                 })() 
                 : Promise.resolve(),
+            // Update product image in Firestore for real-time updates
+            (async () => {
+                const productDocId = encodeShopifyId(productId);
+                await adminDb.collection('productImages').doc(productDocId).set({
+                    imageUrl: productData.imageUrls?.[0] || null,
+                    status: 'confirmed',
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+            })(),
             // Add to new collections
             ...collectionsToAdd.map(collectionId => collectionAddProducts(collectionId, [productId])),
             // Remove from old collections
