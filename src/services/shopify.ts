@@ -304,13 +304,44 @@ export async function getCollections(first: number = 50, after?: string): Promis
 }
 
 export async function getProductById(id: string): Promise<ShopifyProduct | null> {
+    // Step 1: Fetch the main product data
     const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
     if (!response.product) return null;
+
     const { description: descriptionMetafield, ...restOfProduct } = response.product;
-    const product: ShopifyProduct = {
+    let product: ShopifyProduct = {
         ...restOfProduct,
         description: descriptionMetafield?.value || "",
     };
+    
+    // Step 2: Perform a more precise, real-time inventory check
+    const inventoryItemId = product.variants.edges[0]?.node.inventoryItem.id;
+    if (inventoryItemId) {
+        try {
+            const locationId = await getPrimaryLocationId();
+            if (locationId) {
+                const inventoryQuery = `
+                    query getInventoryLevel($id: ID!) {
+                        inventoryLevel(id: $id) {
+                            available
+                        }
+                    }
+                `;
+                // Construct the complex InventoryLevel GID that Shopify needs
+                const inventoryLevelId = `gid://shopify/InventoryLevel/${inventoryItemId.split('/').pop()}?location=${locationId.split('/').pop()}`;
+                
+                const inventoryResult = await fetchShopify<any>(inventoryQuery, { id: inventoryLevelId });
+                
+                if (typeof inventoryResult.inventoryLevel?.available === 'number') {
+                    // Overwrite the incorrect totalInventory with the real-time value
+                    product.totalInventory = inventoryResult.inventoryLevel.available;
+                }
+            }
+        } catch (error) {
+            console.warn("Could not fetch real-time inventory, falling back to totalInventory. Error:", error);
+        }
+    }
+    
     return product;
 }
 
