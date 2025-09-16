@@ -47,6 +47,17 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
             imageUrls: product.imageUrls || [],
             collections: product.collections || [],
         });
+        
+        // Write to Firestore for real-time updates
+        if (result.product?.id) {
+            const productDocId = encodeShopifyId(result.product.id);
+            await adminDb.collection('productImages').doc(productDocId).set({
+                imageUrl: product.imageUrls?.[0] || null,
+                status: 'confirmed',
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+        }
+        
         revalidatePath('/products');
         return { success: true, product: result };
     } catch (error) {
