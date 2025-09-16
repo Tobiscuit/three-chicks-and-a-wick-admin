@@ -11,6 +11,9 @@ import {
     deleteProduct,
     getPrimaryLocationId,
     updateInventoryQuantity,
+    getProductById,
+    collectionAddProducts,
+    collectionRemoveProducts,
 } from '@/services/shopify';
 import { adminDb } from '@/lib/firebase-admin';
 import { encodeShopifyId } from '@/lib/utils';
@@ -27,6 +30,7 @@ const productSchema = z.object({
     sku: z.string(),
     status: z.string(),
     imageUrls: z.array(z.string().url()).optional().nullable(),
+    collections: z.array(z.string()).optional(),
 });
 
 export async function addProductAction(formData: z.infer<typeof productSchema>) {
@@ -53,47 +57,54 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
 
 export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
-        const product = productSchema.parse(formData);
-        const productId = product.id;
-        if (!productId) {
-            throw new Error('Product ID is required for updates.');
-        }
+        const productData = productSchema.parse(formData);
+        const productId = productData.id;
+        if (!productId) throw new Error('Product ID is required for updates.');
 
-        // Step 1: Update core product details (title, tags, status)
-        await updateProduct(productId, {
-            title: product.title,
-            tags: product.tags,
-            status: product.status,
-        });
+        // First, get the product's current collections
+        const existingProduct = await getProductById(productId);
+        const existingCollectionIds = new Set(existingProduct?.collections.edges.map(e => e.node.id) || []);
+        const newCollectionIds = new Set(productData.collections || []);
 
-        // Step 2: Update the description using its separate metafield mutation
-        if (product.description) {
-            await updateProductDescription(productId, product.description);
-        }
+        // Determine which collections to add the product to
+        const collectionsToAdd = [...newCollectionIds].filter(id => !existingCollectionIds.has(id));
+        // Determine which collections to remove the product from
+        const collectionsToRemove = [...existingCollectionIds].filter(id => !newCollectionIds.has(id));
 
-        // Step 3: Update inventory
-        if (product.inventoryItemId && typeof product.inventory === 'number') {
-            
-            // --- ADD THIS LOG ---
-            console.log(`[SERVER] updateProductAction: Updating inventory for item ${product.inventoryItemId} to quantity ${product.inventory}`);
+        // Perform all updates concurrently
+        await Promise.all([
+            // Update core details
+            updateProduct(productId, {
+                title: productData.title,
+                tags: productData.tags,
+                status: productData.status,
+            }),
+            // Update description metafield
+            productData.description ? updateProductDescription(productId, productData.description) : Promise.resolve(),
+            // Update inventory
+            (productData.inventoryItemId && typeof productData.inventory === 'number') ? 
+                (async () => {
+                    console.log(`[SERVER] updateProductAction: Updating inventory for item ${productData.inventoryItemId} to quantity ${productData.inventory}`);
+                    const locationId = await getPrimaryLocationId();
+                    if (!locationId) throw new Error("Could not determine primary location.");
+                    await updateInventoryQuantity(productData.inventoryItemId!, productData.inventory!, locationId);
+                    
+                    const docId = encodeShopifyId(productData.inventoryItemId!);
+                    await adminDb.collection('inventoryStatus').doc(docId).set({
+                        quantity: productData.inventory,
+                        status: 'confirmed',
+                        updatedAt: FieldValue.serverTimestamp(),
+                    }, { merge: true });
+                })() 
+                : Promise.resolve(),
+            // Add to new collections
+            ...collectionsToAdd.map(collectionId => collectionAddProducts(collectionId, [productId])),
+            // Remove from old collections
+            ...collectionsToRemove.map(collectionId => collectionRemoveProducts(collectionId, [productId]))
+        ]);
 
-            const locationId = await getPrimaryLocationId();
-            if (!locationId) {
-                throw new Error("Could not determine primary location for inventory update.");
-            }
-            await updateInventoryQuantity(product.inventoryItemId, product.inventory, locationId);
-            
-            const docId = encodeShopifyId(product.inventoryItemId);
-            await adminDb.collection('inventoryStatus').doc(docId).set({
-                quantity: product.inventory,
-                status: 'confirmed',
-                updatedAt: FieldValue.serverTimestamp(),
-            }, { merge: true });
-        }
-        
         revalidatePath('/products');
         return { success: true };
-
     } catch (error) {
         console.error('Error updating product:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
