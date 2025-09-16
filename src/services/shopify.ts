@@ -320,21 +320,26 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
         try {
             const locationId = await getPrimaryLocationId();
             if (locationId) {
+                // This is the corrected, precise inventory query for 2025-07 API
                 const inventoryQuery = `
                     query getInventoryLevel($id: ID!) {
                         inventoryLevel(id: $id) {
-                            available
+                            quantities(names: ["available"]) {
+                                name
+                                quantity
+                            }
                         }
                     }
                 `;
-                // Construct the complex InventoryLevel GID that Shopify needs
                 const inventoryLevelId = `gid://shopify/InventoryLevel/${inventoryItemId.split('/').pop()}?location=${locationId.split('/').pop()}`;
                 
                 const inventoryResult = await fetchShopify<any>(inventoryQuery, { id: inventoryLevelId });
                 
-                if (typeof inventoryResult.inventoryLevel?.available === 'number') {
-                    // Overwrite the incorrect totalInventory with the real-time value
-                    product.totalInventory = inventoryResult.inventoryLevel.available;
+                // This correctly extracts the quantity from the nested response
+                const realTimeQuantity = inventoryResult.inventoryLevel?.quantities[0]?.quantity;
+                
+                if (typeof realTimeQuantity === 'number') {
+                    product.totalInventory = realTimeQuantity;
                 }
             }
         } catch (error) {
