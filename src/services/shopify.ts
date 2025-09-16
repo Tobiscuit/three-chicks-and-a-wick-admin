@@ -406,6 +406,7 @@ type ProductData = {
     status: string;
     inventory: number; // Ensure this is part of the type
     imageUrls: string[];
+    collections?: string[]; // Add collections support
 };
 
 // REPLACEMENT for getOnlineStorePublicationId
@@ -573,7 +574,14 @@ export async function createProduct(productData: ProductData) {
       await updateInventoryQuantity(inventoryItemId, productData.inventory, locationId);
   }
   
-  // Step 7: Attach images
+  // Step 7: Add product to selected collections
+  if (productData.collections && productData.collections.length > 0) {
+      for (const collectionId of productData.collections) {
+          await collectionAddProducts(collectionId, [productId]);
+      }
+  }
+  
+  // Step 8: Attach images
   if (productData.imageUrls.length > 0) {
     const createMediaMutation = `
         mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
@@ -589,10 +597,10 @@ export async function createProduct(productData: ProductData) {
     });
   }
 
-  // Step 8: Set the description via metafield
+  // Step 9: Set the description via metafield
   await updateProductDescription(productId, productData.description);
   
-  // Step 9: Publish the product to the sales channel
+  // Step 10: Publish the product to the sales channel
   try {
     await publishProductToChannel(productId);
   } catch (error) {
