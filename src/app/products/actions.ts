@@ -45,6 +45,7 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
             status: product.status,
             inventory: product.inventory || 0,
             imageUrls: product.imageUrls || [],
+            collections: product.collections || [],
         });
         revalidatePath('/products');
         return { success: true, product: result };
