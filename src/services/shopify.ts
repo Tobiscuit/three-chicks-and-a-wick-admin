@@ -207,6 +207,31 @@ type GetProductsResponse = {
     };
 };
 
+// Collection management functions
+export async function collectionAddProducts(collectionId: string, productIds: string[]) {
+    const mutation = `
+        mutation collectionAddProducts($id: ID!, $productIds: [ID!]!) {
+            collectionAddProducts(id: $id, productIds: $productIds) {
+                collection { id }
+                userErrors { field message }
+            }
+        }
+    `;
+    await fetchShopify(mutation, { id: collectionId, productIds });
+}
+
+export async function collectionRemoveProducts(collectionId: string, productIds: string[]) {
+    const mutation = `
+        mutation collectionRemoveProducts($id: ID!, $productIds: [ID!]!) {
+            collectionRemoveProducts(id: $id, productIds: $productIds) {
+                collection { id }
+                userErrors { field message }
+            }
+        }
+    `;
+    await fetchShopify(mutation, { id: collectionId, productIds });
+}
+
 export async function getOrders(first: number = 50, after?: string): Promise<ShopifyOrder[]> {
   const query = `
     query getOrders($first: Int!, $after: String) {
@@ -318,32 +343,35 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
     const inventoryItemId = product.variants.edges[0]?.node.inventoryItem.id;
     if (inventoryItemId) {
         try {
-            const locationId = await getPrimaryLocationId();
-            if (locationId) {
-                // This is the corrected, precise inventory query for 2025-07 API
-                const inventoryQuery = `
-                    query getInventoryLevel($id: ID!) {
-                        inventoryLevel(id: $id) {
-                            quantities(names: ["available"]) {
-                                name
-                                quantity
+            // This new query fetches the correct, stable InventoryLevel ID
+            const inventoryLevelsQuery = `
+                query getInventoryLevels($id: ID!) {
+                    inventoryItem(id: $id) {
+                        inventoryLevels(first: 5) {
+                            edges {
+                                node {
+                                    id
+                                    available
+                                    location { id }
+                                }
                             }
                         }
                     }
-                `;
-                const inventoryLevelId = `gid://shopify/InventoryLevel/${inventoryItemId.split('/').pop()}?location=${locationId.split('/').pop()}`;
-                
-                const inventoryResult = await fetchShopify<any>(inventoryQuery, { id: inventoryLevelId });
-                
-                // This correctly extracts the quantity from the nested response
-                const realTimeQuantity = inventoryResult.inventoryLevel?.quantities[0]?.quantity;
-                
-                if (typeof realTimeQuantity === 'number') {
-                    product.totalInventory = realTimeQuantity;
                 }
+            `;
+            const inventoryLevelsResult = await fetchShopify<any>(inventoryLevelsQuery, { id: inventoryItemId });
+            const locationId = await getPrimaryLocationId();
+            
+            // Find the specific inventory level for our primary location
+            const primaryLocationLevel = inventoryLevelsResult.inventoryItem?.inventoryLevels.edges
+                .find((edge: any) => edge.node.location.id === locationId)?.node;
+
+            if (primaryLocationLevel) {
+                product.totalInventory = primaryLocationLevel.available;
             }
+
         } catch (error) {
-            console.warn("Could not fetch real-time inventory, falling back to totalInventory. Error:", error);
+            console.warn("Could not fetch real-time inventory. Error:", error);
         }
     }
     
