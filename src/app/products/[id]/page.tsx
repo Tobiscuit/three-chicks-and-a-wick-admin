@@ -7,8 +7,6 @@ import { AlertTriangle } from 'lucide-react';
 import { ProductForm } from '@/components/product-form';
 import type { ShopifyCollection, ShopifyProduct } from '@/services/shopify';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0; // Disable caching completely
 
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
     const { id } = params;
