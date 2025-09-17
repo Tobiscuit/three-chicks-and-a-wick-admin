@@ -28,9 +28,7 @@ import {
   Edit,
   ExternalLink,
   ClipboardCopy,
-  Pencil,
-  Check,
-  X
+  Pencil
 } from "lucide-react";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useProductImage } from "@/hooks/use-product-image";
@@ -480,13 +478,8 @@ function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string
   console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'firestore_quantity:', quantity, 'shopify_fallback:', fallback, 'displayValue:', displayValue);
 
   return (
-    <span className="inline-flex items-center gap-1">
-      <span>
-        {displayValue}
-      </span>
-      {status === 'error' && (
-        <span className="text-xs text-red-600">⚠️</span>
-      )}
+    <span>
+      {displayValue}
     </span>
   );
 }
@@ -497,29 +490,12 @@ function ProductImageCell({ productId, fallbackImageUrl, isCardView = false }: {
   const displayImageUrl = imageUrl || fallbackImageUrl || (isCardView ? 'https://placehold.co/300x300' : 'https://placehold.co/64x64');
   
   return (
-    <div className="relative">
-      <Image
-        alt="Product"
-        className={isCardView ? "aspect-square object-cover w-full transition-transform group-hover:scale-105" : "aspect-square rounded-md object-cover"}
-        height={isCardView ? 300 : 64}
-        src={displayImageUrl}
-        width={isCardView ? 300 : 64}
-      />
-      {status === 'syncing' && (
-        <div className="absolute inset-0 bg-black/20 rounded-md flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-      {status === 'confirmed' && (
-        <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-          <Check className="w-2 h-2 text-white" />
-        </div>
-      )}
-      {status === 'error' && (
-        <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-          <X className="w-2 h-2 text-white" />
-        </div>
-      )}
-    </div>
+    <Image
+      alt="Product"
+      className={isCardView ? "aspect-square object-cover w-full transition-transform group-hover:scale-105" : "aspect-square rounded-md object-cover"}
+      height={isCardView ? 300 : 64}
+      src={displayImageUrl}
+      width={isCardView ? 300 : 64}
+    />
   );
 }
