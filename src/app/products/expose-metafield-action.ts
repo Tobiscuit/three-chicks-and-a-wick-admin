@@ -39,9 +39,14 @@ export async function exposeDescriptionMetafieldToStorefront() {
     };
     
     try {
-        console.log('📤 Sending mutation:', JSON.stringify({ mutation, variables }, null, 2));
+        console.log('📤 Sending metafieldDefinitionCreate mutation with variables:', JSON.stringify(variables, null, 2));
         const result = await fetchShopify(mutation, variables);
-        console.log('📥 Full response:', JSON.stringify(result, null, 2));
+        console.log('📥 Response structure:', {
+            hasUserErrors: !!result.metafieldDefinitionCreate?.userErrors,
+            userErrorCount: result.metafieldDefinitionCreate?.userErrors?.length || 0,
+            hasCreatedDefinition: !!result.metafieldDefinitionCreate?.createdDefinition,
+            definitionId: result.metafieldDefinitionCreate?.createdDefinition?.id || 'none'
+        });
         
         if (result.metafieldDefinitionCreate.userErrors?.length > 0) {
             const errors = result.metafieldDefinitionCreate.userErrors;
@@ -66,7 +71,7 @@ export async function exposeDescriptionMetafieldToStorefront() {
         } else {
             const errorMsg = 'No definition ID returned, but no errors either';
             console.error('❌ Unexpected response structure:', errorMsg);
-            console.error('❌ Full result structure:', JSON.stringify(result, null, 2));
+            console.error('❌ Available fields in result:', Object.keys(result.metafieldDefinitionCreate || {}));
             return { 
                 success: false, 
                 error: errorMsg
