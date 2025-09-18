@@ -14,7 +14,7 @@ export function DiagnosticButton() {
     try {
       const result = await exposeDescriptionMetafieldToStorefront();
       if (result.success) {
-        alert(`✅ ${result.message}\nVisibility ID: ${result.visibilityId}`);
+        alert(`✅ ${result.message}\nDefinition ID: ${result.definitionId}`);
       } else {
         alert(`❌ ${result.error}`);
       }
