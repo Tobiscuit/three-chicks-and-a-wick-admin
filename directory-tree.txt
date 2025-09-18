@@ -140,6 +140,9 @@ threechicksandawick-admin-panel
 ├── package-lock.json
 ├── package.json
 ├── postcss.config.mjs
+├── scripts
+│   ├── expose-metafield-simple.mjs
+│   └── expose-metafield-to-storefront.js
 ├── src
 │   ├── .env
 │   ├── ai
@@ -183,6 +186,7 @@ threechicksandawick-admin-panel
 │   │   │   │   └── page.tsx
 │   │   │   ├── actions.ts
 │   │   │   ├── diagnostic-actions.ts
+│   │   │   ├── expose-metafield-action.ts
 │   │   │   ├── new
 │   │   │   │   └── page.tsx
 │   │   │   └── page.tsx
