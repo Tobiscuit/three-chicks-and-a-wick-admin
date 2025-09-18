@@ -8,7 +8,7 @@ export async function exposeDescriptionMetafieldToStorefront() {
     const mutation = `
         mutation metafieldDefinitionCreate($definition: MetafieldDefinitionInput!) {
             metafieldDefinitionCreate(definition: $definition) {
-                metafieldDefinition {
+                createdDefinition {
                     id
                     name
                     namespace
@@ -39,30 +39,37 @@ export async function exposeDescriptionMetafieldToStorefront() {
     };
     
     try {
+        console.log('📤 Sending mutation:', JSON.stringify({ mutation, variables }, null, 2));
         const result = await fetchShopify(mutation, variables);
+        console.log('📥 Full response:', JSON.stringify(result, null, 2));
         
         if (result.metafieldDefinitionCreate.userErrors?.length > 0) {
             const errors = result.metafieldDefinitionCreate.userErrors;
-            console.error('❌ Errors:', errors);
+            console.error('❌ User Errors:', errors);
+            const errorMsg = `Failed to create metafield definition: ${errors.map(e => e.message).join(', ')}`;
+            console.error('❌ Error Message:', errorMsg);
             return { 
                 success: false, 
-                error: `Failed to create metafield definition: ${errors.map(e => e.message).join(', ')}` 
+                error: errorMsg
             };
         }
         
-        if (result.metafieldDefinitionCreate.metafieldDefinition?.id) {
+        if (result.metafieldDefinitionCreate.createdDefinition?.id) {
             console.log('✅ Success! Metafield definition created with PUBLIC_READ access');
-            console.log('📋 Definition ID:', result.metafieldDefinitionCreate.metafieldDefinition.id);
-            console.log('🎯 Storefront access:', result.metafieldDefinitionCreate.metafieldDefinition.access?.storefront);
+            console.log('📋 Definition ID:', result.metafieldDefinitionCreate.createdDefinition.id);
+            console.log('🎯 Storefront access:', result.metafieldDefinitionCreate.createdDefinition.access?.storefront);
             return { 
                 success: true, 
                 message: 'Metafield definition created with PUBLIC_READ access',
-                definitionId: result.metafieldDefinitionCreate.metafieldDefinition.id
+                definitionId: result.metafieldDefinitionCreate.createdDefinition.id
             };
         } else {
+            const errorMsg = 'No definition ID returned, but no errors either';
+            console.error('❌ Unexpected response structure:', errorMsg);
+            console.error('❌ Full result structure:', JSON.stringify(result, null, 2));
             return { 
                 success: false, 
-                error: 'No definition ID returned, but no errors either' 
+                error: errorMsg
             };
         }
         
