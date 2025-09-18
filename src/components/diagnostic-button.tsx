@@ -16,10 +16,27 @@ export function DiagnosticButton() {
       if (result.success) {
         alert(`✅ ${result.message}\nDefinition ID: ${result.definitionId}`);
       } else {
-        alert(`❌ ${result.error}`);
+        // Show full error details in a copyable format
+        const errorDetails = `❌ METAFIELD EXPOSURE FAILED
+
+Error: ${result.error}
+
+Full Details:
+${JSON.stringify(result, null, 2)}
+
+Please copy this error message and share it for debugging.`;
+        alert(errorDetails);
       }
     } catch (error) {
-      alert(`❌ Error: ${error}`);
+      const errorDetails = `❌ UNEXPECTED ERROR
+
+Error: ${error}
+
+Stack Trace:
+${error instanceof Error ? error.stack : 'No stack trace available'}
+
+Please copy this error message and share it for debugging.`;
+      alert(errorDetails);
     } finally {
       setIsExposing(false);
     }
