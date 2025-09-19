@@ -1,0 +1,22 @@
+[33mcommit 602c578b0f75fe611dee37d31881387eb5332da9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtemp-fixes[m[33m, [m[1;31morigin/temp-fixes[m[33m)[m
+Author: Tobi <33387497+Tobiscuit@users.noreply.github.com>
+Date:   Fri Sep 19 13:45:20 2025 -0500
+
+    FIX: Manual image upload crashes and broken image handling
+    
+    Issues fixed:
+    1. Manual image upload preview not showing
+    2. 'Cannot read properties of undefined (reading src)' error
+    3. Broken images causing storefront crashes
+    
+    Solutions implemented:
+    - Added proper file validation (type, size)
+    - Enhanced error handling with detailed messages
+    - Added image URL validation before rendering
+    - Added onError handler to remove broken images
+    - Filter invalid URLs before sending to server
+    - Better user feedback for upload status
+    
+    This should fix the manual product creation flow completely.
+
+src/components/product-form/index.tsx

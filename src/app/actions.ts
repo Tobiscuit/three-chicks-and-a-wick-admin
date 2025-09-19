@@ -328,21 +328,29 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
         const signedUrls = await Promise.all(
             imageFiles.map(async (file) => {
                 try {
+                    console.log(`[getGalleryImagesAction] Generating signed URL for: ${file.name}`);
                     const [url] = await file.getSignedUrl({
                         action: 'read',
                         expires: Date.now() + 15 * 60 * 1000, // 15 minutes
                     });
+                    console.log(`[getGalleryImagesAction] ✅ Successfully generated URL for ${file.name}: ${url.substring(0, 50)}...`);
                     return { name: file.name, url: url };
                 } catch (urlError: any) {
-                    console.error(`    FAILED to generate signed URL for ${file.name}:`, urlError.message);
+                    console.error(`[getGalleryImagesAction] ❌ FAILED to generate signed URL for ${file.name}:`, urlError.message);
                     return { name: file.name, url: 'error' };
                 }
             })
         );
         
+        const validImages = signedUrls.filter(img => img.url !== 'error');
+        console.log(`[getGalleryImagesAction] Final results: ${validImages.length} valid images out of ${signedUrls.length} total`);
+        console.log("[getGalleryImagesAction] Valid images:", validImages.map(img => ({
+            name: img.name,
+            url: img.url.substring(0, 50) + '...'
+        })));
         console.log("[getGalleryImagesAction] END: Operation complete.");
         console.log("--------------------------------------------------");
-        return { success: true, images: signedUrls.filter(img => img.url !== 'error'), bucketName: bucket.name };
+        return { success: true, images: validImages, bucketName: bucket.name };
 
     } catch (error: any) {
         console.error("[getGalleryImagesAction] FATAL: An uncaught error occurred:", error);

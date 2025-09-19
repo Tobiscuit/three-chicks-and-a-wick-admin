@@ -76,6 +76,7 @@ threechicksandawick-admin-panel
 ├── docs
 │   └── blueprint.md
 ├── download.zip
+├── e broken background images
 ├── firebase-debug.log
 ├── firebase.json
 ├── firestore.rules
@@ -135,6 +136,7 @@ threechicksandawick-admin-panel
 │   │   │   └── css
 │   │   │   │   └── 38310fdaea982efa.css
 │   └── favicon.ico
+├── how --name-only 602c578
 ├── next-env.d.ts
 ├── next.config.ts
 ├── package-lock.json
