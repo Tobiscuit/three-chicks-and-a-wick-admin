@@ -74,7 +74,7 @@ type GalleryImage = {
     url: string;
 };
 
-const ImageUploadArea = ({ field, preview, label, isLoading = false }: { field: any, preview: string | null, label: string, isLoading?: boolean }) => {
+const ImageUploadArea = ({ field, preview, label, isLoading = false, form }: { field: any, preview: string | null, label: string, isLoading?: boolean, form?: any }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <FormItem>
@@ -86,7 +86,7 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false }: { field: 
         >
           {isLoading ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-              <Skeleton className="w-full h-full rounded-md" />
+              <Skeleton className="w-full h-full rounded-md animate-pulse" />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Processing...</p>
@@ -107,7 +107,6 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false }: { field: 
             </div>
           )}
           <Input
-            {...field}
             type="file"
             className="hidden"
             ref={fileInputRef}
@@ -116,6 +115,10 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false }: { field: 
               const file = e.target.files?.[0];
               if (file) {
                 field.onChange(file);
+                // Trigger form dirty state
+                if (form) {
+                  form.setValue(field.name, file, { shouldDirty: true, shouldValidate: true });
+                }
               }
             }}
             value={undefined}
@@ -325,6 +328,7 @@ export function ImageStudio() {
                         preview={primaryPreview}
                         label="Primary Image (Required)"
                         isLoading={imageProcessing}
+                        form={form}
                       />
                     )}
                   />
@@ -337,6 +341,7 @@ export function ImageStudio() {
                         preview={secondaryPreview}
                         label="Additional Angle (Optional)"
                         isLoading={imageProcessing}
+                        form={form}
                       />
                     )}
                   />
@@ -408,7 +413,7 @@ export function ImageStudio() {
                                                     // Skeleton loaders while fetching
                                                     Array.from({ length: 6 }).map((_, index) => (
                                                         <div key={index} className="aspect-square">
-                                                            <Skeleton className="w-full h-full rounded-md" />
+                                                            <Skeleton className="w-full h-full rounded-md animate-pulse" />
                                                         </div>
                                                     ))
                                                 ) : (
@@ -481,7 +486,7 @@ export function ImageStudio() {
                         {isSubmitting ? (
                             <div className="flex flex-col items-center gap-4">
                                 <div className="relative w-full h-[400px]">
-                                    <Skeleton className="w-full h-full rounded-lg" />
+                                    <Skeleton className="w-full h-full rounded-lg animate-pulse" />
                                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                                         <Loader2 className="h-8 w-8 animate-spin" />
                                         <p>Generating your masterpiece...</p>
