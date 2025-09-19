@@ -140,7 +140,17 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
 
 export async function deleteProductAction(productId: string) {
     try {
-        await deleteProduct(productId);
+        console.log(`[SERVER] Attempting to delete product: ${productId}`);
+        const result = await deleteProduct(productId);
+        console.log(`[SERVER] Delete result:`, result);
+        
+        // Check for user errors in the response
+        if (result.userErrors && result.userErrors.length > 0) {
+            const errorMessage = result.userErrors.map((e: any) => e.message).join(', ');
+            console.error('Shopify delete errors:', errorMessage);
+            return { success: false, error: errorMessage };
+        }
+        
         revalidatePath('/products');
         return { success: true };
     } catch (error) {
