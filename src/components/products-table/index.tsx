@@ -124,7 +124,7 @@ function SecureDeleteDialog({
   return (
     <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
       {children}
-      <AlertDialogContent>
+      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Product</AlertDialogTitle>
           <AlertDialogDescription>
@@ -139,6 +139,7 @@ function SecureDeleteDialog({
             value={confirmationText}
             onChange={(e) => setConfirmationText(e.target.value)}
             className="w-full"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
         <AlertDialogFooter>
