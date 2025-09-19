@@ -49,6 +49,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
 function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inventoryItemId?: string }) {
   const { status: inventoryStatus } = useInventoryStatus(inventoryItemId);
@@ -86,6 +87,85 @@ type ProductsTableProps = {
   products: ShopifyProduct[];
 };
 
+// Secure Delete Dialog Component
+function SecureDeleteDialog({ 
+  product, 
+  onDelete, 
+  children 
+}: { 
+  product: ShopifyProduct; 
+  onDelete: (e: React.MouseEvent, productId: string, title: string) => void;
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Get first two words of product title
+  const firstTwoWords = product.title.split(' ').slice(0, 2).join(' ').toLowerCase();
+  const isConfirmationValid = confirmationText.toLowerCase() === firstTwoWords;
+  
+  const handleDelete = async (e: React.MouseEvent) => {
+    if (!isConfirmationValid) return;
+    
+    setIsDeleting(true);
+    await onDelete(e, product.id, product.title);
+    setIsDeleting(false);
+    setIsOpen(false);
+    setConfirmationText("");
+  };
+  
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setConfirmationText("");
+    }
+    setIsOpen(open);
+  };
+  
+  return (
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+      {children}
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Product</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the product "{product.title}".
+            <br /><br />
+            <strong>Security Check:</strong> Type the first two words of the product name to confirm deletion.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4">
+          <Input
+            placeholder={`Type: "${firstTwoWords}"`}
+            value={confirmationText}
+            onChange={(e) => setConfirmationText(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleDelete}
+            disabled={!isConfirmationValid || isDeleting}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete Product"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,13 +188,16 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
   const handleDelete = async (e: React.MouseEvent, productId: string, title: string) => {
     e.stopPropagation();
-    const confirmDelete = confirm(`Delete "${title}"? This cannot be undone.`);
-    if (!confirmDelete) return;
     const res = await deleteProductAction(productId);
     if (res.success) {
       router.refresh();
     } else {
-      alert(res.error || "Failed to delete product.");
+      // Use toast instead of alert for better UX
+      toast({
+        title: "Delete Failed",
+        description: res.error || "Failed to delete product.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -201,7 +284,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <AlertDialog>
+                      <SecureDeleteDialog product={product} onDelete={handleDelete}>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
@@ -239,21 +322,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               </AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
-                      <AlertDialogContent>
-                          <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the product "{product.title}".
-                              </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={(e) => handleDelete(e, product.id, product.title)}>
-                                  Continue
-                              </AlertDialogAction>
-                          </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
+                      </SecureDeleteDialog>
                 </TableCell>
               </TableRow>
             ))}
@@ -331,7 +400,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
 }) {
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
   return (
-    <AlertDialog>
+    <SecureDeleteDialog product={product} onDelete={onDelete}>
       <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
         <div className="relative">
           <ProductImageCell 
@@ -395,21 +464,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
           </div>
         </CardContent>
       </Card>
-      <AlertDialogContent>
-          <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the product "{product.title}".
-              </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={(e) => onDelete(e, product.id, product.title)}>
-                  Continue
-              </AlertDialogAction>
-          </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    </SecureDeleteDialog>
   )
 }
 
