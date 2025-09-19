@@ -140,41 +140,25 @@ export function ImageStudio() {
   useEffect(() => {
     const fetchGalleryImages = async () => {
         try {
-            console.log('[ImageStudio] Starting to fetch gallery images...');
             setGalleryLoading(true);
             setGalleryError(null);
             
             const result = await getGalleryImagesAction();
-            console.log('[ImageStudio] Gallery images result:', {
-                success: result.success,
-                imageCount: result.images?.length || 0,
-                error: result.error,
-                bucketName: result.bucketName
-            });
 
             if (result.success && result.images) {
                 if (result.images.length === 0) {
-                     console.log('[ImageStudio] No images found in gallery');
                      setGalleryError("No images found in the 'gallery-backgrounds' folder in Firebase Storage.");
                 } else {
-                    console.log('[ImageStudio] Gallery images loaded successfully:', result.images.map(img => ({
-                        name: img.name,
-                        url: img.url.substring(0, 50) + '...',
-                        urlLength: img.url.length
-                    })));
                     setGalleryImages(result.images);
                     if (result.images.length > 0) {
-                        console.log('[ImageStudio] Setting first image as selected:', result.images[0].url.substring(0, 50) + '...');
                         form.setValue("selectedBackgroundUrl", result.images[0].url);
                     }
                 }
             } else {
-                console.error('[ImageStudio] Failed to fetch gallery images:', result.error);
                 setGalleryError(result.error || "An unknown error occurred while fetching gallery images.");
             }
 
         } catch (error: any) {
-            console.error('[ImageStudio] Unexpected error fetching gallery images:', error);
             setGalleryError(error.message || "An unexpected error occurred.");
         } finally {
             setGalleryLoading(false);
@@ -401,12 +385,6 @@ export function ImageStudio() {
                                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
                                                 {galleryImages.map((bg) => {
                                                     const selected = field.value === bg.url;
-                                                    console.log('[ImageStudio] Rendering gallery image:', {
-                                                        name: bg.name,
-                                                        url: bg.url.substring(0, 50) + '...',
-                                                        selected: selected,
-                                                        urlValid: bg.url && typeof bg.url === 'string' && bg.url.startsWith('http')
-                                                    });
                                                     return (
                                                         <div
                                                             key={bg.name}
@@ -420,14 +398,6 @@ export function ImageStudio() {
                                                                 height={200}
                                                                 unoptimized={true}
                                                                 className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
-                                                                onLoad={() => console.log('[ImageStudio] Image loaded successfully:', bg.name)}
-                                                                onError={(e) => {
-                                                                    console.error('[ImageStudio] Image failed to load:', {
-                                                                        name: bg.name,
-                                                                        url: bg.url,
-                                                                        error: e
-                                                                    });
-                                                                }}
                                                             />
                                                             {selected && (
                                                                 <>
