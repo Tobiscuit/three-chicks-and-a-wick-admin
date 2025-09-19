@@ -172,6 +172,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
+  const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
 
   // Collect all inventory item IDs for SSE connection
@@ -189,20 +190,55 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
   const handleDelete = async (e: React.MouseEvent, productId: string, title: string) => {
     e.stopPropagation();
-    const res = await deleteProductAction(productId);
-    if (res.success) {
-      router.refresh();
-    } else {
-      // Use toast instead of alert for better UX
+    
+    // Optimistic UI: Immediately remove from list
+    setDeletedProductIds(prev => new Set([...prev, productId]));
+    
+    try {
+      const res = await deleteProductAction(productId);
+      if (res.success) {
+        // Success: Keep the product removed, server will revalidate
+        toast({
+          title: "Product Deleted",
+          description: "Product has been successfully deleted.",
+        });
+      } else {
+        // Failure: Restore the product in the list
+        setDeletedProductIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+        
+        toast({
+          title: "Delete Failed",
+          description: res.error || "Failed to delete product.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      // Error: Restore the product in the list
+      setDeletedProductIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+      
       toast({
         title: "Delete Failed",
-        description: res.error || "Failed to delete product.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
     }
   };
 
   const filteredProducts = products.filter((product) => {
+    // First filter out deleted products
+    if (deletedProductIds.has(product.id)) {
+      return false;
+    }
+    
+    // Then apply search filter
     const term = searchTerm.toLowerCase();
     const titleMatch = product.title.toLowerCase().includes(term);
     const tagMatch = product.tags.some(tag => tag.toLowerCase().includes(term));
