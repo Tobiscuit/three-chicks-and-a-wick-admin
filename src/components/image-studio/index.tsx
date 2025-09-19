@@ -418,6 +418,7 @@ export function ImageStudio() {
                                                                 alt={bg.name}
                                                                 width={200}
                                                                 height={200}
+                                                                unoptimized={true}
                                                                 className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
                                                                 onLoad={() => console.log('[ImageStudio] Image loaded successfully:', bg.name)}
                                                                 onError={(e) => {
@@ -488,6 +489,7 @@ export function ImageStudio() {
                                 alt="Generated product"
                                 width={800}
                                 height={600}
+                                unoptimized={true}
                                 className="object-contain w-full h-full"
                             />
                         ) : (
@@ -606,7 +608,7 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
                             </DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
-                            <Image src={generatedImage} alt="Generated product" width={525} height={400} className="rounded-lg object-contain w-full h-auto aspect-[4/3] border bg-muted" />
+                            <Image src={generatedImage} alt="Generated product" width={525} height={400} unoptimized={true} className="rounded-lg object-contain w-full h-auto aspect-[4/3] border bg-muted" />
                             <FormField
                                 control={form.control}
                                 name="price"
