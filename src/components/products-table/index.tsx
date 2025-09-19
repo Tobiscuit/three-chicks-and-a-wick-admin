@@ -28,7 +28,8 @@ import {
   Edit,
   ExternalLink,
   ClipboardCopy,
-  Pencil
+  Pencil,
+  Loader2
 } from "lucide-react";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useProductImage } from "@/hooks/use-product-image";
