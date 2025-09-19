@@ -74,7 +74,7 @@ type GalleryImage = {
     url: string;
 };
 
-const ImageUploadArea = ({ field, preview, label }: { field: any, preview: string | null, label: string }) => {
+const ImageUploadArea = ({ field, preview, label, isLoading = false }: { field: any, preview: string | null, label: string, isLoading?: boolean }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <FormItem>
@@ -82,9 +82,17 @@ const ImageUploadArea = ({ field, preview, label }: { field: any, preview: strin
       <FormControl>
         <div
           className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50 transition-colors"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !isLoading && fileInputRef.current?.click()}
         >
-          {preview ? (
+          {isLoading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              <Skeleton className="w-full h-full rounded-md" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Processing...</p>
+              </div>
+            </div>
+          ) : preview ? (
             <Image
               src={preview}
               alt="Product preview"
@@ -128,6 +136,7 @@ export function ImageStudio() {
   const [galleryLoading, setGalleryLoading] = useState(true);
   const [galleryError, setGalleryError] = useState<string | null>(null);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [imageProcessing, setImageProcessing] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -172,21 +181,31 @@ export function ImageStudio() {
 
    useEffect(() => {
         if (primaryImageFile instanceof File) {
+            setImageProcessing(true);
             const reader = new FileReader();
-            reader.onloadend = () => setPrimaryPreview(reader.result as string);
+            reader.onloadend = () => {
+                setPrimaryPreview(reader.result as string);
+                setImageProcessing(false);
+            };
             reader.readAsDataURL(primaryImageFile);
         } else {
             setPrimaryPreview(null);
+            setImageProcessing(false);
         }
    }, [primaryImageFile]);
 
    useEffect(() => {
         if (secondaryImageFile instanceof File) {
+            setImageProcessing(true);
             const reader = new FileReader();
-            reader.onloadend = () => setSecondaryPreview(reader.result as string);
+            reader.onloadend = () => {
+                setSecondaryPreview(reader.result as string);
+                setImageProcessing(false);
+            };
             reader.readAsDataURL(secondaryImageFile);
         } else {
             setSecondaryPreview(null);
+            setImageProcessing(false);
         }
    }, [secondaryImageFile]);
 
@@ -305,6 +324,7 @@ export function ImageStudio() {
                         field={field}
                         preview={primaryPreview}
                         label="Primary Image (Required)"
+                        isLoading={imageProcessing}
                       />
                     )}
                   />
@@ -316,6 +336,7 @@ export function ImageStudio() {
                         field={field}
                         preview={secondaryPreview}
                         label="Additional Angle (Optional)"
+                        isLoading={imageProcessing}
                       />
                     )}
                   />
@@ -383,7 +404,15 @@ export function ImageStudio() {
                                     <FormControl>
                                         <ScrollArea className="h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 md:p-3">
                                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-                                                {galleryImages.map((bg) => {
+                                                {galleryLoading ? (
+                                                    // Skeleton loaders while fetching
+                                                    Array.from({ length: 6 }).map((_, index) => (
+                                                        <div key={index} className="aspect-square">
+                                                            <Skeleton className="w-full h-full rounded-md" />
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    galleryImages.map((bg) => {
                                                     const selected = field.value === bg.url;
                                                     return (
                                                         <div
@@ -407,7 +436,8 @@ export function ImageStudio() {
                                                             )}
                                                         </div>
                                                     );
-                                                })}
+                                                })
+                                                )}
                                             </div>
                                         </ScrollArea>
                                     </FormControl>
@@ -449,9 +479,14 @@ export function ImageStudio() {
                     <FormLabel>Result</FormLabel>
                     <div className="aspect-[4/3] w-full rounded-lg border bg-card-foreground/5 flex items-center justify-center overflow-hidden">
                         {isSubmitting ? (
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                <Loader2 className="h-8 w-8 animate-spin" />
-                                <p>Generating your masterpiece...</p>
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="relative w-full h-[400px]">
+                                    <Skeleton className="w-full h-full rounded-lg" />
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <Loader2 className="h-8 w-8 animate-spin" />
+                                        <p>Generating your masterpiece...</p>
+                                    </div>
+                                </div>
                             </div>
                         ) : generatedImage ? (
                             <Image
