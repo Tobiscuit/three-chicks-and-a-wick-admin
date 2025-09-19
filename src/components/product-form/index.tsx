@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addProductAction, updateProductAction } from "@/app/products/actions";
 import { uploadImageAction } from "@/app/actions";
 import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus } from "lucide-react";
+import { Skeleton } from '@/components/ui/skeleton';
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
@@ -80,6 +81,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images?.edges.map((e: any) => e.node.url) || []);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasFetchedAiData = useRef(false);
 
@@ -193,7 +195,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         const files = event.target.files;
         if (!files || files.length === 0) return;
 
-        setIsSubmitting(true);
+        setIsUploadingImage(true);
         toast({ title: 'Uploading images...' });
 
         try {
@@ -253,7 +255,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 variant: "destructive"
             });
         } finally {
-            setIsSubmitting(false);
+            setIsUploadingImage(false);
             if(fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -383,9 +385,22 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                     </div>
                                 </div>
                             ))}
+                            
+                            {/* Loading skeleton while uploading */}
+                            {isUploadingImage && (
+                                <div className="relative aspect-square">
+                                    <Skeleton className="w-full h-full rounded-md animate-pulse" />
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                        <p className="text-xs text-muted-foreground">Uploading...</p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Always show dropzone */}
                             <div
                                 className="aspect-square flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
-                                onClick={() => fileInputRef.current?.click()}
+                                onClick={() => !isUploadingImage && fileInputRef.current?.click()}
                             >
                                 <div className="text-center">
                                     <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
