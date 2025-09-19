@@ -191,29 +191,65 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
-        if (!files) return;
+        if (!files || files.length === 0) return;
 
         setIsSubmitting(true);
         toast({ title: 'Uploading images...' });
 
         try {
-            const uploadPromises = Array.from(files).map(async file => {
-                const imageDataUrl = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-                return await uploadImageAction(imageDataUrl);
+            const uploadPromises = Array.from(files).map(async (file, index) => {
+                try {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        throw new Error(`File ${index + 1} is not an image`);
+                    }
+                    
+                    // Validate file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        throw new Error(`File ${index + 1} is too large (max 10MB)`);
+                    }
+
+                    const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+        reader.readAsDataURL(file);
+                    });
+                    
+                    const uploadedUrl = await uploadImageAction(imageDataUrl);
+                    if (!uploadedUrl) {
+                        throw new Error(`Failed to upload file ${index + 1}`);
+                    }
+                    
+                    return uploadedUrl;
+                } catch (error) {
+                    console.error(`Upload failed for file ${index + 1}:`, error);
+                    return null;
+                }
             });
 
-            const uploadedUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[];
+            const results = await Promise.all(uploadPromises);
+            const uploadedUrls = results.filter((url): url is string => url !== null);
+            
+            if (uploadedUrls.length === 0) {
+                throw new Error('All image uploads failed');
+            }
+            
+            if (uploadedUrls.length < results.length) {
+                toast({ 
+                    title: 'Partial Upload Success', 
+                    description: `Uploaded ${uploadedUrls.length} of ${results.length} images` 
+                });
+            } else {
+                toast({ title: 'Upload complete!' });
+            }
+            
             setImagePreviews(prev => [...prev, ...uploadedUrls]);
-            toast({ title: 'Upload complete!' });
         } catch (error) {
+            console.error('Image upload error:', error);
             toast({
                 title: "Upload Error",
-                description: "Could not upload images.",
+                description: error instanceof Error ? error.message : "Could not upload images.",
                 variant: "destructive"
             });
         } finally {
@@ -231,17 +267,20 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   async function onSubmit(data: ProductFormValues) {
     setIsSubmitting(true);
-    
+
     // --- ADD THIS LOG ---
     console.log(`[CLIENT] Form submitted. Inventory value: ${data.inventory}`);
     
     try {
+      // Filter out any invalid image URLs before sending to server
+      const validImageUrls = imagePreviews.filter(url => url && typeof url === 'string' && url.startsWith('http'));
+      
       const action = isEditMode ? updateProductAction : addProductAction;
       const result = await action({
         ...data,
         id: initialData?.id,
         inventoryItemId: initialData?.variants.edges[0]?.node.inventoryItem.id,
-        imageUrls: imagePreviews,
+        imageUrls: validImageUrls,
       });
       
       if (result.success) {
@@ -318,13 +357,18 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mb-4">
-                            {imagePreviews.map((src, index) => (
+                            {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
                                 <div key={index} className="relative aspect-square group">
                                     <Image
                                         src={src}
                                         alt={`Product image ${index + 1}`}
                                         fill
                                         className="object-cover rounded-md"
+                                        onError={(e) => {
+                                            console.error(`Failed to load image ${index + 1}:`, src);
+                                            // Remove broken image from previews
+                                            setImagePreviews(prev => prev.filter((_, i) => i !== index));
+                                        }}
                                     />
                                     <div className="absolute top-1 right-1">
                                         <Button
