@@ -51,6 +51,7 @@ const productFormSchema = z.object({
   collections: z.array(z.string()).optional(),
   tags: z.string().optional(),
   featured: z.boolean().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -112,6 +113,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         const ids = initialData?.collections?.edges.map((e: any) => e.node.id) || [];
         return ids.includes(featuredCollection.id);
       })(),
+      images: initialData?.images?.edges.map((e: any) => e.node.url) || [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -119,7 +121,13 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     defaultValues,
   });
   
-  const { setValue, getValues, formState } = form;
+  const { setValue, getValues, formState, watch } = form;
+  const watchedImages = watch('images') || [];
+
+  // Keep imagePreviews in sync with form's images field
+  useEffect(() => {
+    setImagePreviews(watchedImages);
+  }, [watchedImages]);
 
   // Prefill form with AI generated data
   useEffect(() => {
@@ -158,6 +166,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   const finalPublicUrl = await uploadImageAction(dataUrl);
                   if (finalPublicUrl) {
                     setImagePreviews(prev => [finalPublicUrl, ...prev]);
+                    // Also set the form field to trigger dirty state
+                    setValue('images', [finalPublicUrl], { shouldDirty: true });
                   }
                 }
                 reader.readAsDataURL(file);
@@ -247,6 +257,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             }
             
             setImagePreviews(prev => [...prev, ...uploadedUrls]);
+            // Also update the form field to trigger dirty state
+            setValue('images', [...imagePreviews, ...uploadedUrls], { shouldDirty: true });
         } catch (error) {
             console.error('Image upload error:', error);
             toast({
@@ -265,6 +277,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const removeImage = (index: number) => {
       const newPreviews = imagePreviews.filter((_, i) => i !== index);
       setImagePreviews(newPreviews);
+      // Also update the form field to trigger dirty state
+      setValue('images', newPreviews, { shouldDirty: true });
   };
 
   async function onSubmit(data: ProductFormValues) {
@@ -275,7 +289,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     
     try {
       // Filter out any invalid image URLs before sending to server
-      const validImageUrls = imagePreviews.filter(url => url && typeof url === 'string' && url.startsWith('http'));
+      const validImageUrls = (data.images || []).filter(url => url && typeof url === 'string' && url.startsWith('http'));
       
       const action = isEditMode ? updateProductAction : addProductAction;
       const result = await action({
