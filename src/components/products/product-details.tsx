@@ -13,6 +13,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { AIContentDisplay } from "@/components/ai-content-display";
+import { isHtmlContent, getAIContentClassName } from "@/lib/ai-content-utils";
 import { ExternalLink } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import Link from 'next/link';
@@ -67,9 +69,20 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <div>
                 <h3 className="font-semibold text-lg mb-2">Description</h3>
                 <ScrollArea className="h-40 w-full">
-                    <p className="text-sm whitespace-pre-wrap">
-                        {product.description || "No description available."}
-                    </p>
+                    {product.description ? (
+                        isHtmlContent(product.description) ? (
+                            <AIContentDisplay 
+                                content={product.description} 
+                                className={getAIContentClassName('details')}
+                            />
+                        ) : (
+                            <p className="text-sm whitespace-pre-wrap">
+                                {product.description}
+                            </p>
+                        )
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No description available.</p>
+                    )}
                 </ScrollArea>
             </div>
             <Separator />
