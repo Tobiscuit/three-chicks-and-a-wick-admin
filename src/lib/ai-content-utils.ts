@@ -51,3 +51,42 @@ export function getAIContentClassName(context: 'form' | 'preview' | 'details' | 
       return baseClass;
   }
 }
+
+/**
+ * Formats HTML for better readability in textareas
+ * Adds proper indentation and line breaks
+ */
+export function formatHtmlForEditing(html: string): string {
+  if (!html || typeof html !== 'string') return html;
+  
+  // Add line breaks after closing tags
+  let formatted = html
+    .replace(/<\/(p|div|h[1-6]|li|ul|ol|blockquote|pre)>/gi, '</$1>\n')
+    .replace(/<(p|div|h[1-6]|li|ul|ol|blockquote|pre)([^>]*)>/gi, '\n<$1$2>')
+    .replace(/<\/(ul|ol)>/gi, '</$1>\n')
+    .replace(/<(ul|ol)([^>]*)>/gi, '\n<$1$2>')
+    .replace(/<\/(li)>/gi, '</$1>\n')
+    .replace(/<(li)([^>]*)>/gi, '  <$1$2>')
+    .replace(/<\/(strong|em|code)>/gi, '</$1>')
+    .replace(/<(strong|em|code)([^>]*)>/gi, '<$1$2>');
+  
+  // Clean up multiple newlines
+  formatted = formatted
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .replace(/^\s*\n/g, '')
+    .replace(/\n\s*$/g, '');
+  
+  return formatted;
+}
+
+/**
+ * Minifies HTML for storage (removes extra whitespace)
+ */
+export function minifyHtml(html: string): string {
+  if (!html || typeof html !== 'string') return html;
+  
+  return html
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+}
