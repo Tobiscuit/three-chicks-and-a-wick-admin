@@ -37,6 +37,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
+import { AIContentDisplay } from "@/components/ai-content-display";
+import { isHtmlContent, getAIContentClassName } from "@/lib/ai-content-utils";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -364,7 +366,30 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             <FormMessage />
                         </FormItem>
                     )} />
-                    <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your product..." className="min-h-32" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <div className="space-y-4">
+                            <Textarea 
+                              placeholder="Describe your product..." 
+                              className="min-h-32" 
+                              {...field} 
+                            />
+                            {field.value && isHtmlContent(field.value) && (
+                              <div className="border rounded-lg p-4 bg-muted/30">
+                                <h4 className="text-sm font-medium mb-2 text-muted-foreground">Preview:</h4>
+                                <AIContentDisplay 
+                                  content={field.value} 
+                                  className={getAIContentClassName('preview')}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                 </CardContent>
                 </Card>
                 <Card>

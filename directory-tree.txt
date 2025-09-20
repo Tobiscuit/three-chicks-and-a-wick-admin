@@ -197,6 +197,7 @@ threechicksandawick-admin-panel
 │   │   └── strategy
 │   │   │   └── page.tsx
 │   ├── components
+│   │   ├── ai-content-display.tsx
 │   │   ├── auth
 │   │   │   ├── auth-provider.tsx
 │   │   │   ├── auth-wrapper.tsx
@@ -272,6 +273,7 @@ threechicksandawick-admin-panel
 │   ├── lib
 │   │   ├── __tests__
 │   │   │   └── money.test.ts
+│   │   ├── ai-content-utils.ts
 │   │   ├── firebase-admin.ts
 │   │   ├── firebase.ts
 │   │   ├── image.ts
@@ -282,6 +284,8 @@ threechicksandawick-admin-panel
 │   │   │   └── mutations
 │   │   │   │   └── create-product-with-image.ts
 │   │   └── shopify.ts
+│   ├── styles
+│   │   └── ai-content.css
 │   └── types
 │   │   └── shopify.ts
 ├── storage.rules
