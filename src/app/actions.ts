@@ -114,6 +114,7 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
 
         const imageDataUrl = await generateCustomCandleBackgroundFlow({
             background: background,
+            contextualDetails: context,
             candleImage1: angle1,
             candleImage2: angle2,
         });
@@ -141,6 +142,7 @@ type ComposeWithGalleryInput = {
   galleryBackgroundUrl: string;
   angle1: string; // data URL
   angle2?: string; // data URL
+  context?: string; // contextual details
 }
 
 // Helper function to convert Firebase Storage URL to data URL
@@ -173,7 +175,7 @@ async function convertToJpeg(arrayBuffer: ArrayBuffer): Promise<string> {
 
 export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUri?: string; error?: string }> {
     try {
-        const { galleryBackgroundUrl, angle1, angle2 } = input;
+        const { galleryBackgroundUrl, angle1, angle2, context } = input;
 
         // Convert Firebase Storage URL to data URL
         const galleryImageDataUrl = await firebaseUrlToDataUrl(galleryBackgroundUrl);
@@ -182,6 +184,7 @@ export async function composeWithGalleryAction(input: ComposeWithGalleryInput): 
             candleImage1: angle1,
             candleImage2: angle2,
             galleryImage: galleryImageDataUrl,
+            contextualDetails: context,
         });
 
         if (!imageDataUrl) {
