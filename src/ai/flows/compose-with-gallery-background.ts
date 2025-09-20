@@ -31,6 +31,7 @@ const ComposeWithGallerySchema = z.object({
   candleImage1: z.string().describe('The primary user-uploaded candle image as a data URI'),
   candleImage2: z.string().optional().describe('The optional secondary candle image as a data URI'),
   galleryImage: z.string().describe('The pre-existing gallery background image as a data URI'),
+  contextualDetails: z.string().optional().describe('Optional contextual details to add around the candle (e.g., "vanilla stems around", "cinnamon sticks scattered")'),
 });
 
 export const composeWithGalleryBackgroundFlow = ai.defineFlow(
@@ -39,7 +40,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
     inputSchema: ComposeWithGallerySchema,
     outputSchema: z.custom<Part>(),
   },
-  async ({ candleImage1, candleImage2, galleryImage }) => {
+  async ({ candleImage1, candleImage2, galleryImage, contextualDetails }) => {
     
     const redactData = (part: Part) => {
       if (part.inlineData?.data?.length > 100) {
@@ -54,6 +55,11 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] Starting composition with gallery background...');
       
+      // Build contextual details section
+      const contextualSection = contextualDetails ? `
+        **CONTEXTUAL DETAILS:** "${contextualDetails}" - Add these specific elements around the candle to enhance the scene. These should be subtle, professional, and complement the product without overwhelming it.
+      ` : '';
+
       let composePrompt = `
         Create a professional product photography composition with these requirements:
         
@@ -62,6 +68,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         **COMPOSITION:** Rule of thirds, with the candle as the dominant element
         **LIGHTING:** Professional product lighting with soft, even illumination on the candle
         **QUALITY:** High-end e-commerce product photo quality
+        ${contextualSection}
         
         Isolate the candle from its original background and place it onto the new background.
         Ensure the lighting, shadows, and perspective are seamless and consistent.
@@ -82,6 +89,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
           **COMPOSITION:** Rule of thirds, with the candle as the dominant element
           **LIGHTING:** Professional product lighting with soft, even illumination on the candle
           **QUALITY:** High-end e-commerce product photo quality
+          ${contextualSection}
           
           Isolate the first candle from its original background and place it onto the new background.
           Use the second candle image as a reference for the product's true appearance.

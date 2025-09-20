@@ -274,12 +274,14 @@ export function ImageStudio() {
           background: values.backgroundPrompt!,
           angle1,
           angle2,
+          context: values.contextualDetails,
         });
       } else { // Gallery
         result = await composeWithGalleryAction({
           galleryBackgroundUrl: values.selectedBackgroundUrl!,
           angle1,
           angle2,
+          context: values.contextualDetails,
         });
       }
       

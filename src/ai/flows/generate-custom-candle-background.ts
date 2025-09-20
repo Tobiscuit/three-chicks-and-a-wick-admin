@@ -28,6 +28,7 @@ function dataUrlToPart(dataUrl: string): Part {
 
 const CandleAndContextSchema = z.object({
   background: z.string().describe('The user-provided background description'),
+  contextualDetails: z.string().optional().describe('Optional contextual details to add around the candle (e.g., "vanilla stems around", "cinnamon sticks scattered")'),
   candleImage1: z.string().describe('The primary user-uploaded candle image as a data URI'),
   candleImage2: z.string().optional().describe('The optional secondary candle image as a data URI'),
 });
@@ -38,7 +39,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     inputSchema: CandleAndContextSchema,
     outputSchema: z.custom<Part>(),
   },
-  async ({ background, candleImage1, candleImage2 }) => {
+  async ({ background, contextualDetails, candleImage1, candleImage2 }) => {
     
     const redactData = (part: Part) => {
       if (part.inlineData && part.inlineData.data.length > 100) {
@@ -91,6 +92,11 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const bgImageFinalPart = dataUrlToPart(bgImagePart.url);
 
       const context: Part[] = [candleImage1Part, bgImageFinalPart];
+      // Build contextual details section
+      const contextualSection = contextualDetails ? `
+        **CONTEXTUAL DETAILS:** "${contextualDetails}" - Add these specific elements around the candle to enhance the scene. These should be subtle, professional, and complement the product without overwhelming it.
+      ` : '';
+
       let composePrompt = `
         Create a professional product photography composition with these requirements:
         
@@ -100,6 +106,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
         **LIGHTING:** Professional product lighting with soft, even illumination on the candle
         **COMPOSITION:** Rule of thirds, with the candle as the dominant element
         **QUALITY:** High-end e-commerce product photo quality
+        ${contextualSection}
         
         The candle should be the clear hero of the image, not a small element.
         Make it look like a premium product that customers would want to buy.
@@ -118,6 +125,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
           **LIGHTING:** Professional product lighting with soft, even illumination on the candle
           **COMPOSITION:** Rule of thirds, with the candle as the dominant element
           **QUALITY:** High-end e-commerce product photo quality
+          ${contextualSection}
           
           The first candle should be the clear hero of the image, not a small element.
           Make it look like a premium product that customers would want to buy.
