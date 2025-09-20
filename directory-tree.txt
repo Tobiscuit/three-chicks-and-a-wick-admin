@@ -143,7 +143,9 @@ threechicksandawick-admin-panel
 ├── package.json
 ├── postcss.config.mjs
 ├── public
-│   └── storefront-ai-content.css
+│   ├── storefront-ai-content.css
+│   ├── storefront-ai-content.js
+│   └── storefront-integration-guide.md
 ├── scripts
 │   ├── expose-metafield-simple.mjs
 │   └── expose-metafield-to-storefront.js
@@ -223,6 +225,7 @@ threechicksandawick-admin-panel
 │   │   │   └── product-gallery.tsx
 │   │   ├── products-table
 │   │   │   └── index.tsx
+│   │   ├── smart-tag-generator.tsx
 │   │   ├── theme
 │   │   │   ├── theme-provider.tsx
 │   │   │   └── theme-toggle.tsx
@@ -282,10 +285,12 @@ threechicksandawick-admin-panel
 │   │   ├── money.ts
 │   │   └── utils.ts
 │   ├── services
+│   │   ├── ai-tag-generator.ts
 │   │   ├── shopify
 │   │   │   └── mutations
 │   │   │   │   └── create-product-with-image.ts
-│   │   └── shopify.ts
+│   │   ├── shopify.ts
+│   │   └── tag-learning.ts
 │   ├── styles
 │   │   └── ai-content.css
 │   └── types
