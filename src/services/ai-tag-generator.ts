@@ -120,9 +120,12 @@ RESPONSE FORMAT (JSON only, no other text):
       console.log('[AI Tag Generator] Saved new tags:', result.new_tags);
     }
 
-    console.log('[AI Tag Generator] Final result:', result);
+    console.log('[AI Tag Generator] Generated result:', result);
+    console.log('[AI Tag Generator] Selected existing:', result.selected_existing);
+    console.log('[AI Tag Generator] New tags:', result.new_tags);
     console.log('[AI Tag Generator] Final tags count:', result.final_tags.length);
     console.log('[AI Tag Generator] Final tags:', result.final_tags);
+    console.log('[AI Tag Generator] Reasoning:', result.reasoning);
     return result;
 
   } catch (error) {

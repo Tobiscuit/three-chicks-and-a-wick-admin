@@ -218,6 +218,8 @@ export async function generateSmartTagsAction(productData: {
         });
 
         console.log('[Smart Tags] Generated result:', result);
+        console.log('[Smart Tags] Final tags count:', result.final_tags.length);
+        console.log('[Smart Tags] Final tags:', result.final_tags);
         
         return {
             success: true,
@@ -226,6 +228,29 @@ export async function generateSmartTagsAction(productData: {
     } catch (error) {
         console.error('[Smart Tags] Error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to generate smart tags';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function getTagPoolAction(): Promise<{ success: boolean; tagPool?: any; error?: string }> {
+    try {
+        const { getTagPool } = await import('@/services/tag-learning');
+        const tagPool = await getTagPool();
+        
+        console.log('[Tag Pool] Current tag pool:', tagPool);
+        console.log('[Tag Pool] Total tags by category:');
+        Object.entries(tagPool.existing_tags).forEach(([category, tags]) => {
+            console.log(`  ${category}: ${tags.length} tags`);
+        });
+        console.log('[Tag Pool] Usage counts:', tagPool.usage_count);
+        
+        return {
+            success: true,
+            tagPool: tagPool
+        };
+    } catch (error) {
+        console.error('[Tag Pool] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to get tag pool';
         return { success: false, error: errorMessage };
     }
 }
