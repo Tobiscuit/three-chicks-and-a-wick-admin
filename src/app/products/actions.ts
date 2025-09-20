@@ -18,6 +18,8 @@ import {
 import { adminDb } from '@/lib/firebase-admin';
 import { encodeShopifyId } from '@/lib/utils';
 import { FieldValue } from 'firebase-admin/firestore';
+import { incrementTagUsage } from '@/services/tag-learning';
+import { generateSmartTags as generateAITags } from '@/services/ai-tag-generator';
 
 const productSchema = z.object({
     id: z.string().optional(),
@@ -195,6 +197,35 @@ export async function quickUpdateInventoryAction({
         console.error('Quick inventory update error:', error);
         const errorMessage =
             error instanceof Error ? error.message : 'An unknown error occurred';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function generateSmartTagsAction(productData: {
+    name: string;
+    description: string;
+    scent?: string;
+    currentTags?: string;
+}): Promise<{ success: boolean; tags?: string[]; error?: string }> {
+    try {
+        console.log('[Smart Tags] Generating tags for:', productData.name);
+        
+        const result = await generateAITags({
+            name: productData.name,
+            description: productData.description,
+            scent: productData.scent,
+            tags: productData.currentTags
+        });
+
+        console.log('[Smart Tags] Generated result:', result);
+        
+        return {
+            success: true,
+            tags: result.final_tags
+        };
+    } catch (error) {
+        console.error('[Smart Tags] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to generate smart tags';
         return { success: false, error: errorMessage };
     }
 }
