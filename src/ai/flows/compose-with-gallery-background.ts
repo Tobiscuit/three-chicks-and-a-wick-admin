@@ -55,25 +55,40 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
       console.log('[Compose Flow] Starting composition with gallery background...');
       
       let composePrompt = `
-        Your task is to perform a photorealistic composition.
-        You will be given two images: a background image and a product image.
-        Isolate the primary product from the product image, discarding its original background.
-        Realistically place that isolated product onto a surface within the new background image.
+        Create a professional product photography composition with these requirements:
+        
+        **PRIMARY SUBJECT:** The candle must be the MAIN FOCUS and CENTER STAGE of the image
+        **POSITIONING:** Place the candle prominently in the center, taking up 40-60% of the image
+        **COMPOSITION:** Rule of thirds, with the candle as the dominant element
+        **LIGHTING:** Professional product lighting with soft, even illumination on the candle
+        **QUALITY:** High-end e-commerce product photo quality
+        
+        Isolate the candle from its original background and place it onto the new background.
         Ensure the lighting, shadows, and perspective are seamless and consistent.
-
+        The candle should be the clear hero of the image, not a small element.
+        Make it look like a premium product that customers would want to buy.
+        
         **Output only the final, composed image.**
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
       if (candleImage2) {
         composePrompt = `
-          Your task is to perform a photorealistic composition.
-          You will be given three images: a background, a primary product image, and a secondary product image for reference.
-          Isolate the product from the primary product image, discarding its original background.
-          Use the secondary product image as a crucial reference for the product's true lighting, shadows, and depth.
-          Realistically place the isolated product (from the primary image) onto a surface within the background image.
+          Create a professional product photography composition with these requirements:
           
-          **Output only the final, composed image containing the primary product.**
+          **PRIMARY SUBJECT:** The first candle must be the MAIN FOCUS and CENTER STAGE
+          **POSITIONING:** Place the first candle prominently in the center, taking up 40-60% of the image
+          **REFERENCE:** Use the second candle image as a crucial reference for accurate lighting, shadows, and depth
+          **COMPOSITION:** Rule of thirds, with the candle as the dominant element
+          **LIGHTING:** Professional product lighting with soft, even illumination on the candle
+          **QUALITY:** High-end e-commerce product photo quality
+          
+          Isolate the first candle from its original background and place it onto the new background.
+          Use the second candle image as a reference for the product's true appearance.
+          The first candle should be the clear hero of the image, not a small element.
+          Make it look like a premium product that customers would want to buy.
+          
+          **Output only the final, composed image containing the first candle.**
           **Do not include any text, commentary, markdown, or any other content besides the image itself.**
         `;
       }

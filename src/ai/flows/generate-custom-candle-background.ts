@@ -52,7 +52,19 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       console.log(`[Flow] Using image model: ${modelName}`);
 
       console.log('[Flow] Step 1: Generating background...');
-      const bgPrompt = `Generate a background image for a product photo of a candle. The background should be clean, professional, and visually appealing. The user wants the following style: "${background}". Do not include the candle in the image.`;
+      const bgPrompt = `
+        Generate a professional product photography background with these specifications:
+        
+        **STYLE REQUIREMENTS:** "${background}" - incorporate these specific visual elements, colors, textures, and mood
+        **PURPOSE:** This background will be used for a premium candle product photo
+        **COMPOSITION:** Create a clean, uncluttered surface that will complement a centered candle
+        **LIGHTING:** Soft, even lighting that won't compete with the product
+        **QUALITY:** High-resolution, professional e-commerce photography quality
+        **ELEMENTS:** Focus on the specific details mentioned in the style requirements
+        
+        Do not include any candles or products in the image - this is just the background.
+        Make it look like a premium, high-end product photography setup.
+      `;
 
       const bgImageResponse = await ai.generate({
         model: modelName,
@@ -79,12 +91,37 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const bgImageFinalPart = dataUrlToPart(bgImagePart.url);
 
       const context: Part[] = [candleImage1Part, bgImageFinalPart];
-      let composePrompt = `Compose the candle image onto the background image, considering the user's desired style: "${background}". The candle should be centered and well-lit. The final image should look like a professional product photo.`;
+      let composePrompt = `
+        Create a professional product photography composition with these requirements:
+        
+        **PRIMARY SUBJECT:** The candle must be the MAIN FOCUS and CENTER STAGE of the image
+        **POSITIONING:** Place the candle prominently in the center, taking up 40-60% of the image
+        **STYLE CONTEXT:** "${background}" - incorporate these specific visual elements and mood
+        **LIGHTING:** Professional product lighting with soft, even illumination on the candle
+        **COMPOSITION:** Rule of thirds, with the candle as the dominant element
+        **QUALITY:** High-end e-commerce product photo quality
+        
+        The candle should be the clear hero of the image, not a small element.
+        Make it look like a premium product that customers would want to buy.
+      `;
 
       if (candleImage2) {
         const candleImage2Part = dataUrlToPart(candleImage2);
         context.push(candleImage2Part);
-        composePrompt = `Compose the first candle image onto the background image, considering the user's desired style: "${background}". Use the second candle image as a crucial reference for lighting, shadows, and depth. The final composed image should only contain the first candle. The final image should look like a professional product photo.`
+        composePrompt = `
+          Create a professional product photography composition with these requirements:
+          
+          **PRIMARY SUBJECT:** The first candle must be the MAIN FOCUS and CENTER STAGE
+          **POSITIONING:** Place the first candle prominently in the center, taking up 40-60% of the image
+          **STYLE CONTEXT:** "${background}" - incorporate these specific visual elements and mood
+          **REFERENCE:** Use the second candle image as a crucial reference for accurate lighting, shadows, and depth
+          **LIGHTING:** Professional product lighting with soft, even illumination on the candle
+          **COMPOSITION:** Rule of thirds, with the candle as the dominant element
+          **QUALITY:** High-end e-commerce product photo quality
+          
+          The first candle should be the clear hero of the image, not a small element.
+          Make it look like a premium product that customers would want to buy.
+        `;
       }
 
       console.log('[Flow] Input Parts for composition:', JSON.stringify({ candleImage1: redactData(candleImage1Part), candleImage2: candleImage2 ? redactData(context[2]) : undefined, bgImagePart: redactData(bgImageFinalPart) }, null, 2));
