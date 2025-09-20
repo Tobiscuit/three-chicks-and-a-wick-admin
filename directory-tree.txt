@@ -142,6 +142,8 @@ threechicksandawick-admin-panel
 ├── package-lock.json
 ├── package.json
 ├── postcss.config.mjs
+├── public
+│   └── storefront-ai-content.css
 ├── scripts
 │   ├── expose-metafield-simple.mjs
 │   └── expose-metafield-to-storefront.js
