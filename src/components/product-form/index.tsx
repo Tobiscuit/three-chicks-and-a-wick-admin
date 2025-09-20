@@ -32,13 +32,13 @@ import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast";
 import { addProductAction, updateProductAction } from "@/app/products/actions";
 import { uploadImageAction } from "@/app/actions";
-import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
-import { isHtmlContent, getAIContentClassName } from "@/lib/ai-content-utils";
+import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -151,7 +151,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 const { title, body_html, tags, sku, price, quantity, publicImageUrl } = res.data;
                 
                 setValue('title', title, { shouldDirty: true });
-                setValue('description', body_html, { shouldDirty: true });
+                setValue('description', formatHtmlForEditing(body_html), { shouldDirty: true });
                 setValue('price', String(price), { shouldDirty: true });
                 setValue('sku', sku, { shouldDirty: true });
                 setValue('tags', tags, { shouldDirty: true });
@@ -368,12 +368,29 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     )} />
                     <FormField control={form.control} name="description" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Description</FormLabel>
+                          {field.value && isHtmlContent(field.value) && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const formatted = formatHtmlForEditing(field.value);
+                                setValue('description', formatted, { shouldDirty: true });
+                              }}
+                              className="text-xs"
+                            >
+                              <Code className="mr-1 h-3 w-3" />
+                              Format HTML
+                            </Button>
+                          )}
+                        </div>
                         <FormControl>
                           <div className="space-y-4">
                             <Textarea 
                               placeholder="Describe your product..." 
-                              className="min-h-32" 
+                              className="min-h-32 font-mono text-sm" 
                               {...field} 
                             />
                             {field.value && isHtmlContent(field.value) && (
@@ -433,8 +450,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                                         <p className="text-xs text-muted-foreground">Uploading...</p>
                                     </div>
-                                </div>
-                            )}
+                                    </div>
+                                )}
                             
                             {/* Always show dropzone */}
                             <div
