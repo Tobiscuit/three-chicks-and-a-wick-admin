@@ -37,9 +37,10 @@ BRAND GUIDELINES:
 
 TASK:
 1. Select 0-5 relevant tags from the existing pool that match this product
-2. Generate 2-5 new tags to reach exactly 5 total tags
+2. Generate additional new tags so that selected_existing + new_tags = exactly 5 total tags
 3. New tags should be unique, brand-aligned, and SEO-friendly
 4. Prioritize tags that will help customers find this product
+5. CRITICAL: final_tags must contain exactly 5 tags, no more, no less
 
 RESPONSE FORMAT (JSON only, no other text):
 {
@@ -87,10 +88,30 @@ RESPONSE FORMAT (JSON only, no other text):
       };
     }
 
-    // Validate the result
+    // Validate and fix the result
     if (!result.final_tags || result.final_tags.length !== 5) {
-      console.warn('[AI Tag Generator] Invalid tag count, adjusting...');
-      result.final_tags = result.final_tags?.slice(0, 5) || ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'];
+      console.warn('[AI Tag Generator] Invalid tag count:', result.final_tags?.length, 'adjusting to exactly 5...');
+      
+      // If we have more than 5, take the first 5
+      if (result.final_tags && result.final_tags.length > 5) {
+        result.final_tags = result.final_tags.slice(0, 5);
+      }
+      // If we have less than 5, pad with fallback tags
+      else if (!result.final_tags || result.final_tags.length < 5) {
+        const fallbackTags = ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'];
+        const existing = result.final_tags || [];
+        const needed = 5 - existing.length;
+        result.final_tags = [...existing, ...fallbackTags.slice(0, needed)];
+      }
+    }
+
+    // Ensure no duplicates
+    result.final_tags = [...new Set(result.final_tags)];
+    
+    // Final safety check - if still not 5, force it
+    if (result.final_tags.length !== 5) {
+      console.error('[AI Tag Generator] Still invalid after fixes, forcing to 5 tags');
+      result.final_tags = ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'];
     }
 
     // Save new tags to the pool
@@ -100,6 +121,8 @@ RESPONSE FORMAT (JSON only, no other text):
     }
 
     console.log('[AI Tag Generator] Final result:', result);
+    console.log('[AI Tag Generator] Final tags count:', result.final_tags.length);
+    console.log('[AI Tag Generator] Final tags:', result.final_tags);
     return result;
 
   } catch (error) {
