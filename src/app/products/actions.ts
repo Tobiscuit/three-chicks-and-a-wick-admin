@@ -21,6 +21,13 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { incrementTagUsage } from '@/services/tag-learning';
 import { generateSmartTags as generateAITags } from '@/services/ai-tag-generator';
 import { rewriteDescriptionFlow } from '@/ai/flows/reengineer-description';
+import { 
+  saveDescriptionHistory, 
+  loadDescriptionHistory, 
+  addDescriptionVersion,
+  deleteDescriptionHistory,
+  type DescriptionVersion 
+} from '@/services/description-history';
 
 const productSchema = z.object({
     id: z.string().optional(),
@@ -283,6 +290,61 @@ export async function rewriteDescriptionAction(data: {
     } catch (error) {
         console.error('[Rewrite Action] Error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to rewrite description';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function loadDescriptionHistoryAction(productId: string): Promise<{ success: boolean; versions?: DescriptionVersion[]; error?: string }> {
+    try {
+        console.log('[Description History Action] Loading history for product:', productId);
+        const versions = await loadDescriptionHistory(productId);
+        console.log('[Description History Action] Loaded versions:', versions.length);
+        return {
+            success: true,
+            versions: versions
+        };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load description history';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function saveDescriptionHistoryAction(productId: string, versions: DescriptionVersion[]): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[Description History Action] Saving history for product:', productId, 'versions:', versions.length);
+        await saveDescriptionHistory(productId, versions);
+        console.log('[Description History Action] History saved successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to save description history';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function addDescriptionVersionAction(productId: string, version: DescriptionVersion): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[Description History Action] Adding version for product:', productId);
+        await addDescriptionVersion(productId, version);
+        console.log('[Description History Action] Version added successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to add description version';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function deleteDescriptionHistoryAction(productId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[Description History Action] Deleting history for product:', productId);
+        await deleteDescriptionHistory(productId);
+        console.log('[Description History Action] History deleted successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete description history';
         return { success: false, error: errorMessage };
     }
 }

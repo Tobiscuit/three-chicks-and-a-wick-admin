@@ -8,7 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { rewriteDescriptionAction } from '@/app/products/actions';
+import { 
+  rewriteDescriptionAction, 
+  loadDescriptionHistoryAction, 
+  saveDescriptionHistoryAction,
+  addDescriptionVersionAction 
+} from '@/app/products/actions';
 import { AIContentDisplay } from '@/components/ai-content-display';
 import { isHtmlContent, getAIContentClassName } from '@/lib/ai-content-utils';
 import { 
@@ -34,6 +39,7 @@ interface DescriptionVersion {
 }
 
 interface DescriptionRewriterProps {
+  productId?: string; // Add productId for persistence
   initialDescription: string;
   productName: string;
   imageAnalysis?: string;
@@ -41,6 +47,7 @@ interface DescriptionRewriterProps {
 }
 
 export function DescriptionRewriter({
+  productId,
   initialDescription,
   productName,
   imageAnalysis,
@@ -58,6 +65,7 @@ export function DescriptionRewriter({
   ]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
   const [isRewriting, setIsRewriting] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -65,6 +73,33 @@ export function DescriptionRewriter({
   const { toast } = useToast();
 
   const currentDescription = descriptionVersions[currentVersionIndex]?.description || initialDescription;
+
+  // Load description history on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!productId) return;
+      
+      setIsLoadingHistory(true);
+      try {
+        const result = await loadDescriptionHistoryAction(productId);
+        if (result.success && result.versions && result.versions.length > 0) {
+          // Merge with current versions, avoiding duplicates
+          setDescriptionVersions(prev => {
+            const existingIds = new Set(prev.map(v => v.id));
+            const newVersions = result.versions!.filter(v => !existingIds.has(v.id));
+            return [...prev, ...newVersions];
+          });
+          console.log('[Description Rewriter] Loaded history:', result.versions.length, 'versions');
+        }
+      } catch (error) {
+        console.error('[Description Rewriter] Error loading history:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [productId]);
 
   // Update parent when description changes
   useEffect(() => {
@@ -100,6 +135,17 @@ export function DescriptionRewriter({
         setDescriptionVersions(prev => [...prev, newVersion]);
         setCurrentVersionIndex(prev => prev + 1);
         setUserPrompt('');
+        
+        // Save to Firestore if productId exists
+        if (productId) {
+          try {
+            await addDescriptionVersionAction(productId, newVersion);
+            console.log('[Description Rewriter] Version saved to Firestore');
+          } catch (error) {
+            console.error('[Description Rewriter] Error saving version:', error);
+            // Don't show error to user, just log it
+          }
+        }
         
         toast({
           title: "✨ Description Rewritten!",
@@ -169,6 +215,7 @@ export function DescriptionRewriter({
             </div>
             <div className="flex gap-2">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setShowHistory(!showHistory)}
@@ -178,6 +225,7 @@ export function DescriptionRewriter({
               </Button>
               {currentVersionIndex > 0 && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={resetToOriginal}
@@ -190,7 +238,16 @@ export function DescriptionRewriter({
           </div>
         </CardHeader>
         <CardContent>
-          {isRewriting ? (
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="text-center space-y-2">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Loading description history...
+                </p>
+              </div>
+            </div>
+          ) : isRewriting ? (
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />

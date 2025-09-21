@@ -290,6 +290,7 @@ Directory: .
 │   │   └── utils.ts
 │   ├── services
 │   │   ├── ai-tag-generator.ts
+│   │   ├── description-history.ts
 │   │   ├── shopify
 │   │   │   └── mutations
 │   │   │   │   └── create-product-with-image.ts

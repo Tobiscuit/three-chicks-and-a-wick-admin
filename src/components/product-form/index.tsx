@@ -372,6 +372,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <DescriptionRewriter
+                            productId={initialData?.id}
                             initialDescription={field.value || ''}
                             productName={form.watch('title') || 'Product'}
                             imageAnalysis={initialData?.imageAnalysis || undefined}
