@@ -76,8 +76,23 @@ RESPONSE FORMAT (JSON only):
         }
       });
 
-      const content = response.text();
-      console.log('[Reengineer Flow] Raw response:', content);
+      console.log('[Reengineer Flow] Response object:', response);
+      console.log('[Reengineer Flow] Response type:', typeof response);
+      console.log('[Reengineer Flow] Response methods:', Object.getOwnPropertyNames(response));
+      
+      let content;
+      if (typeof response.text === 'function') {
+        content = response.text();
+      } else if (response.text) {
+        content = response.text;
+      } else if (response.message?.content) {
+        content = response.message.content;
+      } else {
+        console.error('[Reengineer Flow] Unknown response format:', response);
+        throw new Error('Unknown response format from AI model');
+      }
+      
+      console.log('[Reengineer Flow] Raw response content:', content);
 
       // Parse JSON response
       let result;
