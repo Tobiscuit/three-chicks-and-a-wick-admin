@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
 import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
+import { DescriptionReengineer } from "@/components/description-reengineer";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -368,41 +369,16 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     )} />
                     <FormField control={form.control} name="description" render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center justify-between">
-                          <FormLabel>Description</FormLabel>
-                          {field.value && isHtmlContent(field.value) && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const formatted = formatHtmlForEditing(field.value);
-                                setValue('description', formatted, { shouldDirty: true });
-                              }}
-                              className="text-xs"
-                            >
-                              <Code className="mr-1 h-3 w-3" />
-                              Format HTML
-                            </Button>
-                          )}
-                        </div>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <div className="space-y-4">
-                            <Textarea 
-                              placeholder="Describe your product..." 
-                              className="min-h-32 font-mono text-sm" 
-                              {...field} 
-                            />
-                            {field.value && isHtmlContent(field.value) && (
-                              <div className="border rounded-lg p-4 bg-muted/30">
-                                <h4 className="text-sm font-medium mb-2 text-muted-foreground">Preview:</h4>
-                                <AIContentDisplay 
-                                  content={field.value} 
-                                  className={getAIContentClassName('preview')}
-                                />
-                              </div>
-                            )}
-                          </div>
+                          <DescriptionReengineer
+                            initialDescription={field.value || ''}
+                            productName={form.watch('title') || 'Product'}
+                            imageAnalysis={initialData?.imageAnalysis || undefined}
+                            onDescriptionChange={(newDescription) => {
+                              setValue('description', newDescription || '', { shouldDirty: true });
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

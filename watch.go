@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -19,58 +23,67 @@ var ignoreList = []string{
 	"dist",
 	"build",
 	"__pycache__",
-	"directory-tree.txt", // Don't include the output file in itself
-	"watch.go",           // Don't include the script itself
+	"watch.go",
 	"go.mod",
 	"go.sum",
 	".next",
+	"directory-trees.txt", // Don't include the output file in itself
 }
 
-// The name of the output file for the directory tree.
-const outputFileName = "directory-tree.txt"
+const configFileName = "watch-config.json"
+const outputFileName = "directory-trees.txt"
+
+type Config struct {
+	Directories []string `json:"directories"`
+}
 
 func main() {
-	// Create a new watcher.
+	config, err := loadConfig()
+	if err != nil {
+		log.Println("No config file found. Starting interactive setup.")
+		config, err = interactiveSetup()
+		if err != nil {
+			log.Fatalf("Error during interactive setup: %v", err)
+		}
+		if err := saveConfig(config); err != nil {
+			log.Fatalf("Error saving config file: %v", err)
+		}
+	}
+
+	if len(config.Directories) == 0 {
+		log.Fatal("No directories to watch. Please add directories to watch-config.json or run interactive setup.")
+	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal("Error creating watcher:", err)
 	}
 	defer watcher.Close()
 
-	// Get the current working directory.
-	rootDir, err := os.Getwd()
-	if err != nil {
-		log.Fatal("Error getting root directory:", err)
-	}
-	log.Printf("Starting watcher for directory: %s\n", rootDir)
-
-	// Add all subdirectories to the watcher.
-	err = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		// Only watch directories.
-		if info.IsDir() {
-			// Check if the directory should be ignored.
-			for _, item := range ignoreList {
-				if info.Name() == item {
-					return filepath.SkipDir // Skip this directory and all its contents.
-				}
+	for _, dir := range config.Directories {
+		log.Printf("Adding watcher for directory: %s\n", dir)
+		err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
 			}
-			return watcher.Add(path)
+			if info.IsDir() {
+				for _, item := range ignoreList {
+					if info.Name() == item {
+						return filepath.SkipDir
+					}
+				}
+				return watcher.Add(path)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("Error walking directory tree for %s: %v\n", dir, err)
 		}
-		return nil
-	})
-	if err != nil {
-		log.Fatal("Error walking directory tree:", err)
 	}
 
-	// Initial generation of the directory tree.
 	log.Println("Performing initial directory tree generation...")
-	generateTree(rootDir)
+	generateAllTrees(config.Directories)
 
-	// Start a goroutine to process events.
-	done := make(chan bool)
 	go func() {
 		for {
 			select {
@@ -78,10 +91,9 @@ func main() {
 				if !ok {
 					return
 				}
-				// We only care about events that change the directory structure.
 				if event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
-					log.Printf("Change detected: %s. Regenerating tree...\n", event.Name)
-					generateTree(rootDir)
+					log.Printf("Change detected: %s. Regenerating all trees...\n", event.Name)
+					generateAllTrees(config.Directories)
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -92,25 +104,98 @@ func main() {
 		}
 	}()
 
-	<-done // Run forever.
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+
+	log.Println("Watching for file changes. Press Ctrl+C to exit.")
+	<-done
+	log.Println("Shutting down watcher.")
 }
 
-// generateTree creates the directory tree and writes it to a file.
-func generateTree(rootDir string) {
+func loadConfig() (Config, error) {
+	var config Config
+	file, err := os.Open(configFileName)
+	if err != nil {
+		return config, err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&config)
+	return config, err
+}
+
+func interactiveSetup() (Config, error) {
+	var config Config
+	config.Directories = append(config.Directories, ".") // Automatically add the current directory
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("The current directory has been added by default.")
+	fmt.Println("Enter any other directories you want to watch (relative or absolute paths, one per line, empty line to finish):")
+
+	for {
+		fmt.Print("> ")
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return config, err
+		}
+		input = strings.TrimSpace(input)
+		if input == "" {
+			break
+		}
+		config.Directories = append(config.Directories, input)
+	}
+	return config, nil
+}
+
+func saveConfig(config Config) error {
+	file, err := os.Create(configFileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(config)
+}
+
+func generateAllTrees(directories []string) {
+	var allTreesBuilder strings.Builder
+	for _, dir := range directories {
+		tree, err := generateSingleTree(dir)
+		if err != nil {
+			log.Printf("Error generating tree for %s: %v\n", dir, err)
+			continue
+		}
+		allTreesBuilder.WriteString(tree)
+		allTreesBuilder.WriteString("\n---\n\n") // Separator
+	}
+
+	// Print the combined tree to the console
+	fmt.Println(allTreesBuilder.String())
+
+	// Write the combined tree to the output file
+	err := os.WriteFile(outputFileName, []byte(allTreesBuilder.String()), 0644)
+	if err != nil {
+		log.Printf("Error writing to %s: %v\n", outputFileName, err)
+	} else {
+		log.Printf("Successfully updated %s\n", outputFileName)
+	}
+}
+
+func generateSingleTree(rootDir string) (string, error) {
 	var builder strings.Builder
-	builder.WriteString(filepath.Base(rootDir) + "\n")
+	builder.WriteString(fmt.Sprintf("Directory: %s\n", rootDir))
 
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Skip the root directory itself in the walk.
 		if path == rootDir {
 			return nil
 		}
 
-		// Check if the file/directory should be ignored.
 		for _, item := range ignoreList {
 			if strings.Contains(path, filepath.FromSlash("/"+item)) || info.Name() == item {
 				if info.IsDir() {
@@ -119,7 +204,7 @@ func generateTree(rootDir string) {
 				return nil
 			}
 		}
-		
+
 		relPath, err := filepath.Rel(rootDir, path)
 		if err != nil {
 			return err
@@ -127,8 +212,7 @@ func generateTree(rootDir string) {
 
 		depth := len(strings.Split(relPath, string(os.PathSeparator)))
 		indent := strings.Repeat("│   ", depth-1)
-		
-		// Determine the prefix based on whether it's the last item in its directory.
+
 		parentDir := filepath.Dir(path)
 		entries, _ := os.ReadDir(parentDir)
 		isLast := info.Name() == entries[len(entries)-1].Name()
@@ -137,21 +221,15 @@ func generateTree(rootDir string) {
 		if isLast {
 			prefix = "└── "
 		}
-		
+
 		builder.WriteString(fmt.Sprintf("%s%s%s\n", indent, prefix, info.Name()))
-		
+
 		return nil
 	})
 
 	if err != nil {
-		log.Printf("Error during tree generation: %v\n", err)
-		return
+		return "", err
 	}
 
-	err = os.WriteFile(outputFileName, []byte(builder.String()), 0644)
-	if err != nil {
-		log.Printf("Error writing to %s: %v\n", outputFileName, err)
-	} else {
-		log.Printf("Successfully updated %s\n", outputFileName)
-	}
+	return builder.String(), nil
 }

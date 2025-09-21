@@ -1,0 +1,564 @@
+Directory: .
+├── .cursor
+│   ├── mcp.json
+│   └── rules
+│   │   └── GENKIT.mdc
+├── .env
+├── .env.example
+├── .env.local
+├── .env.local.example
+├── .firebaserc
+├── .gitignore
+├── .idx
+│   ├── dev.nix
+│   └── icon.png
+├── .modified
+├── GENKIT.md
+├── README.md
+├── candlecraft-studio-yz6sc
+│   ├── functions
+│   │   ├── .env
+│   │   ├── .env.example
+│   │   ├── package-lock.json
+│   │   └── package.json
+│   └── hosting
+│   │   ├── 404.html
+│   │   ├── _next
+│   │   │   └── static
+│   │   │   │   ├── KsBEmxjVRtbPohf8atoCt
+│   │   │   │   │   ├── _buildManifest.js
+│   │   │   │   │   └── _ssgManifest.js
+│   │   │   │   ├── chunks
+│   │   │   │   │   ├── 122-ebf3315f0c88bdb4.js
+│   │   │   │   │   ├── 299-b2c9655e9aaa6fa6.js
+│   │   │   │   │   ├── 328-e64a18db00636e0c.js
+│   │   │   │   │   ├── 345-57e0a61641995d45.js
+│   │   │   │   │   ├── 4bd1b696-ac887deb17bb0587.js
+│   │   │   │   │   ├── 621-69ae4381e8f5be93.js
+│   │   │   │   │   ├── 684-b815804f4035c2de.js
+│   │   │   │   │   ├── 69806262-07c50f2ce9029725.js
+│   │   │   │   │   ├── 736-fba7309cd365abd3.js
+│   │   │   │   │   ├── 766-2a81dda4f304dc54.js
+│   │   │   │   │   ├── 794-34a77c2134c9f6c1.js
+│   │   │   │   │   ├── 812-51f76edf9506a0ff.js
+│   │   │   │   │   ├── 868-fe980341adde7de6.js
+│   │   │   │   │   ├── 996-ab7a7c3e13b15719.js
+│   │   │   │   │   ├── app
+│   │   │   │   │   │   ├── _not-found
+│   │   │   │   │   │   │   └── page-fb89532aa53a2bf9.js
+│   │   │   │   │   │   ├── dashboard
+│   │   │   │   │   │   │   ├── layout-fba2b664f5dfdbb3.js
+│   │   │   │   │   │   │   └── page-6c0f79731b290ec9.js
+│   │   │   │   │   │   ├── layout-b622b03b90490387.js
+│   │   │   │   │   │   ├── page-d44ca7a950917456.js
+│   │   │   │   │   │   ├── products
+│   │   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   │   └── page-fb5b0912cee337d2.js
+│   │   │   │   │   │   │   ├── new
+│   │   │   │   │   │   │   │   └── page-2b5e89a539334e5d.js
+│   │   │   │   │   │   │   └── page-3d93b5a9fa7cc8bc.js
+│   │   │   │   │   │   ├── settings
+│   │   │   │   │   │   │   └── page-48b17b48ce103f96.js
+│   │   │   │   │   │   └── strategy
+│   │   │   │   │   │   │   └── page-9070052276ed06fb.js
+│   │   │   │   │   ├── framework-75d8b6119e7601c4.js
+│   │   │   │   │   ├── main-61fc9f8ed38948b8.js
+│   │   │   │   │   ├── main-app-cac34e67899c4b2e.js
+│   │   │   │   │   ├── pages
+│   │   │   │   │   │   ├── _app-8e94039938385921.js
+│   │   │   │   │   │   └── _error-7b2d139042a6a5ab.js
+│   │   │   │   │   ├── polyfills-42372ed130431b0a.js
+│   │   │   │   │   └── webpack-ffdea594c4225f25.js
+│   │   │   │   └── css
+│   │   │   │   │   └── 38310fdaea982efa.css
+│   │   └── favicon.ico
+├── components.json
+├── cors.json
+├── directory-tree.txt
+├── docs
+│   └── blueprint.md
+├── download.zip
+├── e broken background images
+├── firebase-debug.log
+├── firebase.json
+├── firestore.rules
+├── functions
+│   ├── .env
+│   ├── .env.example
+│   ├── package-lock.json
+│   └── package.json
+├── hosting
+│   ├── 404.html
+│   ├── _next
+│   │   └── static
+│   │   │   ├── KsBEmxjVRtbPohf8atoCt
+│   │   │   │   ├── _buildManifest.js
+│   │   │   │   └── _ssgManifest.js
+│   │   │   ├── chunks
+│   │   │   │   ├── 122-ebf3315f0c88bdb4.js
+│   │   │   │   ├── 299-b2c9655e9aaa6fa6.js
+│   │   │   │   ├── 328-e64a18db00636e0c.js
+│   │   │   │   ├── 345-57e0a61641995d45.js
+│   │   │   │   ├── 4bd1b696-ac887deb17bb0587.js
+│   │   │   │   ├── 621-69ae4381e8f5be93.js
+│   │   │   │   ├── 684-b815804f4035c2de.js
+│   │   │   │   ├── 69806262-07c50f2ce9029725.js
+│   │   │   │   ├── 736-fba7309cd365abd3.js
+│   │   │   │   ├── 766-2a81dda4f304dc54.js
+│   │   │   │   ├── 794-34a77c2134c9f6c1.js
+│   │   │   │   ├── 812-51f76edf9506a0ff.js
+│   │   │   │   ├── 868-fe980341adde7de6.js
+│   │   │   │   ├── 996-ab7a7c3e13b15719.js
+│   │   │   │   ├── app
+│   │   │   │   │   ├── _not-found
+│   │   │   │   │   │   └── page-fb89532aa53a2bf9.js
+│   │   │   │   │   ├── dashboard
+│   │   │   │   │   │   ├── layout-fba2b664f5dfdbb3.js
+│   │   │   │   │   │   └── page-6c0f79731b290ec9.js
+│   │   │   │   │   ├── layout-b622b03b90490387.js
+│   │   │   │   │   ├── page-d44ca7a950917456.js
+│   │   │   │   │   ├── products
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── page-fb5b0912cee337d2.js
+│   │   │   │   │   │   ├── new
+│   │   │   │   │   │   │   └── page-2b5e89a539334e5d.js
+│   │   │   │   │   │   └── page-3d93b5a9fa7cc8bc.js
+│   │   │   │   │   ├── settings
+│   │   │   │   │   │   └── page-48b17b48ce103f96.js
+│   │   │   │   │   └── strategy
+│   │   │   │   │   │   └── page-9070052276ed06fb.js
+│   │   │   │   ├── framework-75d8b6119e7601c4.js
+│   │   │   │   ├── main-61fc9f8ed38948b8.js
+│   │   │   │   ├── main-app-cac34e67899c4b2e.js
+│   │   │   │   ├── pages
+│   │   │   │   │   ├── _app-8e94039938385921.js
+│   │   │   │   │   └── _error-7b2d139042a6a5ab.js
+│   │   │   │   ├── polyfills-42372ed130431b0a.js
+│   │   │   │   └── webpack-ffdea594c4225f25.js
+│   │   │   └── css
+│   │   │   │   └── 38310fdaea982efa.css
+│   └── favicon.ico
+├── how --name-only 602c578
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── public
+│   ├── storefront-ai-content.css
+│   ├── storefront-ai-content.js
+│   └── storefront-integration-guide.md
+├── scripts
+│   ├── expose-metafield-simple.mjs
+│   └── expose-metafield-to-storefront.js
+├── src
+│   ├── .env
+│   ├── ai
+│   │   ├── dev.ts
+│   │   ├── flows
+│   │   │   ├── compose-with-gallery-background.ts
+│   │   │   ├── generate-business-strategy.ts
+│   │   │   ├── generate-custom-candle-background.ts
+│   │   │   ├── reengineer-description.ts
+│   │   │   └── refine-generated-background-with-context.ts
+│   │   ├── genkit.ts
+│   │   └── prompts.ts
+│   ├── app
+│   │   ├── actions.ts
+│   │   ├── api
+│   │   │   ├── diagnostic
+│   │   │   │   ├── delete
+│   │   │   │   │   └── [id]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── image--studio
+│   │   │   │   └── generate-details
+│   │   │   ├── image-studio
+│   │   │   │   └── generate-details
+│   │   │   ├── sse
+│   │   │   │   └── inventory
+│   │   │   │   │   └── route.ts
+│   │   │   ├── test-inventory
+│   │   │   │   └── route.ts
+│   │   │   └── webhooks
+│   │   │   │   └── inventory-update
+│   │   │   │   │   └── route.ts
+│   │   ├── dashboard
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── products
+│   │   │   ├── [id]
+│   │   │   │   └── page.tsx
+│   │   │   ├── actions.ts
+│   │   │   ├── diagnostic-actions.ts
+│   │   │   ├── expose-metafield-action.ts
+│   │   │   ├── new
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── settings
+│   │   │   └── page.tsx
+│   │   └── strategy
+│   │   │   └── page.tsx
+│   ├── components
+│   │   ├── ai-content-display.tsx
+│   │   ├── auth
+│   │   │   ├── auth-provider.tsx
+│   │   │   ├── auth-wrapper.tsx
+│   │   │   ├── loading-page.tsx
+│   │   │   └── login-page.tsx
+│   │   ├── dashboard
+│   │   │   ├── dashboard-client.tsx
+│   │   │   ├── sales-chart.tsx
+│   │   │   ├── stats-card.tsx
+│   │   │   └── top-products.tsx
+│   │   ├── description-reengineer.tsx
+│   │   ├── diagnostic-button.tsx
+│   │   ├── image-studio
+│   │   │   └── index.tsx
+│   │   ├── layout
+│   │   │   ├── app-sidebar.tsx
+│   │   │   └── header.tsx
+│   │   ├── product-form
+│   │   │   └── index.tsx
+│   │   ├── products
+│   │   │   ├── product-details.tsx
+│   │   │   └── product-gallery.tsx
+│   │   ├── products-table
+│   │   │   └── index.tsx
+│   │   ├── smart-tag-generator.tsx
+│   │   ├── theme
+│   │   │   ├── theme-provider.tsx
+│   │   │   └── theme-toggle.tsx
+│   │   └── ui
+│   │   │   ├── __tests__
+│   │   │   │   └── currency-input.test.tsx
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── currency-input.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── toaster.tsx
+│   │   │   └── tooltip.tsx
+│   ├── hooks
+│   │   ├── use-inventory-status.tsx
+│   │   ├── use-mobile.tsx
+│   │   ├── use-product-image.tsx
+│   │   ├── use-server-sent-events.tsx
+│   │   └── use-toast.ts
+│   ├── lib
+│   │   ├── __tests__
+│   │   │   └── money.test.ts
+│   │   ├── ai-content-utils.ts
+│   │   ├── firebase-admin.ts
+│   │   ├── firebase.ts
+│   │   ├── image.ts
+│   │   ├── money.ts
+│   │   └── utils.ts
+│   ├── services
+│   │   ├── ai-tag-generator.ts
+│   │   ├── shopify
+│   │   │   └── mutations
+│   │   │   │   └── create-product-with-image.ts
+│   │   ├── shopify.ts
+│   │   └── tag-learning.ts
+│   ├── styles
+│   │   └── ai-content.css
+│   └── types
+│   │   └── shopify.ts
+├── storage.rules
+├── tailwind.config.ts
+├── test-inventory-webhook.ps1
+├── test-webhook.ps1
+├── tsconfig.json
+├── vitest.config.ts
+├── vitest.setup.ts
+├── watch-config.json
+└── workspace
+│   └── src
+│   │   ├── app
+│   │   │   └── loading.tsx
+│   │   ├── components
+│   │   │   ├── auth
+│   │   │   │   └── loading-page.tsx
+│   │   │   └── image-studio
+│   │   │   │   └── index.tsx
+│   │   └── lib
+│   │   │   └── firebase.ts
+
+---
+
+Directory: C:\Users\Jrami\Desktop\threechicksandawick
+└── three-chicks-and-a-wick
+│   ├── .amplify
+│   │   ├── artifacts
+│   │   │   └── cdk.out
+│   │   │   │   ├── amplify-threegirlsandawick-Jrami-sandbox-5427db1ab7.assets.json
+│   │   │   │   ├── amplify-threegirlsandawick-Jrami-sandbox-5427db1ab7.template.json
+│   │   │   │   ├── cdk.out
+│   │   │   │   ├── manifest.json
+│   │   │   │   └── tree.json
+│   │   └── tsconfig.tsbuildinfo
+│   ├── .cursor
+│   │   └── context
+│   │   │   └── magic-request-2025-08-13.md
+│   ├── .cursorignore
+│   ├── .env.local
+│   ├── .npmrc
+│   ├── README.md
+│   ├── amplify
+│   │   ├── backend.ts
+│   │   └── functions
+│   ├── amplify.yml
+│   ├── amplify_outputs.json
+│   ├── architectural-diagram.mmd
+│   ├── codegen.ts
+│   ├── components.json
+│   ├── current_project_structure.txt
+│   ├── debug-auth-flow.ps1
+│   ├── debug-shopify-api.ps1
+│   ├── design-system.json
+│   ├── directory_tree.json
+│   ├── directory_tree.txt
+│   ├── eslint.config.mjs
+│   ├── gdiff.sh
+│   ├── generate-tree.ps1
+│   ├── how --name-only HEAD
+│   ├── initial-folder-structure.txt
+│   ├── log.txt
+│   ├── next-env.d.ts
+│   ├── next.config.mjs
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.mjs
+│   ├── print-auth-tree.ps1
+│   ├── product.description, product.customDescription, and final rendered value
+│   ├── public
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── images
+│   │   │   ├── 3-chicks-and-a-wick.png
+│   │   │   ├── 3C&AW.png
+│   │   │   ├── 3C&AW.svg
+│   │   │   ├── Correct-Name-2.svg
+│   │   │   ├── Correct-Name.svg
+│   │   │   ├── Gemini_Generated_Image_5x7jqr5x7jqr5x7j.png
+│   │   │   ├── Gemini_Generated_Image_pnbqvpnbqvpnbqvp.png
+│   │   │   ├── Lavender-Bliss-Candle.png
+│   │   │   ├── Official-Logo.svg
+│   │   │   ├── Vector-Horizontal-Logo-No-BG-Cropped.svg
+│   │   │   ├── Vector-Horizontal-Logo-No-BG.svg
+│   │   │   ├── Vector-Horizontal-Logo.svg
+│   │   │   ├── VectorLogoV2-Filled-NewFont.svg
+│   │   │   ├── VectorLogoV2.svg
+│   │   │   ├── placeholders
+│   │   │   │   ├── product-1.png
+│   │   │   │   ├── product-2.png
+│   │   │   │   └── product-3.png
+│   │   │   └── products
+│   │   │   │   ├── Cashmere & Cocoa Butter Candle.png
+│   │   │   │   ├── Cashmere & Cocoa Butter Candle.webp
+│   │   │   │   ├── DIY Clay Earring Kit.png
+│   │   │   │   ├── DIY Clay Earring Kit.webp
+│   │   │   │   ├── Golden Pear & Spice Candle.png
+│   │   │   │   ├── Golden Pear & Spice Candle.webp
+│   │   │   │   ├── Morning Mist Room Spray.png
+│   │   │   │   ├── Morning Mist Room Spray.webp
+│   │   │   │   ├── Spiced Apple Cider Wax Melts.png
+│   │   │   │   ├── Spiced Apple Cider Wax Melts.webp
+│   │   │   │   ├── Wild Rose & Oud Candle.png
+│   │   │   │   ├── Wild Rose & Oud Candle.webp
+│   │   │   │   ├── citrus-grove-soap-bar.webp
+│   │   │   │   ├── diy-macrame-plant-hanger-kit.webp
+│   │   │   │   ├── enchanted-forest-wax-melts.webp
+│   │   │   │   ├── lavender-bliss-candle.webp
+│   │   │   │   ├── ocean-breeze-candle.webp
+│   │   │   │   └── vanilla-bean-dream-candle.webp
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   ├── scripts
+│   │   ├── codegen.mjs
+│   │   ├── convert-images.mjs
+│   │   ├── create-product.mjs
+│   │   ├── delete-all-products.mjs
+│   │   ├── generate-mock-products.mjs
+│   │   ├── print-project-tree.sh
+│   │   ├── print-tree.mjs
+│   │   ├── seed-custom-products.mjs
+│   │   ├── seed-products.mjs
+│   │   ├── seed-shopify.mjs
+│   │   └── test-customer-api.mjs
+│   ├── src
+│   │   ├── app
+│   │   │   ├── ApolloProvider.tsx
+│   │   │   ├── about-us
+│   │   │   │   └── page.tsx
+│   │   │   ├── account
+│   │   │   │   └── page.tsx
+│   │   │   ├── api
+│   │   │   │   ├── auth
+│   │   │   │   │   └── [...shopify]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   ├── cart
+│   │   │   │   │   └── upsert
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   └── customer
+│   │   │   │   │   ├── orders
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── profile
+│   │   │   │   │   │   └── route.ts
+│   │   │   ├── contact-us
+│   │   │   │   └── page.tsx
+│   │   │   ├── education
+│   │   │   │   ├── our-scents
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── our-wax
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── our-wicks
+│   │   │   │   │   └── page.tsx
+│   │   │   ├── favicon.ico
+│   │   │   ├── globals.css
+│   │   │   ├── icon.png
+│   │   │   ├── layout.tsx
+│   │   │   ├── magic-request
+│   │   │   │   └── page.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── product-listings
+│   │   │   │   └── page.tsx
+│   │   │   └── products
+│   │   │   │   └── [handle]
+│   │   │   │   │   ├── loading.tsx
+│   │   │   │   │   └── page.tsx
+│   │   ├── components
+│   │   │   ├── Cart.tsx
+│   │   │   ├── CategoryCards.tsx
+│   │   │   ├── ClientProviders.tsx
+│   │   │   ├── CustomerAuth.tsx
+│   │   │   ├── DebugApollo.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── HeaderClient.tsx
+│   │   │   ├── LoginSuccessToast.tsx
+│   │   │   ├── MagicJobWatcher.tsx
+│   │   │   ├── MagicRequestCard.tsx
+│   │   │   ├── MagicToastHost.tsx
+│   │   │   ├── NewsletterSignup.tsx
+│   │   │   ├── ProductTags.tsx
+│   │   │   └── ui
+│   │   │   │   ├── Modal.tsx
+│   │   │   │   ├── Pagination.tsx
+│   │   │   │   ├── SlideOutPanel.tsx
+│   │   │   │   ├── Toast.tsx
+│   │   │   │   ├── badge.tsx
+│   │   │   │   └── input.tsx
+│   │   ├── context
+│   │   │   ├── CartContext.tsx
+│   │   │   └── ToastContext.tsx
+│   │   ├── features
+│   │   │   ├── home
+│   │   │   │   └── components
+│   │   │   │   │   └── EducationSection.tsx
+│   │   │   ├── magic-request
+│   │   │   │   └── components
+│   │   │   │   │   ├── MagicRequestForm.tsx
+│   │   │   │   │   └── ShadowHtmlPreview.tsx
+│   │   │   └── product
+│   │   │   │   └── components
+│   │   │   │   │   ├── ProductCard.tsx
+│   │   │   │   │   ├── ProductCardSkeleton.tsx
+│   │   │   │   │   ├── ProductCarousel.tsx
+│   │   │   │   │   ├── ProductGallery.tsx
+│   │   │   │   │   ├── ProductGrid.tsx
+│   │   │   │   │   ├── ProductView.tsx
+│   │   │   │   │   └── QuickViewModal.tsx
+│   │   ├── gql
+│   │   │   ├── fragment-masking.ts
+│   │   │   ├── gql.ts
+│   │   │   ├── graphql.ts
+│   │   │   └── index.ts
+│   │   ├── hooks
+│   │   │   ├── useCustomerAuth.ts
+│   │   │   └── useMediaQuery.ts
+│   │   ├── lib
+│   │   │   ├── client.ts
+│   │   │   ├── config.ts
+│   │   │   ├── constants.ts
+│   │   │   ├── debug-apollo.ts
+│   │   │   ├── graphql-config.ts
+│   │   │   ├── mock-products.json
+│   │   │   ├── shopify-client.ts
+│   │   │   ├── shopify-customer.ts
+│   │   │   ├── shopify.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
+│   │   └── utils
+│   │   │   └── amplify-utils.ts
+│   ├── stitch
+│   │   ├── about-us.html
+│   │   ├── checkout.html
+│   │   ├── contact-us.html
+│   │   ├── faq.html
+│   │   ├── home.html
+│   │   ├── order-confirmation.html
+│   │   ├── product-details.html
+│   │   ├── product-listings.html
+│   │   ├── search-results.html
+│   │   ├── shopping-cart.html
+│   │   ├── user-account-profile.html
+│   │   └── wishlist-favorites.html
+│   ├── terraform
+│   │   ├── .terraform.lock.hcl
+│   │   ├── README.md
+│   │   ├── deploy.bat
+│   │   ├── lambda
+│   │   │   ├── index.js
+│   │   │   ├── index.test.js
+│   │   │   ├── magic-request.zip
+│   │   │   ├── package-lock.json
+│   │   │   └── package.json
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── schema.graphql
+│   │   ├── terraform.tfvars.example
+│   │   └── variables.tf
+│   ├── tsconfig.json
+│   ├── watch-config.json
+│   └── yay
+
+---
+
