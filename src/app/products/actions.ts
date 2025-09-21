@@ -20,7 +20,7 @@ import { encodeShopifyId } from '@/lib/utils';
 import { FieldValue } from 'firebase-admin/firestore';
 import { incrementTagUsage } from '@/services/tag-learning';
 import { generateSmartTags as generateAITags } from '@/services/ai-tag-generator';
-import { reengineerDescriptionFlow } from '@/ai/flows/reengineer-description';
+import { rewriteDescriptionFlow } from '@/ai/flows/reengineer-description';
 
 const productSchema = z.object({
     id: z.string().optional(),
@@ -256,7 +256,7 @@ export async function getTagPoolAction(): Promise<{ success: boolean; tagPool?: 
     }
 }
 
-export async function reengineerDescriptionAction(data: {
+export async function rewriteDescriptionAction(data: {
     originalDescription: string;
     userPrompt: string;
     productContext: {
@@ -266,23 +266,23 @@ export async function reengineerDescriptionAction(data: {
     };
 }): Promise<{ success: boolean; result?: any; error?: string }> {
     try {
-        console.log('[Reengineer Action] Starting re-engineering for:', data.productContext.name);
+        console.log('[Rewrite Action] Starting rewrite for:', data.productContext.name);
         
-        const result = await reengineerDescriptionFlow({
+        const result = await rewriteDescriptionFlow({
             originalDescription: data.originalDescription,
             userPrompt: data.userPrompt,
             productContext: data.productContext
         });
 
-        console.log('[Reengineer Action] Re-engineering complete:', result);
+        console.log('[Rewrite Action] Rewrite complete:', result);
         
         return {
             success: true,
             result: result
         };
     } catch (error) {
-        console.error('[Reengineer Action] Error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to re-engineer description';
+        console.error('[Rewrite Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to rewrite description';
         return { success: false, error: errorMessage };
     }
 }
