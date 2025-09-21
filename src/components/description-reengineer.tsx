@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { reengineerDescriptionAction } from '@/app/products/actions';
+import { rewriteDescriptionAction } from '@/app/products/actions';
 import { AIContentDisplay } from '@/components/ai-content-display';
 import { isHtmlContent, getAIContentClassName } from '@/lib/ai-content-utils';
 import { 
@@ -33,19 +33,19 @@ interface DescriptionVersion {
   timestamp: Date;
 }
 
-interface DescriptionReengineerProps {
+interface DescriptionRewriterProps {
   initialDescription: string;
   productName: string;
   imageAnalysis?: string;
   onDescriptionChange: (newDescription: string) => void;
 }
 
-export function DescriptionReengineer({
+export function DescriptionRewriter({
   initialDescription,
   productName,
   imageAnalysis,
   onDescriptionChange
-}: DescriptionReengineerProps) {
+}: DescriptionRewriterProps) {
   const [descriptionVersions, setDescriptionVersions] = useState<DescriptionVersion[]>([
     {
       id: 'original',
@@ -57,7 +57,7 @@ export function DescriptionReengineer({
     }
   ]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
-  const [isReengineering, setIsReengineering] = useState(false);
+  const [isRewriting, setIsRewriting] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -72,12 +72,12 @@ export function DescriptionReengineer({
     setHasUnsavedChanges(currentVersionIndex > 0);
   }, [currentDescription, currentVersionIndex, onDescriptionChange]);
 
-  const handleReengineer = async () => {
-    if (!userPrompt.trim() || isReengineering) return;
+  const handleRewrite = async () => {
+    if (!userPrompt.trim() || isRewriting) return;
 
-    setIsReengineering(true);
+    setIsRewriting(true);
     try {
-      const result = await reengineerDescriptionAction({
+      const result = await rewriteDescriptionAction({
         originalDescription: currentDescription,
         userPrompt: userPrompt.trim(),
         productContext: {
@@ -90,7 +90,7 @@ export function DescriptionReengineer({
       if (result.success && result.result) {
         const newVersion: DescriptionVersion = {
           id: `version-${Date.now()}`,
-          description: result.result.reengineeredDescription,
+          description: result.result.rewrittenDescription,
           userPrompt: userPrompt.trim(),
           reasoning: result.result.reasoning,
           changes: result.result.changes || [],
@@ -102,28 +102,28 @@ export function DescriptionReengineer({
         setUserPrompt('');
         
         toast({
-          title: "✨ Description Re-engineered!",
+          title: "✨ Description Rewritten!",
           description: `Created version ${descriptionVersions.length + 1} with ${result.result.changes?.length || 0} changes.`
         });
       } else {
-        throw new Error(result.error || 'Failed to re-engineer description');
+        throw new Error(result.error || 'Failed to rewrite description');
       }
     } catch (error) {
-      console.error('Re-engineering error:', error);
+      console.error('Rewriting error:', error);
       toast({
-        title: "❌ Re-engineering Failed",
-        description: error instanceof Error ? error.message : 'Failed to re-engineer description',
+        title: "❌ Rewriting Failed",
+        description: error instanceof Error ? error.message : 'Failed to rewrite description',
         variant: "destructive"
       });
     } finally {
-      setIsReengineering(false);
+      setIsRewriting(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleReengineer();
+      handleRewrite();
     }
   };
 
@@ -190,14 +190,14 @@ export function DescriptionReengineer({
           </div>
         </CardHeader>
         <CardContent>
-          {isReengineering ? (
+          {isRewriting ? (
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-4 w-5/6" />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Re-engineering description...
+                Rewriting description...
               </div>
             </div>
           ) : (
@@ -228,12 +228,12 @@ export function DescriptionReengineer({
         </CardContent>
       </Card>
 
-      {/* Re-engineering Input */}
+      {/* Rewriting Input */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Wand2 className="h-5 w-5" />
-            Re-engineer Description
+            Rewrite Description
           </CardTitle>
           <CardDescription>
             Describe how you'd like to change the description. Be creative!
@@ -252,24 +252,24 @@ export function DescriptionReengineer({
                 onChange={(e) => setUserPrompt(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="e.g., Make it more romantic and cozy, Add more sensory details, Focus on the luxury materials..."
-                disabled={isReengineering}
+                disabled={isRewriting}
                 className="w-full"
               />
             </div>
             <Button 
-              onClick={handleReengineer}
-              disabled={!userPrompt.trim() || isReengineering}
+              onClick={handleRewrite}
+              disabled={!userPrompt.trim() || isRewriting}
               className="w-full"
             >
-              {isReengineering ? (
+              {isRewriting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Re-engineering...
+                  Rewriting...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Re-engineer Description
+                  Rewrite Description
                 </>
               )}
             </Button>

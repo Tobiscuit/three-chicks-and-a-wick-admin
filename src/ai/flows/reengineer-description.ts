@@ -13,12 +13,12 @@ const ReengineerDescriptionSchema = z.object({
   })
 });
 
-export const reengineerDescriptionFlow = ai.defineFlow(
+export const rewriteDescriptionFlow = ai.defineFlow(
   {
-    name: 'reengineerDescriptionFlow',
+    name: 'rewriteDescriptionFlow',
     inputSchema: ReengineerDescriptionSchema,
     outputSchema: z.object({
-      reengineeredDescription: z.string().describe('The new re-engineered description'),
+      rewrittenDescription: z.string().describe('The new rewritten description'),
       reasoning: z.string().describe('Why these changes were made'),
       changes: z.array(z.string()).describe('List of key changes made')
     }),
@@ -26,7 +26,7 @@ export const reengineerDescriptionFlow = ai.defineFlow(
   async ({ originalDescription, userPrompt, productContext }) => {
     try {
       const prompt = `
-You are a creative copywriter for "Three Chicks and a Wick" candle brand. Your job is to re-engineer product descriptions based on user feedback while maintaining brand consistency.
+You are a creative copywriter for "Three Chicks and a Wick" candle brand. Your job is to rewrite product descriptions based on user feedback while maintaining brand consistency.
 
 ORIGINAL DESCRIPTION:
 ${originalDescription}
@@ -64,8 +64,8 @@ RESPONSE FORMAT (JSON only):
 }
 `;
 
-      console.log('[Reengineer Flow] Starting description re-engineering...');
-      console.log('[Reengineer Flow] User prompt:', userPrompt);
+      console.log('[Rewrite Flow] Starting description rewrite...');
+      console.log('[Rewrite Flow] User prompt:', userPrompt);
       
       const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash',
@@ -76,9 +76,9 @@ RESPONSE FORMAT (JSON only):
         }
       });
 
-      console.log('[Reengineer Flow] Response object:', response);
-      console.log('[Reengineer Flow] Response type:', typeof response);
-      console.log('[Reengineer Flow] Response methods:', Object.getOwnPropertyNames(response));
+      console.log('[Rewrite Flow] Response object:', response);
+      console.log('[Rewrite Flow] Response type:', typeof response);
+      console.log('[Rewrite Flow] Response methods:', Object.getOwnPropertyNames(response));
       
       let content;
       if (typeof response.text === 'function') {
@@ -88,11 +88,11 @@ RESPONSE FORMAT (JSON only):
       } else if (response.message?.content) {
         content = response.message.content;
       } else {
-        console.error('[Reengineer Flow] Unknown response format:', response);
+        console.error('[Rewrite Flow] Unknown response format:', response);
         throw new Error('Unknown response format from AI model');
       }
       
-      console.log('[Reengineer Flow] Raw response content:', content);
+      console.log('[Rewrite Flow] Raw response content:', content);
 
       // Parse JSON response
       let result;
@@ -104,26 +104,26 @@ RESPONSE FORMAT (JSON only):
         
         result = JSON.parse(jsonMatch[0]);
       } catch (parseError) {
-        console.error('[Reengineer Flow] JSON parse error:', parseError);
+        console.error('[Rewrite Flow] JSON parse error:', parseError);
         
         // Fallback: return original with minimal changes
         result = {
-          reengineeredDescription: originalDescription,
+          rewrittenDescription: originalDescription,
           reasoning: 'Unable to parse AI response, returning original description',
           changes: ['No changes made due to parsing error']
         };
       }
 
-      console.log('[Reengineer Flow] Final result:', result);
+      console.log('[Rewrite Flow] Final result:', result);
       return result;
 
     } catch (error) {
-      console.error('[Reengineer Flow] Error:', error);
+      console.error('[Rewrite Flow] Error:', error);
       
       // Fallback result
       return {
-        reengineeredDescription: originalDescription,
-        reasoning: 'Error occurred during re-engineering, returning original description',
+        rewrittenDescription: originalDescription,
+        reasoning: 'Error occurred during rewrite, returning original description',
         changes: ['No changes made due to error']
       };
     }

@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
 import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
-import { DescriptionReengineer } from "@/components/description-reengineer";
+import { DescriptionRewriter } from "@/components/description-reengineer";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -371,7 +371,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <DescriptionReengineer
+                          <DescriptionRewriter
                             initialDescription={field.value || ''}
                             productName={form.watch('title') || 'Product'}
                             imageAnalysis={initialData?.imageAnalysis || undefined}
