@@ -20,6 +20,7 @@ import { encodeShopifyId } from '@/lib/utils';
 import { FieldValue } from 'firebase-admin/firestore';
 import { incrementTagUsage } from '@/services/tag-learning';
 import { generateSmartTags as generateAITags } from '@/services/ai-tag-generator';
+import { reengineerDescriptionFlow } from '@/ai/flows/reengineer-description';
 
 const productSchema = z.object({
     id: z.string().optional(),
@@ -251,6 +252,37 @@ export async function getTagPoolAction(): Promise<{ success: boolean; tagPool?: 
     } catch (error) {
         console.error('[Tag Pool] Error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to get tag pool';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function reengineerDescriptionAction(data: {
+    originalDescription: string;
+    userPrompt: string;
+    productContext: {
+        name: string;
+        imageAnalysis?: string;
+        brandGuidelines?: string;
+    };
+}): Promise<{ success: boolean; result?: any; error?: string }> {
+    try {
+        console.log('[Reengineer Action] Starting re-engineering for:', data.productContext.name);
+        
+        const result = await reengineerDescriptionFlow({
+            originalDescription: data.originalDescription,
+            userPrompt: data.userPrompt,
+            productContext: data.productContext
+        });
+
+        console.log('[Reengineer Action] Re-engineering complete:', result);
+        
+        return {
+            success: true,
+            result: result
+        };
+    } catch (error) {
+        console.error('[Reengineer Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to re-engineer description';
         return { success: false, error: errorMessage };
     }
 }
