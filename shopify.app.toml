@@ -1,0 +1,18 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "c863d0a9077ccaa20f9359503ba97894"
+name = "threechicksandawick-admin"
+application_url = "https://example.com"
+embedded = true
+
+[webhooks]
+api_version = "2025-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+  scopes = "read_products,write_products,read_orders,write_orders,read_customers,write_customers,read_inventory,write_inventory,read_locations,read_product_listings,write_product_listings,read_metaobject_definitions,write_metaobject_definitions,read_themes,write_themes"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ ]
