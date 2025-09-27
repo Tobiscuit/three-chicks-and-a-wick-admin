@@ -141,7 +141,9 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
             return { error: 'The AI did not return a valid image.' };
         }
 
-        const resultPart = dataUrlToPart(imageDataUrl);
+        // Extract the URL from the object returned by the AI flow
+        const imageUrl = typeof imageDataUrl === 'string' ? imageDataUrl : imageDataUrl.url;
+        const resultPart = dataUrlToPart(imageUrl);
         if (!resultPart?.inlineData) {
           return { error: 'The AI did not return a valid image.'}
         }
