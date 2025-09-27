@@ -8,6 +8,7 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { APP_CONFIG, FIREBASE_CONFIG, GOOGLE_AI_CONFIG } from '@/lib/env-config';
 import { fetchShopify } from '@/services/shopify';
 import { z } from 'zod';
 import { Part } from '@google/generative-ai';
@@ -48,13 +49,13 @@ export async function checkAuthorization(idToken: string | null) {
   let rawAuthorizedEmails: string | undefined;
 
   // 1) Prefer environment variable (works on Vercel): AUTHORIZED_EMAILS="a@x.com,b@y.com"
-  const envAuthorized = process.env.AUTHORIZED_EMAILS;
+  const envAuthorized = APP_CONFIG.AUTHORIZED_EMAILS;
   if (envAuthorized && envAuthorized.trim().length > 0) {
     console.log("[Auth Check] Using AUTHORIZED_EMAILS from environment variables.");
     rawAuthorizedEmails = envAuthorized;
   } else {
     // 2) Fallback to Secret Manager (for Firebase App Hosting)
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const projectId = FIREBASE_CONFIG.PROJECT_ID;
     if (!projectId) {
       console.error("[Auth Check] Project ID not set and AUTHORIZED_EMAILS env missing. Cannot fetch secrets.");
       return { isAuthorized: false, error: "Server configuration error." };
@@ -276,7 +277,7 @@ export async function createPrefillUploadUrl(contentType: string): Promise<Creat
     try {
       const meta = await bucket.getMetadata();
       const currentCors = meta[0].cors || [];
-      const origin = process.env.NEXT_PUBLIC_APP_ORIGIN || 'https://three-chicks-and-a-wick-admin.vercel.app';
+      const origin = APP_CONFIG.ORIGIN;
       const needRule = !currentCors.some((r:any)=> (r.origin || []).includes(origin) && (r.method || []).includes('PUT'));
       if (needRule) {
         const updated = [
@@ -382,12 +383,12 @@ export async function generateProductFromImageAction(
     input: GenerateProductInput
 ): Promise<{ token?: string; error?: string }> {
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!GOOGLE_AI_CONFIG.GEMINI_API_KEY) {
         return { error: "Gemini API key is not configured." };
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(GOOGLE_AI_CONFIG.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-pro",
             generationConfig: { responseMimeType: "application/json" }

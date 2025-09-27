@@ -44,8 +44,10 @@ export type ShopifyCollection = {
     handle: string;
 }
 
-const SHOPIFY_API_URL = process.env.SHOPIFY_STORE_URL!;
-const SHOPIFY_ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN!;
+import { SHOPIFY_CONFIG } from '@/lib/env-config';
+
+const SHOPIFY_API_URL = SHOPIFY_CONFIG.STORE_URL;
+const SHOPIFY_ADMIN_TOKEN = SHOPIFY_CONFIG.ADMIN_ACCESS_TOKEN;
 
 export async function fetchShopify<T>(query: string, variables?: Record<string, any>): Promise<T> {
   if (!SHOPIFY_API_URL || !SHOPIFY_ADMIN_TOKEN) {

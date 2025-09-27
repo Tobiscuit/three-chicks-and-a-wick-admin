@@ -48,6 +48,7 @@ pnpm-debug.log*
 
 # Local environment variables
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -77,6 +78,9 @@ apphosting.yaml
 # Test scripts
 test-inventory-webhook.ps1
 *.ps1
+
+# Environment variable files
+vercel-env-vars.txt
 
 # Logs and OS/IDE clutter
 Thumbs.db

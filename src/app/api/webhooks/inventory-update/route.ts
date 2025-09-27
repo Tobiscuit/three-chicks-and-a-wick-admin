@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { adminDb } from '@/lib/firebase-admin';
+import { SHOPIFY_CONFIG, FIREBASE_CONFIG } from '@/lib/env-config';
 
 export const runtime = 'nodejs';
 
@@ -10,7 +11,7 @@ async function getRawBody(req: NextRequest): Promise<Buffer> {
 }
 
 function verifyShopifyHmac(rawBody: Buffer, hmacHeader: string | null): boolean {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET || '';
+  const secret = SHOPIFY_CONFIG.WEBHOOK_SECRET;
   if (!secret || !hmacHeader) return false;
   const digest = createHmac('sha256', secret).update(rawBody).digest('base64');
   try {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Check if Firebase is properly configured
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  const projectId = FIREBASE_CONFIG.PROJECT_ID;
   console.log('[Webhook inventory-update] Firebase project ID:', projectId ? 'set' : 'NOT SET');
 
   try {

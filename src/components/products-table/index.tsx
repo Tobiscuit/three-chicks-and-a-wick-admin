@@ -5,6 +5,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link";
+import { APP_CONFIG } from '@/lib/env-config';
 import {
   Table,
   TableBody,
@@ -173,7 +174,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
   const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
-  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
+  const storefrontUrl = APP_CONFIG.STOREFRONT_URL;
 
   // Collect all inventory item IDs for SSE connection
   const inventoryItemIds = products
@@ -435,7 +436,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
   onDelete: (e: React.MouseEvent, id: string, title: string) => void; 
   onQuickEdit: () => void;
 }) {
-  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
+  const storefrontUrl = APP_CONFIG.STOREFRONT_URL;
   return (
     <SecureDeleteDialog product={product} onDelete={onDelete}>
       <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
