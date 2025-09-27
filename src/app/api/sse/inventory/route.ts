@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 const clients = new Map<string, WritableStreamDefaultWriter>();
 
 export async function GET(request: NextRequest) {
-  const headersList = headers();
+  const headersList = await headers();
   const clientId = headersList.get('x-client-id') || 'anonymous';
 
   console.log(`[SSE] New client connected: ${clientId}`);
