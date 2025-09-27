@@ -292,22 +292,8 @@ export async function createPrefillUploadUrl(contentType: string): Promise<Creat
     const fileName = `prefill-product-images/${token}.${ext}`;
     const bucket = adminStorage.bucket();
 
-    // Ensure CORS allows browser PUTs from our admin app origin
-    try {
-      const meta = await bucket.getMetadata();
-      const currentCors = meta[0].cors || [];
-      const origin = APP_CONFIG.ORIGIN;
-      const needRule = !currentCors.some((r:any)=> (r.origin || []).includes(origin) && (r.method || []).includes('PUT'));
-      if (needRule) {
-        const updated = [
-          ...currentCors,
-          { origin: [origin, 'http://localhost:3000'], method: ['PUT','GET','HEAD','OPTIONS'], responseHeader: ['Content-Type','x-goog-resumable'], maxAgeSeconds: 3600 },
-        ];
-        await bucket.setCors(updated);
-      }
-    } catch (e) {
-      console.warn('[createPrefillUploadUrl] CORS ensure warning:', (e as any)?.message || e);
-    }
+    // Note: CORS settings for Firebase Storage are configured through Firebase Console
+    // or Google Cloud Storage API, not through the Firebase Admin SDK
     const file = bucket.file(fileName);
     const [url] = await file.getSignedUrl({
       action: 'write',
