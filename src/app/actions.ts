@@ -534,7 +534,7 @@ export async function resolveAiGeneratedProductAction(
         await docRef.delete();
 
         if (!data) {
-            return null;
+            return { success: false, error: "No data found for this draft." };
         }
 
         // Firestore `Timestamp` is a class, not a plain object.
