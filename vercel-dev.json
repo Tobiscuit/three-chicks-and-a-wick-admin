@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "threechicksandawick-admin-dev",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "development",
+    "NEXT_PUBLIC_APP_ENV": "development"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "development"
+    }
+  }
+}
