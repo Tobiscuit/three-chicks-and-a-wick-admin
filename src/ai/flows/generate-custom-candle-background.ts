@@ -151,7 +151,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       console.log('[Flow] Prompt structure:', {
         textPrompt: !!prompt[0].text,
         mediaCount: prompt.filter(p => p.media).length,
-        backgroundImage: bgImageFinal.substring(0, 50) + '...',
+        backgroundImage: bgImageFinalPart.media?.url?.substring(0, 50) + '...' || 'none',
         candleImage1: candleImage1.substring(0, 50) + '...',
         candleImage2: candleImage2 ? candleImage2.substring(0, 50) + '...' : 'none'
       });
