@@ -8,8 +8,8 @@ import { ProductForm } from '@/components/product-form';
 import type { ShopifyCollection, ShopifyProduct } from '@/services/shopify';
 
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const productId = decodeURIComponent(id);
     let product: ShopifyProduct | null = null;
     let collections: ShopifyCollection[] = [];
