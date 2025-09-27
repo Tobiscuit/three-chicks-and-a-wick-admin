@@ -145,7 +145,9 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] SUCCESS: Final image composed.');
 
-      return finalImagePart;
+      return {
+        media: finalImagePart
+      };
     } catch (error: any) {
       console.error("[Compose Flow Error]", error);
       throw new Error(`AI Composition Flow Failed: ${error.message}`);
