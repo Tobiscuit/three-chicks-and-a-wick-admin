@@ -45,7 +45,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   async ({ candleImage1, candleImage2, galleryImage, contextualDetails }) => {
     
     const redactData = (part: Part) => {
-      if (part.media?.url?.length > 100) {
+      if (part.media?.url && part.media.url.length > 100) {
         return `${part.media.url.substring(0, 50)}...[REDACTED_LENGTH=${part.media.url.length}]`;
       }
       return part;
