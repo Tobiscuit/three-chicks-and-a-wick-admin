@@ -40,8 +40,8 @@ export const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
       throw new Error('Could not refine background image');
     }
     
-    // Handle the case where refinedImage might be null or undefined
-    const refinedImagePart = refinedImage?.media();
+    // Type assertion to handle the media() call
+    const refinedImagePart = (refinedImage as any).media();
     if (!refinedImagePart) {
       throw new Error('Could not refine background image');
     }
