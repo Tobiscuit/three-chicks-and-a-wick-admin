@@ -11,7 +11,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from '@google/generative-ai';
+import { Part } from 'genkit';
 
 const BackgroundAndContextSchema = z.object({
   background: z.custom<Part>().describe('The generated background image'),
