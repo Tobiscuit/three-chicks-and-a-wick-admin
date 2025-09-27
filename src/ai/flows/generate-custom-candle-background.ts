@@ -139,7 +139,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       // Build the prompt array with the new URL-based syntax
       const prompt = [
         { text: composePrompt },
-        { media: { url: bgImageFinalPart.media.url } }, // Pass the full data URL string
+        { media: { url: bgImageFinalPart.media?.url || '' } }, // Pass the full data URL string
         { media: { url: candleImage1 } }, // Pass the full data URL string
       ];
 
