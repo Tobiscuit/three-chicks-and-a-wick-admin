@@ -81,9 +81,7 @@ RESPONSE FORMAT (JSON only):
       console.log('[Rewrite Flow] Response methods:', Object.getOwnPropertyNames(response));
       
       let content;
-      if (typeof response.text === 'function') {
-        content = response.text();
-      } else if (response.text) {
+      if (response.text) {
         content = response.text;
       } else if (response.message?.content) {
         content = response.message.content;
