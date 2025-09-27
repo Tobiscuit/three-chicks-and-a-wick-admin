@@ -20,8 +20,9 @@ function dataUrlToPart(dataUrl: string): Part {
         throw new Error('Invalid data URL format for generative part.');
     }
     return {
-        media: {
-            url: dataUrl
+        inlineData: {
+            mimeType: match[1],
+            data: match[2]
         }
     };
 }
@@ -42,8 +43,8 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   async ({ candleImage1, candleImage2, galleryImage, contextualDetails }) => {
     
     const redactData = (part: Part) => {
-      if (part.media?.url?.length > 100) {
-        return `${part.media.url.substring(0, 50)}...[REDACTED_LENGTH=${part.media.url.length}]`;
+      if (part.inlineData?.data?.length > 100) {
+        return `${part.inlineData.data.substring(0, 50)}...[REDACTED_LENGTH=${part.inlineData.data.length}]`;
       }
       return part;
     };
