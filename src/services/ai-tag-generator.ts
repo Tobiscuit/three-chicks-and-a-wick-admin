@@ -62,7 +62,7 @@ RESPONSE FORMAT (JSON only, no other text):
       },
     });
 
-    const content = response.text();
+    const content = response.text;
     console.log('[AI Tag Generator] Raw response:', content);
 
     // Parse the JSON response

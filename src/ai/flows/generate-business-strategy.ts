@@ -30,6 +30,6 @@ export const generateBusinessStrategyFlow = ai.defineFlow(
       },
     });
 
-    return llmResponse.text();
+    return llmResponse.text;
   }
 );
