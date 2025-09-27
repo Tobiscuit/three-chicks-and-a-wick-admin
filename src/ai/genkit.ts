@@ -6,8 +6,5 @@ export const ai = genkit({
   plugins: [
     googleAI(),
   ],
-  logSinks: [],
-  enableTracingAndMetrics: false,
-  traceStore: undefined, // Explicitly disable trace store
 });
 
