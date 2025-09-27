@@ -3,8 +3,9 @@ import { adminDb } from '@/lib/firebase-admin';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   // Delete test data from Firestore
   try {
     const documentId = params.id;
