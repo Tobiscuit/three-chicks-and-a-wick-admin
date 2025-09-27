@@ -173,7 +173,9 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
 
       console.log('[Flow] Step 2 SUCCESS: Final image composed.');
 
-      return finalImagePart;
+      return {
+        media: finalImagePart
+      };
     } catch (error: any) {
       console.error("[Flow Error] An error occurred in generateCustomCandleBackgroundFlow:", error);
       throw new Error(`AI Flow Failed: ${error.message}`);
