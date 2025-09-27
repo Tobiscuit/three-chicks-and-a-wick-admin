@@ -13,6 +13,22 @@ import { fetchShopify } from '@/services/shopify';
 import { z } from 'zod';
 import { Part } from '@google/generative-ai';
 
+function dataUrlToPart(dataUrl: string): Part {
+    if (!dataUrl || typeof dataUrl !== 'string') {
+        throw new Error('Invalid data URL: dataUrl is undefined or not a string');
+    }
+    
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        console.error('Invalid data URL format:', dataUrl.substring(0, 100) + '...');
+        throw new Error('Invalid data URL format for generative part.');
+    }
+    return {
+        media: {
+            url: dataUrl
+        }
+    };
+}
 
 type ActionResult = {
   success: boolean;
@@ -125,11 +141,11 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
         }
 
         const resultPart = dataUrlToPart(imageDataUrl);
-        if (!resultPart?.inlineData) {
+        if (!resultPart?.media?.url) {
           return { error: 'The AI did not return a valid image.'}
         }
 
-        return { imageDataUri: `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}` };
+        return { imageDataUri: resultPart.media.url };
     } catch (error: any) {
         console.error("[generateImageAction Error]", error);
         if (error.message.includes('500') || error.message.includes('503')) {
