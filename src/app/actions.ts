@@ -24,8 +24,9 @@ function dataUrlToPart(dataUrl: string): Part {
         throw new Error('Invalid data URL format for generative part.');
     }
     return {
-        media: {
-            url: dataUrl
+        inlineData: {
+            data: match[2],
+            mimeType: match[1]
         }
     };
 }
@@ -141,11 +142,11 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
         }
 
         const resultPart = dataUrlToPart(imageDataUrl);
-        if (!resultPart?.media?.url) {
+        if (!resultPart?.inlineData) {
           return { error: 'The AI did not return a valid image.'}
         }
 
-        return { imageDataUri: resultPart.media.url };
+        return { imageDataUri: `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}` };
     } catch (error: any) {
         console.error("[generateImageAction Error]", error);
         if (error.message.includes('500') || error.message.includes('503')) {
