@@ -40,7 +40,7 @@ export const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
       throw new Error('Could not refine background image');
     }
     
-    const refinedImagePart = refinedImage.media();
+    const refinedImagePart = refinedImage!.media();
     if (!refinedImagePart) {
       throw new Error('Could not refine background image');
     }
