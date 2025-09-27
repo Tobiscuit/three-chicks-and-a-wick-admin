@@ -95,7 +95,9 @@ RESPONSE FORMAT (JSON only):
       // Parse JSON response
       let result;
       try {
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        // Ensure content is a string
+        const contentStr = typeof content === 'string' ? content : String(content);
+        const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error('No JSON found in response');
         }
