@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from '@google/generative-ai';
+import { Part } from 'genkit';
 
 // Helper to convert a Data URL string into a Genkit Part object
 function dataUrlToPart(dataUrl: string): Part {
@@ -19,9 +19,8 @@ function dataUrlToPart(dataUrl: string): Part {
         throw new Error('Invalid data URL format for generative part.');
     }
     return {
-        inlineData: {
-            mimeType: match[1],
-            data: match[2]
+        media: {
+            url: dataUrl
         }
     };
 }
@@ -42,8 +41,8 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
   async ({ background, contextualDetails, candleImage1, candleImage2 }) => {
     
     const redactData = (part: Part) => {
-      if (part.inlineData && part.inlineData.data.length > 100) {
-        return { ...part, inlineData: { ...part.inlineData, data: `[REDACTED_BASE64_DATA_LENGTH=${part.inlineData.data.length}]` } };
+      if (part.media?.url?.length > 100) {
+        return { ...part, media: { ...part.media, url: `[REDACTED_URL_LENGTH=${part.media.url.length}]` } };
       }
       return part;
     };
