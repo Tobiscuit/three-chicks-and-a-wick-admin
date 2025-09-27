@@ -11,7 +11,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from '@google/generative-ai';
+import { Part } from 'genkit';
 
 const BackgroundAndContextSchema = z.object({
   background: z.custom<Part>().describe('The generated background image'),
@@ -22,7 +22,10 @@ export const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
   {
     name: 'refineGeneratedBackgroundWithContextFlow',
     inputSchema: BackgroundAndContextSchema,
-    outputSchema: z.custom<Part>(),
+    outputSchema: z.object({
+      url: z.string(),
+      contentType: z.string().optional()
+    }),
   },
   async ({ background, context }) => {
     const prompt = `Refine the provided background image with the following context: "${context}". The changes should be subtle and enhance the overall image.`;
@@ -37,9 +40,7 @@ export const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
     if (!refinedImagePart) {
       throw new Error('Could not refine background image');
     }
-    return {
-      media: refinedImagePart
-    };
+    return refinedImagePart;
   }
 );
 

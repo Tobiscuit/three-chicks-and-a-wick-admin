@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { Part } from '@google/generative-ai';
+import { Part } from 'genkit';
 
 // Helper to convert a Data URL string into a Genkit Part object
 function dataUrlToPart(dataUrl: string): Part {
@@ -38,7 +38,10 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   {
     name: 'composeWithGalleryBackgroundFlow',
     inputSchema: ComposeWithGallerySchema,
-    outputSchema: z.custom<Part>(),
+    outputSchema: z.object({
+      url: z.string(),
+      contentType: z.string().optional()
+    }),
   },
   async ({ candleImage1, candleImage2, galleryImage, contextualDetails }) => {
     
@@ -145,9 +148,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] SUCCESS: Final image composed.');
 
-      return {
-        media: finalImagePart
-      };
+      return finalImagePart;
     } catch (error: any) {
       console.error("[Compose Flow Error]", error);
       throw new Error(`AI Composition Flow Failed: ${error.message}`);
