@@ -1,26 +1,21 @@
-// Comprehensive troubleshooting
-console.log('=== ENV-CONFIG DEBUG START ===');
-console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
-console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
-console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
-console.log('USE_A_PREFIX === true:', process.env.USE_A_PREFIX === 'true');
+// Check if we're running on server-side
+const isServer = typeof window === 'undefined';
 
-const USE_A_PREFIX = process.env.USE_A_PREFIX === 'true';
-console.log('Final USE_A_PREFIX value:', USE_A_PREFIX);
+// Only run debug logging on server-side
+if (isServer) {
+  console.log('=== ENV-CONFIG DEBUG START (SERVER-SIDE) ===');
+  console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
+  console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
+  console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
+  
+  const allEnvVars = Object.keys(process.env);
+  console.log('Total env vars:', allEnvVars.length);
+  console.log('A_ prefixed vars:', allEnvVars.filter(key => key.startsWith('A_')));
+  console.log('NEXT_PUBLIC vars:', allEnvVars.filter(key => key.startsWith('NEXT_PUBLIC_')));
+  console.log('=== ENV-CONFIG DEBUG END ===');
+}
 
-// Check all environment variables
-const allEnvVars = Object.keys(process.env);
-console.log('Total env vars:', allEnvVars.length);
-console.log('A_ prefixed vars:', allEnvVars.filter(key => key.startsWith('A_')));
-console.log('NEXT_PUBLIC vars:', allEnvVars.filter(key => key.startsWith('NEXT_PUBLIC_')));
-console.log('SHOPIFY vars:', allEnvVars.filter(key => key.includes('SHOPIFY')));
-console.log('FIREBASE vars:', allEnvVars.filter(key => key.includes('FIREBASE')));
-
-// Check specific variables we need
-console.log('A_SHOPIFY_STORE_URL:', process.env.A_SHOPIFY_STORE_URL);
-console.log('A_FIREBASE_PROJECT_ID:', process.env.A_FIREBASE_PROJECT_ID);
-console.log('A_NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.A_NEXT_PUBLIC_FIREBASE_PROJECT_ID);
-console.log('=== ENV-CONFIG DEBUG END ===');
+const USE_A_PREFIX = isServer ? process.env.USE_A_PREFIX === 'true' : false;
 
 function getEnvVar(key: string, fallback?: string): string | undefined {
   if (USE_A_PREFIX) {
