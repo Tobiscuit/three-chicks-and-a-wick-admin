@@ -40,7 +40,7 @@ export async function exposeDescriptionMetafieldToStorefront() {
     
     try {
         console.log('📤 Sending metafieldDefinitionCreate mutation with variables:', JSON.stringify(variables, null, 2));
-        const result = await fetchShopify(mutation, variables);
+        const result = await fetchShopify(mutation, variables) as any;
         console.log('📥 Response structure:', {
             hasUserErrors: !!result.metafieldDefinitionCreate?.userErrors,
             userErrorCount: result.metafieldDefinitionCreate?.userErrors?.length || 0,
