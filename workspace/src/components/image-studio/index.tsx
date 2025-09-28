@@ -207,9 +207,9 @@ export function ImageStudio() {
           throw new Error('Primary product image is required for gallery composition');
         }
         result = await composeWithGalleryAction({
-          galleryImage: values.selectedBackgroundUrl!,
-          candleImage1: angle1,
-          candleImage2: angle2,
+          galleryBackgroundUrl: values.selectedBackgroundUrl!,
+          angle1,
+          angle2,
         });
       }
         if (result.success && result.imageDataUri) {
