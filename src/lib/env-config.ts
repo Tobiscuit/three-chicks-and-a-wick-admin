@@ -3,7 +3,7 @@ console.log('=== ENV-CONFIG DEBUG START ===');
 console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
 console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
 console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
-console.log('USE_A_PREFIX === true:', process.env.USE_A_PREFIX === true);
+console.log('USE_A_PREFIX === true:', process.env.USE_A_PREFIX === 'true');
 
 const USE_A_PREFIX = process.env.USE_A_PREFIX === 'true';
 console.log('Final USE_A_PREFIX value:', USE_A_PREFIX);
