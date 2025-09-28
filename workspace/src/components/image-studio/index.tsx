@@ -212,7 +212,7 @@ export function ImageStudio() {
           angle2,
         });
       }
-        if (result.success && result.imageDataUri) {
+        if (result.imageDataUri) {
             setGeneratedImage(result.imageDataUri);
             toast({
                 title: "Image Generated",
