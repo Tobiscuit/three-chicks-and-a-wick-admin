@@ -375,7 +375,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             productId={initialData?.id}
                             initialDescription={field.value || ''}
                             productName={form.watch('title') || 'Product'}
-                            imageAnalysis={initialData?.imageAnalysis || undefined}
+                            imageAnalysis={undefined}
                             onDescriptionChange={(newDescription) => {
                               setValue('description', newDescription || '', { shouldDirty: true });
                             }}
