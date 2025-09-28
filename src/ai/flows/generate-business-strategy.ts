@@ -33,3 +33,6 @@ export const generateBusinessStrategyFlow = ai.defineFlow(
     return llmResponse.text;
   }
 );
+
+// Export alias for compatibility
+export const generateBusinessStrategy = generateBusinessStrategyFlow;

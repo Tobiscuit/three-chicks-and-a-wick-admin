@@ -772,3 +772,22 @@ export async function listAllSalesChannels() {
     return null;
   }
 }
+
+export async function getBusinessSnapshot() {
+    try {
+        // Get recent orders and products for business analysis
+        const [orders, products] = await Promise.all([
+            getOrders(10), // Get last 10 orders
+            getProducts(20) // Get last 20 products
+        ]);
+
+        return {
+            orders,
+            products,
+            timestamp: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Failed to get business snapshot:', error);
+        throw new Error('Failed to retrieve business data');
+    }
+}
