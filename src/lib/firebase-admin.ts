@@ -27,6 +27,10 @@ if (getApps().length === 0) {
       publicBucket,
       chosenBucket: storageBucket || 'unset',
     });
+    
+    console.log('[Firebase Admin] CRITICAL: Using bucket:', storageBucket);
+    console.log('[Firebase Admin] Expected bucket: threechicksandawick-admin.firebasestorage.app');
+    console.log('[Firebase Admin] Bucket match:', storageBucket === 'threechicksandawick-admin.firebasestorage.app');
 
     const options: any = { projectId, storageBucket };
 
