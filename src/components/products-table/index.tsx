@@ -170,6 +170,7 @@ function SecureDeleteDialog({
 
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
