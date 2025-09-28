@@ -194,15 +194,21 @@ export function ImageStudio() {
 
       let result;
       if (values.backgroundType === 'generate') {
+        if (!angle1) {
+          throw new Error('Primary product image is required for image generation');
+        }
         result = await generateImageAction({
           background: values.backgroundPrompt!,
           angle1,
           angle2,
         });
       } else { // Gallery
+        if (!angle1) {
+          throw new Error('Primary product image is required for gallery composition');
+        }
         result = await composeWithGalleryAction({
           galleryImage: values.selectedBackgroundUrl!,
-          candleImage1: angle1!,
+          candleImage1: angle1,
           candleImage2: angle2,
         });
       }
