@@ -36,7 +36,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const formSchema = z.object({
-  productImage: z.any().refine(file => file instanceof File, "A product image is required."),
+  primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
+  secondaryProductImage: z.any().optional(),
   backgroundType: z.enum(["gallery", "generate"]).default("gallery"),
   backgroundPrompt: z.string().optional(),
   selectedBackgroundUrl: z.string().optional(),
@@ -69,7 +70,7 @@ type GalleryImage = {
 
 export function ImageStudio() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
+  const [primaryProductImagePreview, setPrimaryProductImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
@@ -135,10 +136,10 @@ export function ImageStudio() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("productImage", file);
+      form.setValue("primaryProductImage", file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProductImagePreview(reader.result as string);
+        setPrimaryProductImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -188,7 +189,7 @@ export function ImageStudio() {
     
     try {
       // Convert images to data URLs
-      const angle1 = values.productImage ? await resizeAndToDataUrl(values.productImage) : undefined;
+      const angle1 = values.primaryProductImage ? await resizeAndToDataUrl(values.primaryProductImage) : undefined;
       const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
 
       let result;
@@ -243,7 +244,7 @@ export function ImageStudio() {
               <CardContent>
                 <FormField
                   control={form.control}
-                  name="productImage"
+                  name="primaryProductImage"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
@@ -251,9 +252,9 @@ export function ImageStudio() {
                           className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50 transition-colors"
                           onClick={() => fileInputRef.current?.click()}
                         >
-                          {productImagePreview ? (
+                          {primaryProductImagePreview ? (
                             <Image
-                              src={productImagePreview}
+                              src={primaryProductImagePreview}
                               alt="Product preview"
                               width={400}
                               height={400}
