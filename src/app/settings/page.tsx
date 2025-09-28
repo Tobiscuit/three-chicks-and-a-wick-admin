@@ -9,11 +9,11 @@ import { auth } from '@/lib/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Palette, Store } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
-import { SHOPIFY_CONFIG } from '@/lib/env-config';
+// Removed env-config import for client-side component
 
 export default function SettingsPage() {
     const { user } = useAuth();
-    const shopifyStoreUrl = SHOPIFY_CONFIG.STORE_URL || 'Not configured';
+    const shopifyStoreUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'Not configured';
 
     const handleSignOut = () => {
         auth.signOut();
