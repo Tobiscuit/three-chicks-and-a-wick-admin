@@ -40,7 +40,18 @@ export default function StrategyPage() {
             // 2. Generate strategy with Genkit
             const result = await generateBusinessStrategy(snapshot);
 
-            setStrategy(result);
+            // Parse the string result into a Strategy object
+            try {
+                const strategyData = JSON.parse(result);
+                setStrategy(strategyData);
+            } catch (parseError) {
+                // If parsing fails, create a fallback strategy object
+                setStrategy({
+                    pricing_recommendations: [result],
+                    marketing_suggestions: [],
+                    inventory_alerts: []
+                });
+            }
         } catch (err: any) {
             console.error("Failed to generate strategy:", err);
             setError(err.message || "An unknown error occurred while generating the business strategy.");
