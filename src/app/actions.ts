@@ -388,12 +388,12 @@ export async function generateProductFromImageAction(
     input: GenerateProductInput
 ): Promise<{ token?: string; error?: string }> {
 
-    if (!GOOGLE_AI_CONFIG.GEMINI_API_KEY) {
+    if (!GOOGLE_AI_CONFIG.API_KEY) {
         return { error: "Gemini API key is not configured." };
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(GOOGLE_AI_CONFIG.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(GOOGLE_AI_CONFIG.API_KEY);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-pro",
             generationConfig: { responseMimeType: "application/json" }
