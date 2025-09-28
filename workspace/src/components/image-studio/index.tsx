@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle } from "lucide-react";
-import { generateImageAction } from "@/app/actions";
+import { generateImageAction, composeWithGalleryAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { ref, listAll, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
@@ -144,19 +144,67 @@ export function ImageStudio() {
     }
   };
 
+  const resizeAndToDataUrl = (file: File, maxSize = 1024, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const image = new window.Image();
+        image.onload = () => {
+          let { width, height } = image;
+          if (width > height) {
+            if (width > maxSize) {
+              height = Math.round(height * (maxSize / width));
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = Math.round(width * (maxSize / height));
+              height = maxSize;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return reject(new Error('Could not get canvas context'));
+          }
+          ctx.drawImage(image, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        image.onerror = reject;
+        image.src = readerEvent.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     setGeneratedImage(null);
     
-    const formData = new FormData();
-    formData.append('productImage', values.productImage);
-    formData.append('backgroundType', values.backgroundType);
-    if(values.backgroundPrompt) formData.append('backgroundPrompt', values.backgroundPrompt);
-    if(values.selectedBackgroundUrl) formData.append('selectedBackgroundUrl', values.selectedBackgroundUrl);
-    if(values.contextualDetails) formData.append('contextualDetails', values.contextualDetails);
-
     try {
-        const result = await generateImageAction(formData);
+      // Convert images to data URLs
+      const angle1 = values.productImage ? await resizeAndToDataUrl(values.productImage) : undefined;
+      const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
+
+      let result;
+      if (values.backgroundType === 'generate') {
+        result = await generateImageAction({
+          background: values.backgroundPrompt!,
+          angle1,
+          angle2,
+        });
+      } else { // Gallery
+        result = await composeWithGalleryAction({
+          galleryImage: values.selectedBackgroundUrl!,
+          candleImage1: angle1!,
+          candleImage2: angle2,
+        });
+      }
         if (result.success && result.imageDataUri) {
             setGeneratedImage(result.imageDataUri);
             toast({
