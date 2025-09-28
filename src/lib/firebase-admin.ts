@@ -15,6 +15,11 @@ if (getApps().length === 0) {
   const publicBucket = FIREBASE_CONFIG.STORAGE_BUCKET;
   const adminBucketEnv = FIREBASE_ADMIN_CONFIG.STORAGE_BUCKET_ADMIN;
   const serviceAccountJson = FIREBASE_ADMIN_CONFIG.SERVICE_ACCOUNT;
+  
+  console.log('[Firebase Admin] Raw values:');
+  console.log('  projectId:', projectId);
+  console.log('  publicBucket:', publicBucket);
+  console.log('  adminBucketEnv:', adminBucketEnv);
 
   try {
     // Use the public bucket directly for Firebase Storage (firebasestorage.app)
