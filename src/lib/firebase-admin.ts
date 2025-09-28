@@ -25,7 +25,6 @@ if (getApps().length === 0) {
       projectIdCandidate: projectId || 'unset',
       adminBucketEnv: adminBucketEnv || 'unset',
       publicBucket,
-      derivedAdminBucket: derivedAdminBucket || 'unset',
       chosenBucket: storageBucket || 'unset',
     });
 
