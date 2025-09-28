@@ -1,19 +1,24 @@
 // Check if we're running on server-side
 const isServer = typeof window === 'undefined';
 
-// Only run debug logging on server-side
-if (isServer) {
-  console.log('=== ENV-CONFIG DEBUG START (SERVER-SIDE) ===');
-  console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
-  console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
-  console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
-  
-  const allEnvVars = Object.keys(process.env);
-  console.log('Total env vars:', allEnvVars.length);
-  console.log('A_ prefixed vars:', allEnvVars.filter(key => key.startsWith('A_')));
-  console.log('NEXT_PUBLIC vars:', allEnvVars.filter(key => key.startsWith('NEXT_PUBLIC_')));
-  console.log('=== ENV-CONFIG DEBUG END ===');
-}
+// Comprehensive logging for both server and client
+console.log('=== ENV-CONFIG DEBUG START ===');
+console.log('Environment:', isServer ? 'SERVER' : 'CLIENT');
+console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
+console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
+console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
+
+const allEnvVars = Object.keys(process.env);
+console.log('Total env vars:', allEnvVars.length);
+console.log('A_ prefixed vars:', allEnvVars.filter(key => key.startsWith('A_')));
+console.log('NEXT_PUBLIC vars:', allEnvVars.filter(key => key.startsWith('NEXT_PUBLIC_')));
+console.log('FIREBASE vars:', allEnvVars.filter(key => key.includes('FIREBASE')));
+
+// Check specific variables that might be causing issues
+console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+console.log('A_FIREBASE_PROJECT_ID:', process.env.A_FIREBASE_PROJECT_ID);
+console.log('NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+console.log('=== ENV-CONFIG DEBUG END ===');
 
 const USE_A_PREFIX = isServer ? process.env.USE_A_PREFIX === 'true' : false;
 
@@ -37,9 +42,17 @@ function getPublicEnvVar(key: string, fallback?: string): string | undefined {
 }
 
 function getRequiredEnvVar(key: string): string {
+  console.log(`[ENV-CONFIG] getRequiredEnvVar called for: ${key}`);
+  console.log(`[ENV-CONFIG] USE_A_PREFIX: ${USE_A_PREFIX}`);
+  console.log(`[ENV-CONFIG] Looking for: ${USE_A_PREFIX ? 'A_' : ''}${key}`);
+  
   const value = getEnvVar(key);
+  console.log(`[ENV-CONFIG] Found value: ${value ? 'SET' : 'NOT SET'}`);
+  
   if (!value) {
-    throw new Error(`Required environment variable ${USE_A_PREFIX ? 'A_' : ''}${key} is not set`);
+    const errorMsg = `Required environment variable ${USE_A_PREFIX ? 'A_' : ''}${key} is not set`;
+    console.error(`[ENV-CONFIG] ERROR: ${errorMsg}`);
+    throw new Error(errorMsg);
   }
   return value;
 }
