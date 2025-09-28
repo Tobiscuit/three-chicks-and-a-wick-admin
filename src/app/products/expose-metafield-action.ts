@@ -51,7 +51,7 @@ export async function exposeDescriptionMetafieldToStorefront() {
         if (result.metafieldDefinitionCreate.userErrors?.length > 0) {
             const errors = result.metafieldDefinitionCreate.userErrors;
             console.error('❌ User Errors:', errors);
-            const errorMsg = `Failed to create metafield definition: ${errors.map(e => e.message).join(', ')}`;
+            const errorMsg = `Failed to create metafield definition: ${errors.map((e: any) => e.message).join(', ')}`;
             console.error('❌ Error Message:', errorMsg);
             return { 
                 success: false, 
