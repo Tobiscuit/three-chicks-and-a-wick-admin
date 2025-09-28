@@ -36,7 +36,8 @@ function getPublicEnvVar(key: string, fallback?: string): string | undefined {
       process.env[`NEXT_PUBLIC_${key}`] = aPrefixedValue; // Dynamic setting for Next.js
       return aPrefixedValue;
     }
-    return fallback;
+    // Fall back to regular NEXT_PUBLIC_ variable if A_NEXT_PUBLIC_ doesn't exist
+    return process.env[`NEXT_PUBLIC_${key}`] || fallback;
   }
   return process.env[`NEXT_PUBLIC_${key}`] || fallback;
 }
