@@ -17,10 +17,9 @@ if (getApps().length === 0) {
   const serviceAccountJson = FIREBASE_ADMIN_CONFIG.SERVICE_ACCOUNT;
 
   try {
-    // Determine admin bucket: prefer explicit admin bucket (appspot.com),
-    // else derive from projectId, else fall back to public bucket if provided.
-    const derivedAdminBucket = projectId ? `${projectId}.appspot.com` : undefined;
-    const storageBucket = adminBucketEnv || derivedAdminBucket || publicBucket;
+    // Use the public bucket directly for Firebase Storage (firebasestorage.app)
+    // This ensures we use the correct bucket name that matches the client-side
+    const storageBucket = publicBucket || adminBucketEnv;
 
     console.log('[Firebase Admin] Bucket selection diagnostics:', {
       projectIdCandidate: projectId || 'unset',
