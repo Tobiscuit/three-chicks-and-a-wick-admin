@@ -318,6 +318,10 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
     try {
         // Use the Admin SDK's configured default bucket (appspot.com) preference
         const bucket = adminStorage.bucket();
+        console.log('[Gallery Action] Bucket name:', bucket.name);
+        console.log('[Gallery Action] Expected bucket: threechicksandawick-admin.firebasestorage.app');
+        console.log('[Gallery Action] Bucket match:', bucket.name === 'threechicksandawick-admin.firebasestorage.app');
+        
         if (!bucket.name) {
             throw new Error("Admin bucket name is empty. Ensure FIREBASE_STORAGE_BUCKET_ADMIN or projectId is set.");
         }
