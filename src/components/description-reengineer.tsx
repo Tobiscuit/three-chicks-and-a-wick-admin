@@ -32,8 +32,8 @@ import { useToast } from '@/hooks/use-toast';
 interface DescriptionVersion {
   id: string;
   description: string;
-  userPrompt: string;
-  reasoning: string;
+  userPrompt?: string;
+  reasoning?: string;
   changes: string[];
   timestamp: Date;
 }
