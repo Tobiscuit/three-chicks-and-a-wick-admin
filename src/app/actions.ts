@@ -459,12 +459,16 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
+        console.log("===== STASHING AI GENERATED DATA =====");
         const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity);
+        console.log("===== STASH RESULT =====", stashResult);
 
         if (!stashResult.success || !stashResult.token) {
+            console.error("===== STASH FAILED =====", stashResult.error);
             throw new Error(stashResult.error || "Failed to stash AI-generated data.");
         }
 
+        console.log("===== RETURNING SUCCESS TOKEN =====", stashResult.token);
         return { token: stashResult.token };
 
     } catch (error: any) {
@@ -490,20 +494,38 @@ export async function stashAiGeneratedProductAction(
     quantity: number,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
+        console.log("===== STASH FUNCTION START =====");
+        console.log("Creative data:", creativeData);
+        console.log("Price:", price);
+        console.log("Quantity:", quantity);
+        console.log("Image data URL length:", imageDataUrl.length);
+        
         // Step 1: Upload the image to Firebase Storage to get a public URL
         const bucket = adminStorage.bucket();
-        const fileName = `product-images/ai-generated/${uuidv4()}.webp`;
-        const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
+        console.log("Using bucket:", bucket.name);
         
+        const fileName = `product-images/ai-generated/${uuidv4()}.webp`;
+        console.log("File name:", fileName);
+        
+        const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
+        console.log("Image buffer size:", imageBuffer.length);
+        
+        console.log("===== UPLOADING TO FIREBASE STORAGE =====");
         await bucket.file(fileName).save(imageBuffer, {
             metadata: { contentType: 'image/jpeg' },
             public: true,
         });
+        console.log("===== UPLOAD SUCCESS =====");
+        
         const publicImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        console.log("Public image URL:", publicImageUrl);
 
         // Step 2: Stash the creative data and the public image URL in Firestore
         const token = uuidv4();
+        console.log("Generated token:", token);
+        
         const docRef = adminDb.collection('aiProductDrafts').doc(token);
+        console.log("===== SAVING TO FIRESTORE =====");
 
         await docRef.set({
             ...creativeData,
@@ -512,6 +534,7 @@ export async function stashAiGeneratedProductAction(
             publicImageUrl, // Stash the short URL, not the raw data
             createdAt: new Date(),
         });
+        console.log("===== FIRESTORE SAVE SUCCESS =====");
 
         return { success: true, token };
 
