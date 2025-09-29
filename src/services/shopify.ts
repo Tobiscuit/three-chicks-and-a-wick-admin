@@ -46,12 +46,14 @@ export type ShopifyCollection = {
 
 import { SHOPIFY_CONFIG } from '@/lib/env-config';
 
-const SHOPIFY_API_URL = SHOPIFY_CONFIG.STORE_URL;
+const SHOPIFY_API_URL = `https://${SHOPIFY_CONFIG.STORE_URL}/admin/api/${SHOPIFY_CONFIG.API_VERSION}/graphql.json`;
 const SHOPIFY_ADMIN_TOKEN = SHOPIFY_CONFIG.ADMIN_ACCESS_TOKEN;
 
 // Debug logging for admin token
 console.log('[Shopify] Admin token last 4 chars:', SHOPIFY_ADMIN_TOKEN?.slice(-4) || 'NOT SET');
-console.log('[Shopify] Store URL:', SHOPIFY_API_URL);
+console.log('[Shopify] Store URL:', SHOPIFY_CONFIG.STORE_URL);
+console.log('[Shopify] API Version:', SHOPIFY_CONFIG.API_VERSION);
+console.log('[Shopify] Full API URL:', SHOPIFY_API_URL);
 
 export async function fetchShopify<T>(query: string, variables?: Record<string, any>): Promise<T> {
   if (!SHOPIFY_API_URL || !SHOPIFY_ADMIN_TOKEN) {
