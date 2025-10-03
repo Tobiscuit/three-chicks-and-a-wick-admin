@@ -145,20 +145,32 @@ export function SynchronizedEditor({
   // Load description history on mount
   useEffect(() => {
     const loadHistory = async () => {
-      if (!productId) return;
-      
+      if (!productId) {
+        console.log('[SynchronizedEditor] No productId, skipping history load (new product)');
+        return;
+      }
+
+      console.log('[SynchronizedEditor] Loading history for productId:', productId);
       setIsLoadingHistory(true);
       try {
         const result = await loadDescriptionHistoryAction(productId);
+        console.log('[SynchronizedEditor] History load result:', {
+          success: result.success,
+          versionsCount: result.versions?.length || 0
+        });
+        
         if (result.success && result.versions && result.versions.length > 0) {
           const versions = result.versions.map((version: any) => ({
             ...version,
             timestamp: new Date(version.timestamp)
           }));
+          console.log('[SynchronizedEditor] Loaded', versions.length, 'versions from history');
           setDescriptionVersions(versions);
+        } else {
+          console.log('[SynchronizedEditor] No history found, using initial version');
         }
       } catch (error) {
-        console.error('Failed to load description history:', error);
+        console.error('[SynchronizedEditor] Failed to load description history:', error);
       } finally {
         setIsLoadingHistory(false);
       }
