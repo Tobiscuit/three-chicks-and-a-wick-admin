@@ -80,9 +80,9 @@ export function SynchronizedEditor({
     stableOnContentChange(content);
   }, [content, stableOnContentChange]);
 
-  // Update content when initial content changes (only on first load)
+  // Initialize content on first load only
   useEffect(() => {
-    if (!isInitialized.current && initialContent !== content) {
+    if (!isInitialized.current) {
       isInitialized.current = true;
       setContent(initialContent);
       // Update the initial version
@@ -96,7 +96,24 @@ export function SynchronizedEditor({
       }, ...prev.slice(1)]);
       setCurrentVersionIndex(0);
     }
-  }, [initialContent, content]);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Handle initialContent changes after mount (e.g., when AI data loads)
+  useEffect(() => {
+    if (isInitialized.current && initialContent && initialContent !== content && !hasUnsavedChanges) {
+      setContent(initialContent);
+      // Update the initial version
+      setDescriptionVersions(prev => [{
+        id: 'initial',
+        description: initialContent,
+        userPrompt: 'Initial content',
+        reasoning: 'Initial product description',
+        changes: [],
+        timestamp: new Date()
+      }, ...prev.slice(1)]);
+      setCurrentVersionIndex(0);
+    }
+  }, [initialContent, content, hasUnsavedChanges]);
 
   // Load description history on mount
   useEffect(() => {
