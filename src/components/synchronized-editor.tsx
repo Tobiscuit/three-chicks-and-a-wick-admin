@@ -215,9 +215,12 @@ export function SynchronizedEditor({
       });
 
       if (result.success && result.result) {
+        // Extract title and description from AI response
+        const { title, description } = extractTitleAndDescription(result.result.reengineeredDescription);
+        
         const newVersion: DescriptionVersion = {
           id: Date.now().toString(),
-          description: result.result.reengineeredDescription,
+          description: description, // Use only the description part, without title
           userPrompt,
           reasoning: result.result.reasoning,
           changes: result.result.changes,
@@ -227,7 +230,7 @@ export function SynchronizedEditor({
         // Add new version and update content
         setDescriptionVersions(prev => [newVersion, ...prev]);
         setCurrentVersionIndex(0);
-        setContent(result.result.reengineeredDescription);
+        setContent(description); // Use only the description part
         setUserPrompt('');
         setHasUnsavedChanges(false);
 
@@ -236,8 +239,12 @@ export function SynchronizedEditor({
           await addDescriptionVersionAction(productId, newVersion);
         }
 
+        const toastMessage = title 
+          ? `✨ Description Enhanced (Title: "${title}")`
+          : "✨ Description Enhanced";
+
         toast({
-          title: "✨ Description Enhanced",
+          title: toastMessage,
           description: "AI has successfully re-engineered your description."
         });
       } else {
@@ -258,7 +265,7 @@ export function SynchronizedEditor({
   const switchVersion = (versionIndex: number) => {
     setCurrentVersionIndex(versionIndex);
     setContent(descriptionVersions[versionIndex].description);
-    setShowHistory(false);
+    // Don't close history panel - let user browse versions
     setHasUnsavedChanges(false);
   };
 
@@ -272,6 +279,18 @@ export function SynchronizedEditor({
       description: "Restored the original description."
     });
   };
+
+  // Extract title from AI response if it exists
+  const extractTitleAndDescription = useCallback((aiResponse: string) => {
+    // Check if the response contains an h1 or h2 tag
+    const titleMatch = aiResponse.match(/<h[12][^>]*>(.*?)<\/h[12]>\s*/i);
+    if (titleMatch) {
+      const title = titleMatch[1];
+      const description = aiResponse.replace(/<h[12][^>]*>.*?<\/h[12]>\s*/i, '');
+      return { title, description };
+    }
+    return { title: null, description: aiResponse };
+  }, []);
 
   return (
     <div className="space-y-6">
