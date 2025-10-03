@@ -74,6 +74,17 @@ export function SynchronizedEditor({
   const { toast } = useToast();
   const isInitialized = useRef(false);
 
+  // === DEBUGGING LOGS ===
+  console.log('[SynchronizedEditor] Render:', {
+    initialContent: initialContent?.substring(0, 100) + '...',
+    content: content?.substring(0, 100) + '...',
+    contentLength: content?.length || 0,
+    isInitialized: isInitialized.current,
+    hasUnsavedChanges,
+    productId,
+    productName
+  });
+
   // Sync content changes to parent component
   const stableOnContentChange = useCallback(onContentChange, []);
   useEffect(() => {
@@ -82,8 +93,15 @@ export function SynchronizedEditor({
 
   // Initialize content on first load only
   useEffect(() => {
+    console.log('[SynchronizedEditor] Mount effect:', {
+      isInitialized: isInitialized.current,
+      initialContent: initialContent?.substring(0, 100) + '...',
+      initialContentLength: initialContent?.length || 0
+    });
+    
     if (!isInitialized.current) {
       isInitialized.current = true;
+      console.log('[SynchronizedEditor] Setting initial content:', initialContent?.substring(0, 100) + '...');
       setContent(initialContent);
       // Update the initial version
       setDescriptionVersions(prev => [{
@@ -100,7 +118,16 @@ export function SynchronizedEditor({
 
   // Handle initialContent changes after mount (e.g., when AI data loads)
   useEffect(() => {
+    console.log('[SynchronizedEditor] InitialContent change effect:', {
+      isInitialized: isInitialized.current,
+      initialContent: initialContent?.substring(0, 100) + '...',
+      currentContent: content?.substring(0, 100) + '...',
+      hasUnsavedChanges,
+      willUpdate: isInitialized.current && initialContent && initialContent !== content && !hasUnsavedChanges
+    });
+    
     if (isInitialized.current && initialContent && initialContent !== content && !hasUnsavedChanges) {
+      console.log('[SynchronizedEditor] Updating content from initialContent change:', initialContent?.substring(0, 100) + '...');
       setContent(initialContent);
       // Update the initial version
       setDescriptionVersions(prev => [{
@@ -142,6 +169,12 @@ export function SynchronizedEditor({
 
   // Handle content changes from rich text editor
   const handleContentChange = (newContent: string) => {
+    console.log('[SynchronizedEditor] Manual editor content change:', {
+      oldContent: content?.substring(0, 100) + '...',
+      newContent: newContent?.substring(0, 100) + '...',
+      oldLength: content?.length || 0,
+      newLength: newContent?.length || 0
+    });
     setContent(newContent);
     setHasUnsavedChanges(true);
   };
@@ -239,11 +272,16 @@ export function SynchronizedEditor({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <RichTextEditor
-            content={content}
-            onChange={handleContentChange}
-            placeholder={placeholder}
-          />
+                   <RichTextEditor
+                     content={content}
+                     onChange={handleContentChange}
+                     placeholder={placeholder}
+                   />
+                   {/* Debug info */}
+                   <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                     <strong>Debug:</strong> Content length: {content?.length || 0} chars
+                     {content && <div className="mt-1">Content preview: {content.substring(0, 50)}...</div>}
+                   </div>
           {hasUnsavedChanges && (
             <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
