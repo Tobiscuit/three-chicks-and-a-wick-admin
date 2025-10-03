@@ -32,7 +32,7 @@ import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast";
 import { addProductAction, updateProductAction } from "@/app/products/actions";
 import { uploadImageAction } from "@/app/actions";
-import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code, Sparkles } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
@@ -367,23 +367,85 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             <FormMessage />
                         </FormItem>
                     )} />
-                    <FormField control={form.control} name="description" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <DescriptionRewriter
-                            productId={initialData?.id}
-                            initialDescription={field.value || ''}
-                            productName={form.watch('title') || 'Product'}
-                            imageAnalysis={undefined}
-                            onDescriptionChange={(newDescription) => {
-                              setValue('description', newDescription || '', { shouldDirty: true });
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+                    <FormField control={form.control} name="description" render={({ field }) => {
+                      const [editMode, setEditMode] = useState<'ai' | 'manual'>('ai');
+                      const isAiGenerated = field.value && (
+                        field.value.includes('<p>') || 
+                        field.value.includes('**The Scent:**') || 
+                        field.value.includes('**The Vibe:**') || 
+                        field.value.includes('**The Vessel:**')
+                      );
+
+                      return (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Description</FormLabel>
+                            {isEditMode && field.value && (
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant={editMode === 'ai' ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => setEditMode('ai')}
+                                  className="text-xs"
+                                >
+                                  <Sparkles className="mr-1 h-3 w-3" />
+                                  AI Rewriter
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={editMode === 'manual' ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => setEditMode('manual')}
+                                  className="text-xs"
+                                >
+                                  <Code className="mr-1 h-3 w-3" />
+                                  Manual Edit
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          <FormControl>
+                            {editMode === 'ai' && (isEditMode && field.value) ? (
+                              // AI Rewriter mode
+                              <DescriptionRewriter
+                                productId={initialData?.id}
+                                initialDescription={field.value || ''}
+                                productName={form.watch('title') || 'Product'}
+                                imageAnalysis={undefined}
+                                onDescriptionChange={(newDescription) => {
+                                  setValue('description', newDescription || '', { shouldDirty: true });
+                                }}
+                              />
+                            ) : (
+                              // Manual editing mode
+                              <div className="space-y-3">
+                                <Textarea
+                                  {...field}
+                                  placeholder="Enter a detailed product description... (You can use HTML formatting like <p>, <strong>, <ul>, <li>)"
+                                  className="min-h-[120px]"
+                                  value={field.value || ''}
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value);
+                                  }}
+                                />
+                                {!isEditMode && (
+                                  <p className="text-sm text-muted-foreground">
+                                    💡 <strong>Tip:</strong> After saving, you can use the AI rewriter to enhance your description!
+                                  </p>
+                                )}
+                                {isEditMode && isAiGenerated && (
+                                  <p className="text-sm text-muted-foreground">
+                                    ✨ <strong>AI Generated:</strong> This description was created by AI. Switch to "AI Rewriter" mode to enhance it further!
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }} />
                 </CardContent>
                 </Card>
                 <Card>
