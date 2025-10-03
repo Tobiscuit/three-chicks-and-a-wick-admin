@@ -102,8 +102,8 @@ export function SynchronizedEditor({
       setIsLoadingHistory(true);
       try {
         const result = await loadDescriptionHistoryAction(productId);
-        if (result.success && result.data?.length > 0) {
-          const versions = result.data.map((version: any) => ({
+        if (result.success && result.versions?.length > 0) {
+          const versions = result.versions.map((version: any) => ({
             ...version,
             timestamp: new Date(version.timestamp)
           }));
