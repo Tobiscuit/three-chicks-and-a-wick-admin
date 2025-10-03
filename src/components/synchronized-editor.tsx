@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,7 @@ export function SynchronizedEditor({
   const [showHistory, setShowHistory] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { toast } = useToast();
+  const isInitialized = useRef(false);
 
   // Sync content changes to parent component
   const stableOnContentChange = useCallback(onContentChange, []);
@@ -79,9 +80,10 @@ export function SynchronizedEditor({
     stableOnContentChange(content);
   }, [content, stableOnContentChange]);
 
-  // Update content when initial content changes
+  // Update content when initial content changes (only on first load)
   useEffect(() => {
-    if (initialContent !== content) {
+    if (!isInitialized.current && initialContent !== content) {
+      isInitialized.current = true;
       setContent(initialContent);
       // Update the initial version
       setDescriptionVersions(prev => [{
@@ -94,7 +96,7 @@ export function SynchronizedEditor({
       }, ...prev.slice(1)]);
       setCurrentVersionIndex(0);
     }
-  }, [initialContent]);
+  }, [initialContent, content]);
 
   // Load description history on mount
   useEffect(() => {
