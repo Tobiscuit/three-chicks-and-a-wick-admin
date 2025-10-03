@@ -72,7 +72,7 @@ RESPONSE FORMAT (JSON only):
         prompt: prompt,
         config: {
           temperature: 0.8, // More creative
-          maxOutputTokens: 2000,
+          maxOutputTokens: 1000, // Reduced to leave room for thoughts
           responseMimeType: "application/json"
         }
       });
