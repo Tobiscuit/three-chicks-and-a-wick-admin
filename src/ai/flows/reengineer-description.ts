@@ -68,11 +68,12 @@ RESPONSE FORMAT (JSON only):
       console.log('[Rewrite Flow] User prompt:', userPrompt);
       
       const response = await ai.generate({
-        model: 'googleai/gemini-2.5-flash',
+        model: 'googleai/gemini-2.5-pro',
         prompt: prompt,
         config: {
           temperature: 0.8, // More creative
-          maxOutputTokens: 2000
+          maxOutputTokens: 2000,
+          responseMimeType: "application/json"
         }
       });
 
