@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,9 +74,10 @@ export function SynchronizedEditor({
   const { toast } = useToast();
 
   // Sync content changes to parent component
+  const stableOnContentChange = useCallback(onContentChange, []);
   useEffect(() => {
-    onContentChange(content);
-  }, [content, onContentChange]);
+    stableOnContentChange(content);
+  }, [content, stableOnContentChange]);
 
   // Update content when initial content changes
   useEffect(() => {
