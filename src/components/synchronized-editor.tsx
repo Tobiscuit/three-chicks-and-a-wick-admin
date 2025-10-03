@@ -167,10 +167,7 @@ export function SynchronizedEditor({
 
         // Save to history
         if (productId) {
-          await addDescriptionVersionAction({
-            productId,
-            version: newVersion
-          });
+          await addDescriptionVersionAction(productId, newVersion);
         }
 
         toast({
