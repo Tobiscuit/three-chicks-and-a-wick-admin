@@ -39,8 +39,7 @@ import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
 import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
-import { DescriptionRewriter } from "@/components/description-reengineer";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { SynchronizedEditor } from "@/components/synchronized-editor";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -368,83 +367,24 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             <FormMessage />
                         </FormItem>
                     )} />
-                    <FormField control={form.control} name="description" render={({ field }) => {
-                      const [editMode, setEditMode] = useState<'ai' | 'manual'>('ai');
-                      const isAiGenerated = field.value && (
-                        field.value.includes('<p>') || 
-                        field.value.includes('**The Scent:**') || 
-                        field.value.includes('**The Vibe:**') || 
-                        field.value.includes('**The Vessel:**')
-                      );
-
-                      return (
+                    <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Description</FormLabel>
-                            {isEditMode && field.value && (
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  variant={editMode === 'ai' ? 'default' : 'outline'}
-                                  size="sm"
-                                  onClick={() => setEditMode('ai')}
-                                  className="text-xs"
-                                >
-                                  <Sparkles className="mr-1 h-3 w-3" />
-                                  AI Rewriter
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={editMode === 'manual' ? 'default' : 'outline'}
-                                  size="sm"
-                                  onClick={() => setEditMode('manual')}
-                                  className="text-xs"
-                                >
-                                  <Code className="mr-1 h-3 w-3" />
-                                  Manual Edit
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                          <FormLabel>Description</FormLabel>
                           <FormControl>
-                            {editMode === 'ai' && (isEditMode && field.value) ? (
-                              // AI Rewriter mode
-                              <DescriptionRewriter
-                                productId={initialData?.id}
-                                initialDescription={field.value || ''}
-                                productName={form.watch('title') || 'Product'}
-                                imageAnalysis={undefined}
-                                onDescriptionChange={(newDescription) => {
-                                  setValue('description', newDescription || '', { shouldDirty: true });
-                                }}
-                              />
-                            ) : (
-                              // Manual editing mode
-                              <div className="space-y-3">
-                                <RichTextEditor
-                                  content={field.value || ''}
-                                  onChange={(content) => {
-                                    field.onChange(content);
-                                  }}
-                                  placeholder="Start typing your product description... Use the toolbar above to format your text with bold, italic, and bullet points."
-                                />
-                                {!isEditMode && (
-                                  <p className="text-sm text-muted-foreground">
-                                    💡 <strong>Tip:</strong> Use the toolbar above to format your text. After saving, you can use the AI rewriter to enhance your description!
-                                  </p>
-                                )}
-                                {isEditMode && isAiGenerated && (
-                                  <p className="text-sm text-muted-foreground">
-                                    ✨ <strong>AI Generated:</strong> This description was created by AI. Switch to "AI Rewriter" mode to enhance it further!
-                                  </p>
-                                )}
-                              </div>
-                            )}
+                            <SynchronizedEditor
+                              initialContent={field.value || ''}
+                              onContentChange={(content) => {
+                                setValue('description', content, { shouldDirty: true });
+                              }}
+                              productId={initialData?.id}
+                              productName={form.watch('title') || 'Product'}
+                              imageAnalysis={undefined}
+                              placeholder="Start typing your product description... Use the toolbar above to format your text with bold, italic, and bullet points."
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
-                      );
-                    }} />
+                      )} />
                 </CardContent>
                 </Card>
                 <Card>
