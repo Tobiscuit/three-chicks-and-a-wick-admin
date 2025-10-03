@@ -228,6 +228,8 @@ export function SynchronizedEditor({
         };
 
         // Add new version and update content
+        console.log('[SynchronizedEditor] Adding new version:', newVersion);
+        console.log('[SynchronizedEditor] Setting content to:', description.substring(0, 100) + '...');
         setDescriptionVersions(prev => [newVersion, ...prev]);
         setCurrentVersionIndex(0);
         setContent(description); // Use only the description part

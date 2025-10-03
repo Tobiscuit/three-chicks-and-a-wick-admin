@@ -19,12 +19,23 @@ export interface DescriptionHistory {
 
 const COLLECTION_NAME = 'description_history';
 
+// Helper function to encode product ID for Firestore
+function encodeProductId(productId: string): string {
+  return productId.replace(/\//g, '__');
+}
+
+// Helper function to decode product ID from Firestore
+function decodeProductId(encodedId: string): string {
+  return encodedId.replace(/__/g, '/');
+}
+
 export async function saveDescriptionHistory(
   productId: string, 
   versions: DescriptionVersion[]
 ): Promise<void> {
   try {
-    const docRef = adminDb.collection(COLLECTION_NAME).doc(productId);
+    const encodedId = encodeProductId(productId);
+    const docRef = adminDb.collection(COLLECTION_NAME).doc(encodedId);
     
     const historyData: DescriptionHistory = {
       productId,
@@ -45,7 +56,8 @@ export async function saveDescriptionHistory(
 
 export async function loadDescriptionHistory(productId: string): Promise<DescriptionVersion[]> {
   try {
-    const docRef = adminDb.collection(COLLECTION_NAME).doc(productId);
+    const encodedId = encodeProductId(productId);
+    const docRef = adminDb.collection(COLLECTION_NAME).doc(encodedId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
@@ -72,7 +84,8 @@ export async function addDescriptionVersion(
   version: DescriptionVersion
 ): Promise<void> {
   try {
-    const docRef = adminDb.collection(COLLECTION_NAME).doc(productId);
+    const encodedId = encodeProductId(productId);
+    const docRef = adminDb.collection(COLLECTION_NAME).doc(encodedId);
     
     // Get existing history
     const docSnap = await docRef.get();
