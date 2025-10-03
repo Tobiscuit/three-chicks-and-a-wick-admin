@@ -97,14 +97,23 @@ RESPONSE FORMAT (JSON only):
       try {
         // Ensure content is a string
         const contentStr = typeof content === 'string' ? content : String(content);
+        console.log('[Rewrite Flow] Content string length:', contentStr.length);
+        console.log('[Rewrite Flow] Content string preview:', contentStr.substring(0, 500));
+        
         const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
+        console.log('[Rewrite Flow] JSON match found:', !!jsonMatch);
+        
         if (!jsonMatch) {
+          console.error('[Rewrite Flow] No JSON found in response. Full content:', contentStr);
           throw new Error('No JSON found in response');
         }
         
+        console.log('[Rewrite Flow] Attempting to parse JSON:', jsonMatch[0]);
         result = JSON.parse(jsonMatch[0]);
+        console.log('[Rewrite Flow] JSON parsed successfully:', result);
       } catch (parseError) {
         console.error('[Rewrite Flow] JSON parse error:', parseError);
+        console.error('[Rewrite Flow] Content that failed to parse:', contentStr);
         
         // Fallback: return original with minimal changes
         result = {
