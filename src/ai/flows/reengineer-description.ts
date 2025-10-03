@@ -125,13 +125,41 @@ RESPONSE FORMAT (JSON only):
         // If the JSON is truncated (no closing brace), try to complete it
         if (!jsonStr.includes('}')) {
           console.log('[Rewrite Flow] JSON appears to be truncated, attempting to complete it');
-          // Find the last complete property and add closing braces
-          const lastQuoteIndex = jsonStr.lastIndexOf('"');
-          if (lastQuoteIndex > -1) {
-            jsonStr = jsonStr.substring(0, lastQuoteIndex + 1) + '}';
-          } else {
-            jsonStr += '}';
+          
+          // Try to fix common truncation issues
+          let fixedJson = jsonStr;
+          
+          // Fix truncated arrays in changes field
+          if (fixedJson.includes('"changes": [')) {
+            const changesStart = fixedJson.indexOf('"changes": [');
+            const changesEnd = fixedJson.indexOf(']', changesStart);
+            
+            if (changesEnd === -1) {
+              // Array was truncated, try to close it properly
+              const lastCompleteItem = fixedJson.lastIndexOf('"');
+              if (lastCompleteItem > changesStart) {
+                // Find the last complete array item
+                const lastComma = fixedJson.lastIndexOf(',', lastCompleteItem);
+                if (lastComma > -1) {
+                  // Remove the incomplete item and close the array
+                  fixedJson = fixedJson.substring(0, lastComma) + ']';
+                } else {
+                  // No comma found, close the array
+                  fixedJson = fixedJson.substring(0, lastCompleteItem + 1) + ']';
+                }
+              } else {
+                // No complete items, close empty array
+                fixedJson = fixedJson.substring(0, changesStart + 12) + ']';
+              }
+            }
           }
+          
+          // Add closing brace if missing
+          if (!fixedJson.includes('}')) {
+            fixedJson += '}';
+          }
+          
+          jsonStr = fixedJson;
         }
         
         console.log('[Rewrite Flow] Attempting to parse JSON:', jsonStr);
