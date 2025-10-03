@@ -139,27 +139,29 @@ export function SynchronizedEditor({
     setIsRewriting(true);
     try {
       const result = await rewriteDescriptionAction({
-        productId: productId || '',
-        currentDescription: content,
+        originalDescription: content,
         userPrompt,
-        productName: productName || 'Product',
-        imageAnalysis: imageAnalysis || ''
+        productContext: {
+          name: productName || 'Product',
+          imageAnalysis: imageAnalysis || '',
+          brandGuidelines: undefined
+        }
       });
 
-      if (result.success && result.data) {
+      if (result.success && result.result) {
         const newVersion: DescriptionVersion = {
           id: Date.now().toString(),
-          description: result.data.reengineeredDescription,
+          description: result.result.reengineeredDescription,
           userPrompt,
-          reasoning: result.data.reasoning,
-          changes: result.data.changes,
+          reasoning: result.result.reasoning,
+          changes: result.result.changes,
           timestamp: new Date()
         };
 
         // Add new version and update content
         setDescriptionVersions(prev => [newVersion, ...prev]);
         setCurrentVersionIndex(0);
-        setContent(result.data.reengineeredDescription);
+        setContent(result.result.reengineeredDescription);
         setUserPrompt('');
         setHasUnsavedChanges(false);
 
