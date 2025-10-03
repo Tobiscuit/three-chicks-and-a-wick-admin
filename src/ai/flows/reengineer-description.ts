@@ -101,16 +101,41 @@ RESPONSE FORMAT (JSON only):
         console.log('[Rewrite Flow] Content string length:', contentStr.length);
         console.log('[Rewrite Flow] Content string preview:', contentStr.substring(0, 500));
         
-        const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
-        console.log('[Rewrite Flow] JSON match found:', !!jsonMatch);
+        // Handle truncated JSON responses (when finishReason is 'length')
+        let jsonContent = contentStr;
         
-        if (!jsonMatch) {
-          console.error('[Rewrite Flow] No JSON found in response. Full content:', contentStr);
-          throw new Error('No JSON found in response');
+        // Remove markdown code blocks if present
+        if (jsonContent.startsWith('```json')) {
+          jsonContent = jsonContent.replace(/^```json\s*/, '');
+        }
+        if (jsonContent.endsWith('```')) {
+          jsonContent = jsonContent.replace(/\s*```$/, '');
         }
         
-        console.log('[Rewrite Flow] Attempting to parse JSON:', jsonMatch[0]);
-        result = JSON.parse(jsonMatch[0]);
+        // Find the opening brace
+        const openBraceIndex = jsonContent.indexOf('{');
+        if (openBraceIndex === -1) {
+          console.error('[Rewrite Flow] No opening brace found in response. Full content:', jsonContent);
+          throw new Error('No opening brace found in response');
+        }
+        
+        // Extract everything after the opening brace
+        let jsonStr = jsonContent.substring(openBraceIndex);
+        
+        // If the JSON is truncated (no closing brace), try to complete it
+        if (!jsonStr.includes('}')) {
+          console.log('[Rewrite Flow] JSON appears to be truncated, attempting to complete it');
+          // Find the last complete property and add closing braces
+          const lastQuoteIndex = jsonStr.lastIndexOf('"');
+          if (lastQuoteIndex > -1) {
+            jsonStr = jsonStr.substring(0, lastQuoteIndex + 1) + '}';
+          } else {
+            jsonStr += '}';
+          }
+        }
+        
+        console.log('[Rewrite Flow] Attempting to parse JSON:', jsonStr);
+        result = JSON.parse(jsonStr);
         console.log('[Rewrite Flow] JSON parsed successfully:', result);
       } catch (parseError) {
         console.error('[Rewrite Flow] JSON parse error:', parseError);
