@@ -204,6 +204,9 @@ export function SynchronizedEditor({
 
     setIsRewriting(true);
     try {
+      console.log('[SynchronizedEditor] Starting AI rewrite with prompt:', userPrompt);
+      console.log('[SynchronizedEditor] Current content:', content.substring(0, 100) + '...');
+      
       const result = await rewriteDescriptionAction({
         originalDescription: content,
         userPrompt,
@@ -213,6 +216,10 @@ export function SynchronizedEditor({
           brandGuidelines: undefined
         }
       });
+
+      console.log('[SynchronizedEditor] AI rewrite result:', result);
+      console.log('[SynchronizedEditor] Result success:', result.success);
+      console.log('[SynchronizedEditor] Result data:', result.result);
 
       if (result.success && result.result) {
         // Extract title and description from AI response
@@ -250,10 +257,11 @@ export function SynchronizedEditor({
           description: "AI has successfully re-engineered your description."
         });
       } else {
+        console.error('[SynchronizedEditor] AI rewrite failed:', result.error);
         throw new Error(result.error || 'Failed to rewrite description');
       }
     } catch (error: any) {
-      console.error('Rewrite failed:', error);
+      console.error('[SynchronizedEditor] Rewrite failed:', error);
       toast({
         variant: "destructive",
         title: "Rewrite Failed",
