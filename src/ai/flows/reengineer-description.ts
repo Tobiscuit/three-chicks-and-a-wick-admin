@@ -94,9 +94,10 @@ RESPONSE FORMAT (JSON only):
 
       // Parse JSON response
       let result;
+      // Ensure content is a string
+      const contentStr = typeof content === 'string' ? content : String(content);
+      
       try {
-        // Ensure content is a string
-        const contentStr = typeof content === 'string' ? content : String(content);
         console.log('[Rewrite Flow] Content string length:', contentStr.length);
         console.log('[Rewrite Flow] Content string preview:', contentStr.substring(0, 500));
         
