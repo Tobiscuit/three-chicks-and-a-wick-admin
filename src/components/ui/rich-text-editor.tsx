@@ -1,7 +1,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import StarterKit from '@tiptap/starter-kit';
 import { Button } from '@/components/ui/button';
 import { 
@@ -11,9 +11,12 @@ import {
   ListOrdered, 
   Type,
   Undo,
-  Redo
+  Redo,
+  Eye,
+  Edit3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AIContentDisplay } from '@/components/ai-content-display';
 
 interface RichTextEditorProps {
   content: string;
@@ -28,6 +31,7 @@ export function RichTextEditor({
   placeholder = "Start typing your description...",
   className 
 }: RichTextEditorProps) {
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -47,7 +51,7 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[120px] p-3',
+        class: 'ai-generated-content product-description focus:outline-none min-h-[120px] p-3',
         placeholder,
       },
     },
@@ -71,7 +75,8 @@ export function RichTextEditor({
   return (
     <div className={cn("border rounded-md", className)}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 border-b bg-muted/50">
+      <div className="flex items-center justify-between p-2 border-b bg-muted/50">
+        <div className="flex items-center gap-1">
         <Button
           type="button"
           variant="ghost"
@@ -149,13 +154,48 @@ export function RichTextEditor({
         >
           <Redo className="h-4 w-4" />
         </Button>
+        </div>
+        
+        {/* Preview Toggle */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsPreviewMode(!isPreviewMode)}
+          className="h-8 px-2"
+        >
+          {isPreviewMode ? (
+            <>
+              <Edit3 className="h-4 w-4 mr-1" />
+              Edit
+            </>
+          ) : (
+            <>
+              <Eye className="h-4 w-4 mr-1" />
+              Preview
+            </>
+          )}
+        </Button>
       </div>
       
-      {/* Editor Content */}
-      <EditorContent 
-        editor={editor} 
-        className="prose prose-sm dark:prose-invert max-w-none"
-      />
+      {/* Editor Content or Preview */}
+      {isPreviewMode ? (
+        <div className="p-3 min-h-[120px]">
+          {content ? (
+            <AIContentDisplay 
+              content={content} 
+              className="product-description"
+            />
+          ) : (
+            <p className="text-muted-foreground text-sm italic">{placeholder}</p>
+          )}
+        </div>
+      ) : (
+        <EditorContent 
+          editor={editor} 
+          className="ai-generated-content product-description"
+        />
+      )}
     </div>
   );
 }
