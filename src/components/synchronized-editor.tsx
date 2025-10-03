@@ -145,33 +145,20 @@ export function SynchronizedEditor({
   // Load description history on mount
   useEffect(() => {
     const loadHistory = async () => {
-      if (!productId) {
-        console.log('[SynchronizedEditor] No productId, skipping history load');
-        return;
-      }
-
-      console.log('[SynchronizedEditor] Loading history for productId:', productId);
+      if (!productId) return;
+      
       setIsLoadingHistory(true);
       try {
         const result = await loadDescriptionHistoryAction(productId);
-        console.log('[SynchronizedEditor] History load result:', {
-          success: result.success,
-          versionsCount: result.versions?.length || 0,
-          error: result.error
-        });
-        
         if (result.success && result.versions && result.versions.length > 0) {
           const versions = result.versions.map((version: any) => ({
             ...version,
             timestamp: new Date(version.timestamp)
           }));
-          console.log('[SynchronizedEditor] Setting description versions:', versions.length);
           setDescriptionVersions(versions);
-        } else {
-          console.log('[SynchronizedEditor] No versions found, keeping initial version');
         }
       } catch (error) {
-        console.error('[SynchronizedEditor] Failed to load description history:', error);
+        console.error('Failed to load description history:', error);
       } finally {
         setIsLoadingHistory(false);
       }
@@ -203,13 +190,6 @@ export function SynchronizedEditor({
       return;
     }
 
-    console.log('[SynchronizedEditor] Starting AI rewrite:', {
-      userPrompt,
-      contentLength: content.length,
-      productId,
-      productName
-    });
-
     setIsRewriting(true);
     try {
       const result = await rewriteDescriptionAction({
@@ -222,12 +202,6 @@ export function SynchronizedEditor({
         }
       });
 
-      console.log('[SynchronizedEditor] AI rewrite result:', {
-        success: result.success,
-        hasResult: !!result.result,
-        error: result.error
-      });
-
       if (result.success && result.result) {
         const newVersion: DescriptionVersion = {
           id: Date.now().toString(),
@@ -238,18 +212,8 @@ export function SynchronizedEditor({
           timestamp: new Date()
         };
 
-        console.log('[SynchronizedEditor] Creating new version:', {
-          id: newVersion.id,
-          descriptionLength: newVersion.description.length,
-          userPrompt: newVersion.userPrompt
-        });
-
         // Add new version and update content
-        setDescriptionVersions(prev => {
-          const updated = [newVersion, ...prev];
-          console.log('[SynchronizedEditor] Updated descriptionVersions:', updated.length);
-          return updated;
-        });
+        setDescriptionVersions(prev => [newVersion, ...prev]);
         setCurrentVersionIndex(0);
         setContent(result.result.reengineeredDescription);
         setUserPrompt('');
@@ -257,9 +221,7 @@ export function SynchronizedEditor({
 
         // Save to history
         if (productId) {
-          console.log('[SynchronizedEditor] Saving version to history for productId:', productId);
-          const saveResult = await addDescriptionVersionAction(productId, newVersion);
-          console.log('[SynchronizedEditor] History save result:', saveResult);
+          await addDescriptionVersionAction(productId, newVersion);
         }
 
         toast({
@@ -282,12 +244,6 @@ export function SynchronizedEditor({
   };
 
   const switchVersion = (versionIndex: number) => {
-    console.log('[SynchronizedEditor] Switching to version:', {
-      versionIndex,
-      totalVersions: descriptionVersions.length,
-      versionId: descriptionVersions[versionIndex]?.id,
-      descriptionLength: descriptionVersions[versionIndex]?.description.length
-    });
     setCurrentVersionIndex(versionIndex);
     setContent(descriptionVersions[versionIndex].description);
     setShowHistory(false);
@@ -295,7 +251,6 @@ export function SynchronizedEditor({
   };
 
   const resetToOriginal = () => {
-    console.log('[SynchronizedEditor] Resetting to original version');
     setCurrentVersionIndex(0);
     setContent(descriptionVersions[0].description);
     setShowHistory(false);
