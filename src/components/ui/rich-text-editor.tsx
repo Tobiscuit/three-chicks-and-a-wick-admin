@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import { useEffect } from 'react';
 import StarterKit from '@tiptap/starter-kit';
 import { Button } from '@/components/ui/button';
 import { 
@@ -51,6 +52,17 @@ export function RichTextEditor({
       },
     },
   });
+
+  // Update editor content when prop changes
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      console.log('[RichTextEditor] Updating editor content:', {
+        newContent: content?.substring(0, 100) + '...',
+        currentEditorContent: editor.getHTML()?.substring(0, 100) + '...'
+      });
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
 
   if (!editor) {
     return null;
