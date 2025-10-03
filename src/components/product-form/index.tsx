@@ -137,6 +137,13 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     const searchParams = new URLSearchParams(window.location.search);
     const token = searchParams.get('draftToken');
 
+    console.log('[ProductForm] AI Prefill useEffect:', {
+      token,
+      isEditMode,
+      hasFetchedAiData: hasFetchedAiData.current,
+      currentDescription: form.getValues('description')?.substring(0, 100) + '...'
+    });
+
     if (!token || isEditMode || hasFetchedAiData.current) {
       return;
     }
@@ -150,6 +157,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
             if (res.success && res.data) {
                 const { title, body_html, tags, sku, price, quantity, publicImageUrl } = res.data;
+                
+                console.log('[ProductForm] AI Data received:', {
+                  title,
+                  body_html: body_html?.substring(0, 100) + '...',
+                  formattedDescription: formatHtmlForEditing(body_html)?.substring(0, 100) + '...'
+                });
                 
                 setValue('title', title, { shouldDirty: true });
                 setValue('description', formatHtmlForEditing(body_html), { shouldDirty: true });
@@ -374,6 +387,10 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             <SynchronizedEditor
                               initialContent={field.value || ''}
                               onContentChange={(content) => {
+                                console.log('[ProductForm] SynchronizedEditor content change:', {
+                                  newContent: content?.substring(0, 100) + '...',
+                                  fieldValue: field.value?.substring(0, 100) + '...'
+                                });
                                 setValue('description', content, { shouldDirty: true });
                               }}
                               productId={initialData?.id}
