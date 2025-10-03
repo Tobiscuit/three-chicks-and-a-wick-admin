@@ -18,7 +18,7 @@ export const rewriteDescriptionFlow = ai.defineFlow(
     name: 'rewriteDescriptionFlow',
     inputSchema: ReengineerDescriptionSchema,
     outputSchema: z.object({
-      rewrittenDescription: z.string().describe('The new rewritten description'),
+      reengineeredDescription: z.string().describe('The new rewritten description'),
       reasoning: z.string().describe('Why these changes were made'),
       changes: z.array(z.string()).describe('List of key changes made')
     }),
@@ -108,7 +108,7 @@ RESPONSE FORMAT (JSON only):
         
         // Fallback: return original with minimal changes
         result = {
-          rewrittenDescription: originalDescription,
+          reengineeredDescription: originalDescription,
           reasoning: 'Unable to parse AI response, returning original description',
           changes: ['No changes made due to parsing error']
         };
