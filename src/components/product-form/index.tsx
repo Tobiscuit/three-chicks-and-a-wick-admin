@@ -40,6 +40,7 @@ import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
 import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
 import { DescriptionRewriter } from "@/components/description-reengineer";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -420,18 +421,16 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             ) : (
                               // Manual editing mode
                               <div className="space-y-3">
-                                <Textarea
-                                  {...field}
-                                  placeholder="Enter a detailed product description... (You can use HTML formatting like <p>, <strong>, <ul>, <li>)"
-                                  className="min-h-[120px]"
-                                  value={field.value || ''}
-                                  onChange={(e) => {
-                                    field.onChange(e.target.value);
+                                <RichTextEditor
+                                  content={field.value || ''}
+                                  onChange={(content) => {
+                                    field.onChange(content);
                                   }}
+                                  placeholder="Start typing your product description... Use the toolbar above to format your text with bold, italic, and bullet points."
                                 />
                                 {!isEditMode && (
                                   <p className="text-sm text-muted-foreground">
-                                    💡 <strong>Tip:</strong> After saving, you can use the AI rewriter to enhance your description!
+                                    💡 <strong>Tip:</strong> Use the toolbar above to format your text. After saving, you can use the AI rewriter to enhance your description!
                                   </p>
                                 )}
                                 {isEditMode && isAiGenerated && (
