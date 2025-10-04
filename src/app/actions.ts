@@ -386,6 +386,7 @@ type GenerateProductInput = {
     price: string;
     creatorNotes: string;
     quantity: number;
+    sourceImages?: string[]; // Optional source images from Image Studio
 }
 
 export async function generateProductFromImageAction(
@@ -403,7 +404,7 @@ export async function generateProductFromImageAction(
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const { creatorNotes, price, imageDataUrl, quantity } = input;
+        const { creatorNotes, price, imageDataUrl, quantity, sourceImages } = input;
 
         if (!creatorNotes || !price || !imageDataUrl || quantity === undefined) {
             return { error: "Missing required fields for product generation." };
@@ -477,7 +478,7 @@ Transform raw data into a partial Shopify product listing, focusing only on the 
         }
         
         console.log("===== STASHING AI GENERATED DATA =====");
-        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity);
+        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity, sourceImages);
         console.log("===== STASH RESULT =====", stashResult);
 
         if (!stashResult.success || !stashResult.token) {
@@ -509,6 +510,7 @@ export async function stashAiGeneratedProductAction(
     imageDataUrl: string,
     price: string,
     quantity: number,
+    sourceImages?: string[],
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
         console.log("===== STASH FUNCTION START =====");
@@ -549,6 +551,7 @@ export async function stashAiGeneratedProductAction(
             price,
             quantity,
             publicImageUrl, // Stash the short URL, not the raw data
+            sourceImages: sourceImages || [], // Store source images if provided
             createdAt: new Date(),
         });
         console.log("===== FIRESTORE SAVE SUCCESS =====");

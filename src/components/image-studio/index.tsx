@@ -548,6 +548,8 @@ export function ImageStudio() {
         <AddProductModal
           generatedImage={generatedImage}
           onClose={() => setShowAddProductModal(false)}
+          primaryImageFile={form.watch('primaryProductImage')}
+          secondaryImageFile={form.watch('secondaryProductImage')}
         />
       )}
     </Form>
@@ -568,7 +570,12 @@ const addProductModalSchema = z.object({
 
 type AddProductModalValues = z.infer<typeof addProductModalSchema>;
 
-function AddProductModal({ generatedImage, onClose }: { generatedImage: string; onClose: () => void; }) {
+function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryImageFile }: { 
+    generatedImage: string; 
+    onClose: () => void;
+    primaryImageFile?: File;
+    secondaryImageFile?: File;
+}) {
     const router = useRouter();
     const { toast } = useToast();
     const [isGenerating, setIsGenerating] = useState(false);
@@ -580,11 +587,23 @@ function AddProductModal({ generatedImage, onClose }: { generatedImage: string; 
     const onSubmit = async (values: AddProductModalValues) => {
         setIsGenerating(true);
         try {
+            // Get source images from the parent form
+            const sourceImages = [];
+            if (primaryImageFile instanceof File) {
+                const primaryDataUrl = await fileToDataUrl(primaryImageFile);
+                sourceImages.push(primaryDataUrl);
+            }
+            if (secondaryImageFile instanceof File) {
+                const secondaryDataUrl = await fileToDataUrl(secondaryImageFile);
+                sourceImages.push(secondaryDataUrl);
+            }
+
             const result = await generateProductFromImageAction({
                 imageDataUrl: generatedImage,
                 price: values.price,
                 creatorNotes: values.contextualDetails,
                 quantity: values.quantity,
+                sourceImages: sourceImages.length > 0 ? sourceImages : undefined,
             });
 
             if (result.token) {
