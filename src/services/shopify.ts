@@ -453,11 +453,14 @@ async function getPublicationIds(channelNames: string[]): Promise<string[]> {
 // This new version publishes a product to all the channels we find.
 async function publishProductToChannel(productId: string) {
   // Define all the channels you want to publish to here
-  const channelsToPublish = ['Online Store', 'Threechicksandawick Headless'];
+  // TODO: Update channel name for production - currently using dev headless channel
+  const channelsToPublish = ['Online Store', 'Threechicksandawick Dev Headless'];
   const publicationIds = await getPublicationIds(channelsToPublish);
 
   if (publicationIds.length === 0) {
       console.warn(`No valid publication channels found to publish product ${productId}`);
+      console.warn(`⚠️  PRODUCTION WARNING: Channel names may need updating for production deployment`);
+      console.warn(`Current channels searched:`, channelsToPublish);
       return; // Stop if no channels were found
   }
 
@@ -488,7 +491,8 @@ async function publishProductToChannel(productId: string) {
   if (userErrors && userErrors.length > 0) {
       console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
   } else {
-      console.log(`Successfully published product ${productId} to ${publicationIds.length} channel(s).`);
+      console.log(`✅ Successfully published product ${productId} to ${publicationIds.length} channel(s):`, channelsToPublish);
+      console.log(`Published to publication IDs:`, publicationIds);
   }
 }
 
