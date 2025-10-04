@@ -158,13 +158,14 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             toast({ title: "🪄 Loading AI Content..." });
             
             // Load user settings to check if source images should be included
-            let userSettings = null;
+            let includeSourceImagesFromSettings = false;
             if (user?.uid) {
                 try {
                     console.log('[ProductForm] Loading user settings for UID:', user.uid);
-                    userSettings = await getUserSettings(user.uid);
+                    const userSettings = await getUserSettings(user.uid);
                     console.log('[ProductForm] includeSourceImages setting:', userSettings.imageStudioSettings.includeSourceImages);
-                    setIncludeSourceImages(userSettings.imageStudioSettings.includeSourceImages);
+                    includeSourceImagesFromSettings = userSettings.imageStudioSettings.includeSourceImages;
+                    setIncludeSourceImages(includeSourceImagesFromSettings);
                 } catch (error) {
                     console.error('Error loading user settings:', error);
                 }
@@ -201,12 +202,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   }
                   
                   // Add source images if setting is enabled and they exist
-                  console.log('[ProductForm] Source image decision - includeSourceImages:', includeSourceImages, 'sourceImageUrls count:', sourceImageUrls?.length || 0);
-                  if (includeSourceImages && sourceImageUrls && sourceImageUrls.length > 0) {
+                  console.log('[ProductForm] Source image decision - includeSourceImages:', includeSourceImagesFromSettings, 'sourceImageUrls count:', sourceImageUrls?.length || 0);
+                  if (includeSourceImagesFromSettings && sourceImageUrls && sourceImageUrls.length > 0) {
                     console.log('[ProductForm] ✅ Adding source images to gallery:', sourceImageUrls.length);
                     imageUrls.push(...sourceImageUrls);
                   } else {
-                    console.log('[ProductForm] ❌ Not adding source images - setting:', includeSourceImages, 'count:', sourceImageUrls?.length || 0);
+                    console.log('[ProductForm] ❌ Not adding source images - setting:', includeSourceImagesFromSettings, 'count:', sourceImageUrls?.length || 0);
                   }
                   
                   if (imageUrls.length > 0) {
