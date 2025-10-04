@@ -584,6 +584,15 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
         resolver: zodResolver(addProductModalSchema),
     });
 
+    const fileToDataUrl = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
     const onSubmit = async (values: AddProductModalValues) => {
         setIsGenerating(true);
         try {
