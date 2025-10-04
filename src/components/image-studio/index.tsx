@@ -599,16 +599,31 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
         try {
             // Upload source images to Firebase Storage first to avoid 413 errors
             const sourceImageUrls = [];
+            console.log('[Image Studio] Starting source image upload...');
+            console.log('[Image Studio] primaryImageFile:', primaryImageFile?.name);
+            console.log('[Image Studio] secondaryImageFile:', secondaryImageFile?.name);
+            
             if (primaryImageFile instanceof File) {
+                console.log('[Image Studio] Uploading primary image...');
                 const primaryDataUrl = await fileToDataUrl(primaryImageFile);
                 const primaryUrl = await uploadImageAction(primaryDataUrl);
-                if (primaryUrl) sourceImageUrls.push(primaryUrl);
+                if (primaryUrl) {
+                    sourceImageUrls.push(primaryUrl);
+                    console.log('[Image Studio] Primary image uploaded:', primaryUrl);
+                }
             }
             if (secondaryImageFile instanceof File) {
+                console.log('[Image Studio] Uploading secondary image...');
                 const secondaryDataUrl = await fileToDataUrl(secondaryImageFile);
                 const secondaryUrl = await uploadImageAction(secondaryDataUrl);
-                if (secondaryUrl) sourceImageUrls.push(secondaryUrl);
+                if (secondaryUrl) {
+                    sourceImageUrls.push(secondaryUrl);
+                    console.log('[Image Studio] Secondary image uploaded:', secondaryUrl);
+                }
             }
+            
+            console.log('[Image Studio] Total source images uploaded:', sourceImageUrls.length);
+            console.log('[Image Studio] Source image URLs:', sourceImageUrls);
 
             const result = await generateProductFromImageAction({
                 imageDataUrl: generatedImage,
