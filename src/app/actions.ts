@@ -546,12 +546,35 @@ export async function stashAiGeneratedProductAction(
         const docRef = adminDb.collection('aiProductDrafts').doc(token);
         console.log("===== SAVING TO FIRESTORE =====");
 
+        // Upload source images to Firebase Storage if provided
+        let sourceImageUrls: string[] = [];
+        if (sourceImages && sourceImages.length > 0) {
+            console.log("===== UPLOADING SOURCE IMAGES =====");
+            for (let i = 0; i < sourceImages.length; i++) {
+                try {
+                    const sourceFileName = `product-images/source-images/${uuidv4()}.webp`;
+                    const sourceImageBuffer = Buffer.from(sourceImages[i].split(',')[1], 'base64');
+                    
+                    await bucket.file(sourceFileName).save(sourceImageBuffer, {
+                        metadata: { contentType: 'image/jpeg' },
+                        public: true,
+                    });
+                    
+                    const sourceImageUrl = `https://storage.googleapis.com/${bucket.name}/${sourceFileName}`;
+                    sourceImageUrls.push(sourceImageUrl);
+                    console.log(`Source image ${i + 1} uploaded:`, sourceImageUrl);
+                } catch (error) {
+                    console.error(`Failed to upload source image ${i + 1}:`, error);
+                }
+            }
+        }
+
         await docRef.set({
             ...creativeData,
             price,
             quantity,
             publicImageUrl, // Stash the short URL, not the raw data
-            sourceImages: sourceImages || [], // Store source images if provided
+            sourceImageUrls, // Store source image URLs instead of data
             createdAt: new Date(),
         });
         console.log("===== FIRESTORE SAVE SUCCESS =====");
