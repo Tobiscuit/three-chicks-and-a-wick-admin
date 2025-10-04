@@ -177,6 +177,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImageUrls } = res.data;
                 
                 console.log('[ProductForm] Source images from AI data:', sourceImageUrls?.length || 0, sourceImageUrls);
+                console.log('[ProductForm] Raw body_html from AI:', body_html?.substring(0, 200) + '...');
+                console.log('[ProductForm] body_html contains HTML tags:', body_html?.includes('<p>') || body_html?.includes('<ul>') || body_html?.includes('<strong>'));
                 
                 setValue('title', title, { shouldDirty: true });
                 setValue('description', formatHtmlForEditing(body_html), { shouldDirty: true });
