@@ -162,10 +162,14 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             if (user?.uid) {
                 try {
                     userSettings = await getUserSettings(user.uid);
+                    console.log('[ProductForm] User settings loaded:', userSettings);
+                    console.log('[ProductForm] includeSourceImages setting:', userSettings.imageStudioSettings.includeSourceImages);
                     setIncludeSourceImages(userSettings.imageStudioSettings.includeSourceImages);
                 } catch (error) {
                     console.error('Error loading user settings:', error);
                 }
+            } else {
+                console.log('[ProductForm] No user UID, skipping settings load');
             }
             
             const res = await resolveAiGeneratedProductAction(token);
@@ -176,7 +180,9 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 console.log('[ProductForm] AI Data received:', {
                   title,
                   body_html: body_html?.substring(0, 100) + '...',
-                  formattedDescription: formatHtmlForEditing(body_html)?.substring(0, 100) + '...'
+                  formattedDescription: formatHtmlForEditing(body_html)?.substring(0, 100) + '...',
+                  sourceImageUrls: sourceImageUrls,
+                  sourceImageUrlsLength: sourceImageUrls?.length || 0
                 });
                 
                 setValue('title', title, { shouldDirty: true });
@@ -203,10 +209,21 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   }
                   
                   // Add source images if setting is enabled and they exist
+                  console.log('[ProductForm] Source image logic check:', {
+                    includeSourceImages,
+                    sourceImageUrlsExists: !!sourceImageUrls,
+                    sourceImageUrlsLength: sourceImageUrls?.length || 0,
+                    willInclude: includeSourceImages && sourceImageUrls && sourceImageUrls.length > 0
+                  });
+                  
                   if (includeSourceImages && sourceImageUrls && sourceImageUrls.length > 0) {
                     console.log('[ProductForm] Including source images:', sourceImageUrls.length);
+                    console.log('[ProductForm] Source image URLs:', sourceImageUrls);
                     // Source images are already uploaded to Firebase Storage, just add the URLs
                     imageUrls.push(...sourceImageUrls);
+                    console.log('[ProductForm] Final imageUrls after adding source images:', imageUrls);
+                  } else {
+                    console.log('[ProductForm] Not including source images - setting disabled or no source images');
                   }
                   
                   if (imageUrls.length > 0) {

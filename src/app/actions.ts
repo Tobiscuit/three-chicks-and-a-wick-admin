@@ -548,7 +548,8 @@ export async function stashAiGeneratedProductAction(
 
         // Source images are already uploaded to Firebase Storage, just use the URLs
         console.log("===== USING PRE-UPLOADED SOURCE IMAGES =====");
-        console.log("Source image URLs:", sourceImageUrls);
+        console.log("Source image URLs received:", sourceImageUrls);
+        console.log("Source image URLs length:", sourceImageUrls?.length || 0);
 
         await docRef.set({
             ...creativeData,
