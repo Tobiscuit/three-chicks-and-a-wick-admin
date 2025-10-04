@@ -25,19 +25,12 @@ export const rewriteDescriptionFlow = ai.defineFlow(
   },
   async ({ originalDescription, userPrompt, productContext }) => {
     try {
-      const prompt = `You are the brand voice for "Three Chicks and a Wick" candle brand. Rewrite this description based on user feedback.
+      const prompt = `Rewrite this candle description: "${userPrompt}"
 
-ORIGINAL: ${originalDescription}
-USER REQUEST: "${userPrompt}"
+${originalDescription}
 
-Tone: Playful yet sophisticated, conversational, emphasize craftsmanship and sensory details.
-
-Return JSON only:
-{
-  "reengineeredDescription": "New description with HTML formatting",
-  "reasoning": "Why these changes were made", 
-  "changes": ["Change 1", "Change 2"]
-}`;
+Return JSON:
+{"reengineeredDescription": "new text", "reasoning": "why", "changes": ["change"]}`;
 
       console.log('[Rewrite Flow] Starting description rewrite...');
       console.log('[Rewrite Flow] User prompt:', userPrompt);
@@ -47,7 +40,7 @@ Return JSON only:
         prompt: prompt,
         config: {
           temperature: 0.8, // More creative
-          maxOutputTokens: 1000, // Reduced to leave room for thoughts
+          maxOutputTokens: 500, // Further reduced for very long inputs
           responseMimeType: "application/json"
         }
       });
