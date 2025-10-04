@@ -20,17 +20,19 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     
     if (settingsSnap.exists()) {
       const data = settingsSnap.data();
-      return {
+      const result = {
         imageStudioSettings: {
           includeSourceImages: data.imageStudioSettings?.includeSourceImages ?? defaultSettings.imageStudioSettings.includeSourceImages,
         },
       };
+      console.log('[UserSettings] Loaded settings for user:', userId, result);
+      return result;
     }
     
-    // Return default settings if document doesn't exist
+    console.log('[UserSettings] No settings found for user:', userId, 'returning defaults');
     return defaultSettings;
   } catch (error) {
-    console.error('Error fetching user settings:', error);
+    console.error('[UserSettings] Error fetching settings:', error);
     return defaultSettings;
   }
 }
@@ -48,13 +50,16 @@ export async function updateUserSettings(userId: string, settings: Partial<UserS
 export async function updateImageStudioSetting(userId: string, includeSourceImages: boolean): Promise<void> {
   try {
     const settingsRef = doc(db, 'userSettings', userId);
-    await setDoc(settingsRef, {
+    const data = {
       imageStudioSettings: {
         includeSourceImages,
       },
-    }, { merge: true });
+    };
+    console.log('[UserSettings] Updating setting for user:', userId, data);
+    await setDoc(settingsRef, data, { merge: true });
+    console.log('[UserSettings] Setting updated successfully');
   } catch (error) {
-    console.error('Error updating image studio setting:', error);
+    console.error('[UserSettings] Error updating image studio setting:', error);
     throw error;
   }
 }
