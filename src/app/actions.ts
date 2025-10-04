@@ -386,7 +386,7 @@ type GenerateProductInput = {
     price: string;
     creatorNotes: string;
     quantity: number;
-    sourceImages?: string[]; // Optional source images from Image Studio
+    sourceImageUrls?: string[]; // Optional source image URLs from Image Studio
 }
 
 export async function generateProductFromImageAction(
@@ -404,7 +404,7 @@ export async function generateProductFromImageAction(
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const { creatorNotes, price, imageDataUrl, quantity, sourceImages } = input;
+        const { creatorNotes, price, imageDataUrl, quantity, sourceImageUrls } = input;
 
         if (!creatorNotes || !price || !imageDataUrl || quantity === undefined) {
             return { error: "Missing required fields for product generation." };
@@ -478,7 +478,7 @@ Transform raw data into a partial Shopify product listing, focusing only on the 
         }
         
         console.log("===== STASHING AI GENERATED DATA =====");
-        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity, sourceImages);
+        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity, sourceImageUrls);
         console.log("===== STASH RESULT =====", stashResult);
 
         if (!stashResult.success || !stashResult.token) {
@@ -510,7 +510,7 @@ export async function stashAiGeneratedProductAction(
     imageDataUrl: string,
     price: string,
     quantity: number,
-    sourceImages?: string[],
+    sourceImageUrls?: string[],
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
         console.log("===== STASH FUNCTION START =====");
@@ -546,35 +546,16 @@ export async function stashAiGeneratedProductAction(
         const docRef = adminDb.collection('aiProductDrafts').doc(token);
         console.log("===== SAVING TO FIRESTORE =====");
 
-        // Upload source images to Firebase Storage if provided
-        let sourceImageUrls: string[] = [];
-        if (sourceImages && sourceImages.length > 0) {
-            console.log("===== UPLOADING SOURCE IMAGES =====");
-            for (let i = 0; i < sourceImages.length; i++) {
-                try {
-                    const sourceFileName = `product-images/source-images/${uuidv4()}.webp`;
-                    const sourceImageBuffer = Buffer.from(sourceImages[i].split(',')[1], 'base64');
-                    
-                    await bucket.file(sourceFileName).save(sourceImageBuffer, {
-                        metadata: { contentType: 'image/jpeg' },
-                        public: true,
-                    });
-                    
-                    const sourceImageUrl = `https://storage.googleapis.com/${bucket.name}/${sourceFileName}`;
-                    sourceImageUrls.push(sourceImageUrl);
-                    console.log(`Source image ${i + 1} uploaded:`, sourceImageUrl);
-                } catch (error) {
-                    console.error(`Failed to upload source image ${i + 1}:`, error);
-                }
-            }
-        }
+        // Source images are already uploaded to Firebase Storage, just use the URLs
+        console.log("===== USING PRE-UPLOADED SOURCE IMAGES =====");
+        console.log("Source image URLs:", sourceImageUrls);
 
         await docRef.set({
             ...creativeData,
             price,
             quantity,
             publicImageUrl, // Stash the short URL, not the raw data
-            sourceImageUrls, // Store source image URLs instead of data
+            sourceImageUrls: sourceImageUrls || [], // Store source image URLs
             createdAt: new Date(),
         });
         console.log("===== FIRESTORE SAVE SUCCESS =====");
