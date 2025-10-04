@@ -33,6 +33,7 @@ import {
   getGalleryImagesAction,
   generateProductFromImageAction,
   composeWithGalleryAction,
+  uploadImageAction,
 } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -596,15 +597,17 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
     const onSubmit = async (values: AddProductModalValues) => {
         setIsGenerating(true);
         try {
-            // Get source images from the parent form
-            const sourceImages = [];
+            // Upload source images to Firebase Storage first to avoid 413 errors
+            const sourceImageUrls = [];
             if (primaryImageFile instanceof File) {
                 const primaryDataUrl = await fileToDataUrl(primaryImageFile);
-                sourceImages.push(primaryDataUrl);
+                const primaryUrl = await uploadImageAction(primaryDataUrl);
+                if (primaryUrl) sourceImageUrls.push(primaryUrl);
             }
             if (secondaryImageFile instanceof File) {
                 const secondaryDataUrl = await fileToDataUrl(secondaryImageFile);
-                sourceImages.push(secondaryDataUrl);
+                const secondaryUrl = await uploadImageAction(secondaryDataUrl);
+                if (secondaryUrl) sourceImageUrls.push(secondaryUrl);
             }
 
             const result = await generateProductFromImageAction({
@@ -612,7 +615,7 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
                 price: values.price,
                 creatorNotes: values.contextualDetails,
                 quantity: values.quantity,
-                sourceImages: sourceImages.length > 0 ? sourceImages : undefined,
+                sourceImageUrls: sourceImageUrls.length > 0 ? sourceImageUrls : undefined,
             });
 
             if (result.token) {
