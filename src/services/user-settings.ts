@@ -25,11 +25,9 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
           includeSourceImages: data.imageStudioSettings?.includeSourceImages ?? defaultSettings.imageStudioSettings.includeSourceImages,
         },
       };
-      console.log('[UserSettings] Loaded settings for user:', userId, result);
       return result;
     }
     
-    console.log('[UserSettings] No settings found for user:', userId, 'returning defaults');
     return defaultSettings;
   } catch (error) {
     console.error('[UserSettings] Error fetching settings:', error);
@@ -55,9 +53,7 @@ export async function updateImageStudioSetting(userId: string, includeSourceImag
         includeSourceImages,
       },
     };
-    console.log('[UserSettings] Updating setting for user:', userId, data);
     await setDoc(settingsRef, data, { merge: true });
-    console.log('[UserSettings] Setting updated successfully');
   } catch (error) {
     console.error('[UserSettings] Error updating image studio setting:', error);
     throw error;

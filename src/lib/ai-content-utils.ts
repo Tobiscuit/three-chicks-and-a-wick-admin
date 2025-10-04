@@ -59,8 +59,6 @@ export function getAIContentClassName(context: 'form' | 'preview' | 'details' | 
 export function formatHtmlForEditing(html: string): string {
   if (!html || typeof html !== 'string') return html;
   
-  console.log('[formatHtmlForEditing] Input HTML:', html?.substring(0, 200) + '...');
-  
   // Add line breaks after closing tags
   let formatted = html
     .replace(/<\/(p|div|h[1-6]|li|ul|ol|blockquote|pre)>/gi, '</$1>\n')
@@ -77,8 +75,6 @@ export function formatHtmlForEditing(html: string): string {
     .replace(/\n\s*\n\s*\n/g, '\n\n')
     .replace(/^\s*\n/g, '')
     .replace(/\n\s*$/g, '');
-  
-  console.log('[formatHtmlForEditing] Output HTML:', formatted?.substring(0, 200) + '...');
   
   return formatted;
 }
