@@ -161,6 +161,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             let userSettings = null;
             if (user?.uid) {
                 try {
+                    console.log('[ProductForm] Loading user settings for UID:', user.uid);
                     userSettings = await getUserSettings(user.uid);
                     console.log('[ProductForm] includeSourceImages setting:', userSettings.imageStudioSettings.includeSourceImages);
                     setIncludeSourceImages(userSettings.imageStudioSettings.includeSourceImages);
@@ -200,6 +201,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   }
                   
                   // Add source images if setting is enabled and they exist
+                  console.log('[ProductForm] Source image decision - includeSourceImages:', includeSourceImages, 'sourceImageUrls count:', sourceImageUrls?.length || 0);
                   if (includeSourceImages && sourceImageUrls && sourceImageUrls.length > 0) {
                     console.log('[ProductForm] ✅ Adding source images to gallery:', sourceImageUrls.length);
                     imageUrls.push(...sourceImageUrls);
