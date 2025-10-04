@@ -1,30 +1,33 @@
 'use server';
 
 import { z } from 'zod';
-import { ai } from '@/ai/genkit';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GOOGLE_AI_CONFIG } from '@/lib/env-config';
 
-const ReengineerDescriptionSchema = z.object({
-  originalDescription: z.string().describe('The current product description'),
-  userPrompt: z.string().describe('User\'s creative direction for re-engineering'),
-  productContext: z.object({
-    name: z.string().describe('Product name'),
-    imageAnalysis: z.string().optional().describe('Original image analysis from product creation'),
-    brandGuidelines: z.string().optional().describe('Brand voice and tone guidelines')
-  })
-});
-
-export const rewriteDescriptionFlow = ai.defineFlow(
-  {
-    name: 'rewriteDescriptionFlow',
-    inputSchema: ReengineerDescriptionSchema,
-    outputSchema: z.object({
-      reengineeredDescription: z.string().describe('The new rewritten description'),
-      reasoning: z.string().describe('Why these changes were made'),
-      changes: z.array(z.string()).describe('List of key changes made')
-    }),
-  },
-  async ({ originalDescription, userPrompt, productContext }) => {
+export async function rewriteDescriptionFlow({
+  originalDescription,
+  userPrompt,
+  productContext
+}: {
+  originalDescription: string;
+  userPrompt: string;
+  productContext: {
+    name: string;
+    imageAnalysis?: string;
+    brandGuidelines?: string;
+  };
+}) {
     try {
+      if (!GOOGLE_AI_CONFIG.API_KEY) {
+        throw new Error("Gemini API key is not configured.");
+      }
+
+      const genAI = new GoogleGenerativeAI(GOOGLE_AI_CONFIG.API_KEY);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-pro",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
       const prompt = `Rewrite this candle description: "${userPrompt}"
 
 ${originalDescription}
@@ -35,36 +38,15 @@ Return JSON:
       console.log('[Rewrite Flow] Starting description rewrite...');
       console.log('[Rewrite Flow] User prompt:', userPrompt);
       
-      const response = await ai.generate({
-        model: 'googleai/gemini-2.5-pro',
-        prompt: prompt,
-        config: {
-          temperature: 0.8, // More creative
-          maxOutputTokens: 500, // Further reduced for very long inputs
-          responseMimeType: "application/json"
-        }
-      });
+      const result = await model.generateContent([prompt]);
+      const response = await result.response;
+      const text = response.text();
 
-      console.log('[Rewrite Flow] Response object:', response);
-      console.log('[Rewrite Flow] Response type:', typeof response);
-      console.log('[Rewrite Flow] Response methods:', Object.getOwnPropertyNames(response));
-      
-      let content;
-      if (response.text) {
-        content = response.text;
-      } else if (response.message?.content) {
-        content = response.message.content;
-      } else {
-        console.error('[Rewrite Flow] Unknown response format:', response);
-        throw new Error('Unknown response format from AI model');
-      }
-      
-      console.log('[Rewrite Flow] Raw response content:', content);
+      console.log('[Rewrite Flow] Raw response text:', text);
 
       // Parse JSON response
       let result;
-      // Ensure content is a string
-      const contentStr = typeof content === 'string' ? content : String(content);
+      const contentStr = text;
       
       try {
         console.log('[Rewrite Flow] Content string length:', contentStr.length);
