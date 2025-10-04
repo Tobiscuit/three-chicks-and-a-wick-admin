@@ -171,7 +171,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             const res = await resolveAiGeneratedProductAction(token);
 
             if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImages } = res.data;
+                const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImageUrls } = res.data;
                 
                 console.log('[ProductForm] AI Data received:', {
                   title,
@@ -203,18 +203,10 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   }
                   
                   // Add source images if setting is enabled and they exist
-                  if (includeSourceImages && sourceImages && sourceImages.length > 0) {
-                    console.log('[ProductForm] Including source images:', sourceImages.length);
-                    for (const sourceImageDataUrl of sourceImages) {
-                      try {
-                        const sourcePublicUrl = await uploadImageAction(sourceImageDataUrl);
-                        if (sourcePublicUrl) {
-                          imageUrls.push(sourcePublicUrl);
-                        }
-                      } catch (error) {
-                        console.error('Error uploading source image:', error);
-                      }
-                    }
+                  if (includeSourceImages && sourceImageUrls && sourceImageUrls.length > 0) {
+                    console.log('[ProductForm] Including source images:', sourceImageUrls.length);
+                    // Source images are already uploaded to Firebase Storage, just add the URLs
+                    imageUrls.push(...sourceImageUrls);
                   }
                   
                   if (imageUrls.length > 0) {
