@@ -141,5 +141,4 @@ Return JSON:
         changes: ['No changes made due to error']
       };
     }
-  }
-);
+}
