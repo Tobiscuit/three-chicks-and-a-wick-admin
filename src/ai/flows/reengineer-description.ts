@@ -25,44 +25,19 @@ export const rewriteDescriptionFlow = ai.defineFlow(
   },
   async ({ originalDescription, userPrompt, productContext }) => {
     try {
-      const prompt = `
-You are a creative copywriter for "Three Chicks and a Wick" candle brand. Your job is to rewrite product descriptions based on user feedback while maintaining brand consistency.
+      const prompt = `You are the brand voice for "Three Chicks and a Wick" candle brand. Rewrite this description based on user feedback.
 
-ORIGINAL DESCRIPTION:
-${originalDescription}
+ORIGINAL: ${originalDescription}
+USER REQUEST: "${userPrompt}"
 
-PRODUCT CONTEXT:
-- Name: ${productContext.name}
-- Image Analysis: ${productContext.imageAnalysis || 'Not available'}
-- Brand Guidelines: ${productContext.brandGuidelines || 'Premium, artisanal, luxurious candles with personality and charm'}
+Tone: Playful yet sophisticated, conversational, emphasize craftsmanship and sensory details.
 
-USER'S CREATIVE DIRECTION:
-"${userPrompt}"
-
-BRAND VOICE GUIDELINES:
-- Playful yet sophisticated
-- Conversational and engaging
-- Emphasize unique materials and craftsmanship
-- Include sensory details (scent, texture, visual)
-- Use storytelling elements
-- Maintain premium positioning
-- Be authentic and genuine
-
-TASK:
-Re-engineer the original description based on the user's creative direction while maintaining:
-- Brand voice and tone consistency
-- Product accuracy and details
-- SEO-friendly structure with proper HTML
-- Professional quality and readability
-- Engaging storytelling elements
-
-RESPONSE FORMAT (JSON only):
+Return JSON only:
 {
-  "reengineeredDescription": "The new description with proper HTML formatting",
-  "reasoning": "Brief explanation of why these changes were made",
-  "changes": ["Key change 1", "Key change 2", "Key change 3"]
-}
-`;
+  "reengineeredDescription": "New description with HTML formatting",
+  "reasoning": "Why these changes were made", 
+  "changes": ["Change 1", "Change 2"]
+}`;
 
       console.log('[Rewrite Flow] Starting description rewrite...');
       console.log('[Rewrite Flow] User prompt:', userPrompt);

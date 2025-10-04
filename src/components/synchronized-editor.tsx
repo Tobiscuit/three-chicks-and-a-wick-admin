@@ -75,15 +75,10 @@ export function SynchronizedEditor({
   const isInitialized = useRef(false);
 
   // === DEBUGGING LOGS ===
-  console.log('[SynchronizedEditor] Render:', {
-    initialContent: initialContent?.substring(0, 100) + '...',
-    content: content?.substring(0, 100) + '...',
-    contentLength: content?.length || 0,
-    isInitialized: isInitialized.current,
-    hasUnsavedChanges,
-    productId,
-    productName
-  });
+  // Reduced logging - only log on significant changes
+  if (content && content.length > 100 && content !== initialContent) {
+    console.log('[SynchronizedEditor] Content updated:', content.substring(0, 100) + '...');
+  }
 
   // Sync content changes to parent component
   const stableOnContentChange = useCallback(onContentChange, []);
@@ -93,15 +88,9 @@ export function SynchronizedEditor({
 
   // Initialize content on first load only
   useEffect(() => {
-    console.log('[SynchronizedEditor] Mount effect:', {
-      isInitialized: isInitialized.current,
-      initialContent: initialContent?.substring(0, 100) + '...',
-      initialContentLength: initialContent?.length || 0
-    });
-    
     if (!isInitialized.current) {
       isInitialized.current = true;
-      console.log('[SynchronizedEditor] Setting initial content:', initialContent?.substring(0, 100) + '...');
+      console.log('[SynchronizedEditor] Initializing');
       setContent(initialContent);
       // Update the initial version
       setDescriptionVersions(prev => [{
@@ -181,12 +170,6 @@ export function SynchronizedEditor({
 
   // Handle content changes from rich text editor
   const handleContentChange = (newContent: string) => {
-    console.log('[SynchronizedEditor] Manual editor content change:', {
-      oldContent: content?.substring(0, 100) + '...',
-      newContent: newContent?.substring(0, 100) + '...',
-      oldLength: content?.length || 0,
-      newLength: newContent?.length || 0
-    });
     setContent(newContent);
     setHasUnsavedChanges(true);
   };
