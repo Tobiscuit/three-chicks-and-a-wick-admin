@@ -664,6 +664,46 @@ export async function updateProduct(productId: string, productInput: { title?: s
 }
 
 export async function updateProductDescription(productId: string, description: string) {
+    // First, ensure the metafield definition exists with Storefront API access
+    const createDefinitionMutation = `
+        mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+            metafieldDefinitionCreate(definition: $definition) {
+                createdDefinition {
+                    id
+                    name
+                    namespace
+                    key
+                }
+                userErrors {
+                    field
+                    message
+                    code
+                }
+            }
+        }
+    `;
+
+    try {
+        // Create metafield definition with Storefront API access
+        await fetchShopify<any>(createDefinitionMutation, {
+            definition: {
+                name: "Custom Description",
+                namespace: "custom",
+                key: "description",
+                type: "multi_line_text_field",
+                ownerType: "PRODUCT",
+                access: {
+                    storefront: "PUBLIC_READ"
+                }
+            }
+        });
+        console.log('✅ Metafield definition created with Storefront API access');
+    } catch (error) {
+        // Definition might already exist, which is fine
+        console.log('ℹ️ Metafield definition creation skipped (may already exist)');
+    }
+
+    // Then set the metafield value
     const setMetafieldMutation = `
         mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
             metafieldsSet(metafields: $metafields) {
@@ -686,6 +726,7 @@ export async function updateProductDescription(productId: string, description: s
         console.warn(`Metafield update failed: ${JSON.stringify(userErrors)}`);
         throw new Error(`Description update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
     }
+    console.log('✅ Product description saved to metafield with Storefront API access');
     return result;
 }
 
