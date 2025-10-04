@@ -38,8 +38,8 @@ Return JSON:
       console.log('[Rewrite Flow] Starting description rewrite...');
       console.log('[Rewrite Flow] User prompt:', userPrompt);
       
-      const result = await model.generateContent([prompt]);
-      const response = await result.response;
+      const generateResult = await model.generateContent([prompt]);
+      const response = await generateResult.response;
       const text = response.text();
 
       console.log('[Rewrite Flow] Raw response text:', text);
