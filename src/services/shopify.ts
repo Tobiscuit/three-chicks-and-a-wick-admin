@@ -93,7 +93,9 @@ const GET_PRODUCT_BY_ID_QUERY = `
       tags
       totalInventory
       onlineStoreUrl
-      description: metafield(namespace: "custom", key: "description") {
+      description
+      descriptionHtml
+      customDescription: metafield(namespace: "custom", key: "description") {
         value
       }
       featuredImage {
@@ -138,7 +140,9 @@ const GET_PRODUCT_BY_ID_QUERY = `
 
 type GetProductByIdResponse = {
     product: {
-        description: { value: string } | null;
+        description: string;
+        descriptionHtml: string;
+        customDescription: { value: string } | null;
     } & Omit<ShopifyProduct, 'description'> | null;
 };
 
@@ -155,7 +159,9 @@ const GET_PRODUCTS_QUERY = `
           tags
           totalInventory
           onlineStoreUrl
-          description: metafield(namespace: "custom", key: "description") {
+          description
+          descriptionHtml
+          customDescription: metafield(namespace: "custom", key: "description") {
             value
           }
           featuredImage {
@@ -208,7 +214,9 @@ type GetProductsResponse = {
     products: {
         edges: Array<{
             node: {
-                description: { value: string } | null;
+                description: string;
+                descriptionHtml: string;
+                customDescription: { value: string } | null;
             } & Omit<ShopifyProduct, 'description'>;
         }>;
         pageInfo: {
@@ -295,10 +303,10 @@ export async function getProducts(first: number = 50, after?: string): Promise<S
     const response = await fetchShopify<GetProductsResponse>(GET_PRODUCTS_QUERY, { first, after });
     
     return response.products.edges.map(({ node }) => {
-        const { description: descriptionMetafield, ...restOfProduct } = node;
+        const { description, descriptionHtml, customDescription, ...restOfProduct } = node;
         return {
             ...restOfProduct,
-            description: descriptionMetafield?.value || "",
+            description: description || descriptionHtml || customDescription?.value || "",
         };
     });
 }
@@ -344,10 +352,10 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
     const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
     if (!response.product) return null;
 
-    const { description: descriptionMetafield, ...restOfProduct } = response.product;
+    const { description, descriptionHtml, customDescription, ...restOfProduct } = response.product;
     let product: ShopifyProduct = {
         ...restOfProduct,
-        description: descriptionMetafield?.value || "",
+        description: description || descriptionHtml || customDescription?.value || "",
     };
     
     // Step 2: Perform a more precise, real-time inventory check
@@ -509,7 +517,8 @@ export async function createProduct(productData: ProductData) {
   const productInput = {
     title: productData.title,
     tags: productData.tags,
-    status: productData.status
+    status: productData.status,
+    descriptionHtml: productData.description
   };
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
   const productId = createProductResult.productCreate.product?.id;
@@ -620,7 +629,7 @@ export async function createProduct(productData: ProductData) {
     });
   }
 
-  // Step 9: Set the description via metafield
+  // Step 9: Set the description via metafield for backward compatibility
   await updateProductDescription(productId, productData.description);
   
   // Step 10: Publish the product to the sales channel
