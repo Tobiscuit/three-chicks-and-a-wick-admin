@@ -106,22 +106,28 @@ export function SynchronizedEditor({
   }, []); // Empty dependency array - only run once on mount
 
   // Handle initialContent changes after mount (e.g., when AI data loads)
+  // Only update if editor is empty AND we haven't done any AI rewrites yet
   useEffect(() => {
-    if (isInitialized.current && initialContent && initialContent !== content && !hasUnsavedChanges) {
-      console.log('[SynchronizedEditor] Updating content from initialContent change');
-      setContent(initialContent);
-      // Update the initial version
-      setDescriptionVersions(prev => [{
-        id: 'initial',
-        description: initialContent,
-        userPrompt: 'Initial content',
-        reasoning: 'Initial product description',
-        changes: [],
-        timestamp: new Date()
-      }, ...prev.slice(1)]);
-      setCurrentVersionIndex(0);
+    if (isInitialized.current && initialContent && !hasUnsavedChanges && descriptionVersions.length <= 1) {
+      // Only update if current content is empty or very short (likely placeholder)
+      if (!content || content.length < 50) {
+        console.log('[SynchronizedEditor] Updating from initialContent (editor was empty, no AI rewrites yet)');
+        setContent(initialContent);
+        // Update the initial version
+        setDescriptionVersions(prev => [{
+          id: 'initial',
+          description: initialContent,
+          userPrompt: 'Initial content',
+          reasoning: 'Initial product description',
+          changes: [],
+          timestamp: new Date()
+        }, ...prev.slice(1)]);
+        setCurrentVersionIndex(0);
+      } else {
+        console.log('[SynchronizedEditor] Ignoring initialContent change (editor has content or AI rewrites done)');
+      }
     }
-  }, [initialContent, hasUnsavedChanges]); // Removed 'content' from dependencies
+  }, [initialContent, hasUnsavedChanges, content, descriptionVersions.length]);
 
   // Load description history on mount
   useEffect(() => {
