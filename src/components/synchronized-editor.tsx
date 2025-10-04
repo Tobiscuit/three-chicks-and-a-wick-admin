@@ -107,16 +107,8 @@ export function SynchronizedEditor({
 
   // Handle initialContent changes after mount (e.g., when AI data loads)
   useEffect(() => {
-    console.log('[SynchronizedEditor] InitialContent change effect:', {
-      isInitialized: isInitialized.current,
-      initialContent: initialContent?.substring(0, 100) + '...',
-      currentContent: content?.substring(0, 100) + '...',
-      hasUnsavedChanges,
-      willUpdate: isInitialized.current && initialContent && initialContent !== content && !hasUnsavedChanges
-    });
-    
     if (isInitialized.current && initialContent && initialContent !== content && !hasUnsavedChanges) {
-      console.log('[SynchronizedEditor] Updating content from initialContent change:', initialContent?.substring(0, 100) + '...');
+      console.log('[SynchronizedEditor] Updating content from initialContent change');
       setContent(initialContent);
       // Update the initial version
       setDescriptionVersions(prev => [{
@@ -129,7 +121,7 @@ export function SynchronizedEditor({
       }, ...prev.slice(1)]);
       setCurrentVersionIndex(0);
     }
-  }, [initialContent, content, hasUnsavedChanges]);
+  }, [initialContent, hasUnsavedChanges]); // Removed 'content' from dependencies
 
   // Load description history on mount
   useEffect(() => {
