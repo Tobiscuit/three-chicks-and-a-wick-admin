@@ -40,6 +40,8 @@ import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
 import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
 import { SynchronizedEditor } from "@/components/synchronized-editor";
+import { getUserSettings } from "@/services/user-settings";
+import { useAuth } from "@/components/auth/auth-provider";
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -83,11 +85,13 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images?.edges.map((e: any) => e.node.url) || []);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasFetchedAiData = useRef(false);
+  const [includeSourceImages, setIncludeSourceImages] = useState(false);
 
   const isEditMode = !!initialData;
   
@@ -153,10 +157,21 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             hasFetchedAiData.current = true;
             toast({ title: "🪄 Loading AI Content..." });
             
+            // Load user settings to check if source images should be included
+            let userSettings = null;
+            if (user?.uid) {
+                try {
+                    userSettings = await getUserSettings(user.uid);
+                    setIncludeSourceImages(userSettings.imageStudioSettings.includeSourceImages);
+                } catch (error) {
+                    console.error('Error loading user settings:', error);
+                }
+            }
+            
             const res = await resolveAiGeneratedProductAction(token);
 
             if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, quantity, publicImageUrl } = res.data;
+                const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImages } = res.data;
                 
                 console.log('[ProductForm] AI Data received:', {
                   title,
@@ -172,6 +187,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 setValue('inventory', quantity, { shouldDirty: true });
                 setValue('status', 'ACTIVE', { shouldDirty: true });
 
+                // Upload the composed image
                 const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
                 const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
@@ -180,10 +196,30 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 reader.onloadend = async () => {
                   const dataUrl = reader.result as string;
                   const finalPublicUrl = await uploadImageAction(dataUrl);
+                  
+                  let imageUrls = [];
                   if (finalPublicUrl) {
-                    setImagePreviews(prev => [finalPublicUrl, ...prev]);
-                    // Also set the form field to trigger dirty state
-                    setValue('images', [finalPublicUrl], { shouldDirty: true });
+                    imageUrls.push(finalPublicUrl);
+                  }
+                  
+                  // Add source images if setting is enabled and they exist
+                  if (includeSourceImages && sourceImages && sourceImages.length > 0) {
+                    console.log('[ProductForm] Including source images:', sourceImages.length);
+                    for (const sourceImageDataUrl of sourceImages) {
+                      try {
+                        const sourcePublicUrl = await uploadImageAction(sourceImageDataUrl);
+                        if (sourcePublicUrl) {
+                          imageUrls.push(sourcePublicUrl);
+                        }
+                      } catch (error) {
+                        console.error('Error uploading source image:', error);
+                      }
+                    }
+                  }
+                  
+                  if (imageUrls.length > 0) {
+                    setImagePreviews(prev => [...imageUrls, ...prev]);
+                    setValue('images', imageUrls, { shouldDirty: true });
                   }
                 }
                 reader.readAsDataURL(file);
