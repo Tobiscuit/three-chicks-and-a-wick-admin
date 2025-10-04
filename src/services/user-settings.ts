@@ -48,9 +48,11 @@ export async function updateUserSettings(userId: string, settings: Partial<UserS
 export async function updateImageStudioSetting(userId: string, includeSourceImages: boolean): Promise<void> {
   try {
     const settingsRef = doc(db, 'userSettings', userId);
-    await updateDoc(settingsRef, {
-      'imageStudioSettings.includeSourceImages': includeSourceImages,
-    });
+    await setDoc(settingsRef, {
+      imageStudioSettings: {
+        includeSourceImages,
+      },
+    }, { merge: true });
   } catch (error) {
     console.error('Error updating image studio setting:', error);
     throw error;
