@@ -442,6 +442,7 @@ You transform simple product details into an evocative story that sparks joy and
     * **The Scent:** A pure, direct description of the fragrance notes.
     * **The Vibe:** The feeling, mood, or experience the scent creates.
     * **The Vessel:** A brief, elegant description of the physical candle holder.
+6.  **Principle of Product Focus:** When analyzing the image, focus exclusively on the product itself. The photographic background, lighting, and studio setting are for aesthetic purposes only and **must not** influence the scent description. Base your writing on the candle, its vessel, and any visible ingredients (e.g., vanilla beans, flowers).
 
 **Your Task:**
 Transform raw data into a partial Shopify product listing, focusing only on the creative text fields. You must generate a single, valid JSON object that strictly adheres to the provided output structure. The "tags" field is mandatory.`;
@@ -456,7 +457,7 @@ Transform raw data into a partial Shopify product listing, focusing only on the 
         
         const result = await model.generateContent([
             systemPrompt,
-            "**Output Structure:**\n```json\n{\n  \"title\": \"A creative and joyful title (5-7 words max)\",\n  \"body_html\": \"A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).\",\n  \"tags\": \"A string of 5-7 relevant, SEO-friendly tags, separated by commas.\",\n  \"sku\": \"Generate a simple, unique SKU based on the title (e.g., AHC-01).\",\n  \"image_alt\": \"A descriptive and accessible alt-text for the product image.\"\n}\n```",
+            "**Output Structure:**\n```json\n{\n  \"title\": \"A creative and joyful title (5-7 words max)\",\n  \"body_html\": \"A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).\",\n  \"tags\": \"A string of up to 5 relevant, SEO-friendly tags, separated by commas.\",\n  \"sku\": \"Generate a simple, unique SKU based on the title (e.g., AHC-01).\",\n  \"image_alt\": \"A descriptive and accessible alt-text for the product image.\"\n}\n```",
             imagePart,
             userMessage
         ]);
