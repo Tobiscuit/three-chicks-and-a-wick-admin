@@ -30,7 +30,8 @@ PRODUCT TO TAG:
 
 BRAND GUIDELINES:
 - Focus on scent families, materials, occasions, moods, seasons, and brand values
-- Tags should be SEO-friendly (lowercase, hyphenated, descriptive)
+- Tags should be capitalized (e.g., "Spa Night", "Luxury Candle", "Vanilla Bean")
+- Use descriptive, brand-aligned terminology
 - Avoid generic terms like "candle" or "wax"
 - Be specific and evocative
 - Consider the target customer and use cases
@@ -81,9 +82,9 @@ RESPONSE FORMAT (JSON only, no other text):
       
       // Fallback: create basic tags
       result = {
-        selected_existing: ['handmade', 'premium'],
-        new_tags: ['luxury-candle', 'artisanal', 'premium-wax'],
-        final_tags: ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'],
+        selected_existing: ['Handmade', 'Premium'],
+        new_tags: ['Luxury Candle', 'Artisanal', 'Premium Wax'],
+        final_tags: ['Handmade', 'Premium', 'Luxury Candle', 'Artisanal', 'Premium Wax'],
         reasoning: 'Fallback tags due to parsing error'
       };
     }
@@ -98,7 +99,7 @@ RESPONSE FORMAT (JSON only, no other text):
       }
       // If we have less than 5, pad with fallback tags
       else if (!result.final_tags || result.final_tags.length < 5) {
-        const fallbackTags = ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'];
+        const fallbackTags = ['Handmade', 'Premium', 'Luxury Candle', 'Artisanal', 'Premium Wax'];
         const existing = result.final_tags || [];
         const needed = 5 - existing.length;
         result.final_tags = [...existing, ...fallbackTags.slice(0, needed)];
@@ -111,7 +112,7 @@ RESPONSE FORMAT (JSON only, no other text):
     // Final safety check - if still not 5, force it
     if (result.final_tags.length !== 5) {
       console.error('[AI Tag Generator] Still invalid after fixes, forcing to 5 tags');
-      result.final_tags = ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'];
+      result.final_tags = ['Handmade', 'Premium', 'Luxury Candle', 'Artisanal', 'Premium Wax'];
     }
 
     // Save new tags to the pool
@@ -133,9 +134,9 @@ RESPONSE FORMAT (JSON only, no other text):
     
     // Fallback result
     return {
-      selected_existing: ['handmade', 'premium'],
-      new_tags: ['luxury-candle', 'artisanal', 'premium-wax'],
-      final_tags: ['handmade', 'premium', 'luxury-candle', 'artisanal', 'premium-wax'],
+      selected_existing: ['Handmade', 'Premium'],
+      new_tags: ['Luxury Candle', 'Artisanal', 'Premium Wax'],
+      final_tags: ['Handmade', 'Premium', 'Luxury Candle', 'Artisanal', 'Premium Wax'],
       reasoning: 'Fallback tags due to error'
     };
   }
