@@ -27,12 +27,12 @@ export interface SmartTagResult {
 // Initialize tag pool with some starter tags
 const DEFAULT_TAG_POOL: TagPool = {
   existing_tags: {
-    scent_families: ['floral', 'woody', 'citrus', 'spicy', 'fresh', 'warm', 'earthy', 'vanilla', 'lavender', 'sandalwood'],
-    materials: ['soy-wax', 'coconut-wax', 'wooden-wick', 'cotton-wick', 'premium-wax', 'hand-poured'],
-    occasions: ['gift', 'self-care', 'meditation', 'romance', 'celebration', 'relaxation', 'spa-night', 'date-night'],
-    moods: ['calming', 'energizing', 'cozy', 'luxurious', 'minimalist', 'romantic', 'zen', 'uplifting'],
-    seasons: ['spring', 'summer', 'fall', 'winter', 'year-round', 'holiday'],
-    brand_values: ['handmade', 'premium', 'sustainable', 'artisanal', 'luxury', 'eco-friendly'],
+    scent_families: ['Floral', 'Woody', 'Citrus', 'Spicy', 'Fresh', 'Warm', 'Earthy', 'Vanilla', 'Lavender', 'Sandalwood'],
+    materials: ['Soy Wax', 'Coconut Wax', 'Wooden Wick', 'Cotton Wick', 'Premium Wax', 'Hand Poured'],
+    occasions: ['Gift', 'Self Care', 'Meditation', 'Romance', 'Celebration', 'Relaxation', 'Spa Night', 'Date Night'],
+    moods: ['Calming', 'Energizing', 'Cozy', 'Luxurious', 'Minimalist', 'Romantic', 'Zen', 'Uplifting'],
+    seasons: ['Spring', 'Summer', 'Fall', 'Winter', 'Year Round', 'Holiday'],
+    brand_values: ['Handmade', 'Premium', 'Sustainable', 'Artisanal', 'Luxury', 'Eco Friendly'],
     auto_generated: []
   },
   usage_count: {},
@@ -76,11 +76,11 @@ export async function saveNewTags(newTags: string[], category: keyof TagPool['ex
     }
     
     newTags.forEach(tag => {
-      const normalizedTag = tag.toLowerCase().trim();
+      const normalizedTag = tag.trim(); // Keep capitalization
       
-      // Check if tag already exists in any category
+      // Check if tag already exists in any category (case-insensitive check)
       const existsInAnyCategory = Object.values(tagPool.existing_tags).some(categoryTags => 
-        categoryTags.includes(normalizedTag)
+        categoryTags.some(existingTag => existingTag.toLowerCase() === normalizedTag.toLowerCase())
       );
       
       if (!existsInAnyCategory) {
@@ -104,7 +104,7 @@ export async function incrementTagUsage(tags: string[]): Promise<void> {
     const tagPool = await getTagPool();
     
     tags.forEach(tag => {
-      const normalizedTag = tag.toLowerCase().trim();
+      const normalizedTag = tag.trim(); // Keep capitalization
       tagPool.usage_count[normalizedTag] = (tagPool.usage_count[normalizedTag] || 0) + 1;
     });
     
