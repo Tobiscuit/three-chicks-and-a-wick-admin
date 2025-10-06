@@ -11,7 +11,7 @@ import { auth } from '@/lib/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Palette, Store, Settings as SettingsIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
-import { getUserSettings, updateImageStudioSetting } from '@/services/user-settings';
+import { getUserSettings, updateImageStudioSetting, updateCustomCandleSetting } from '@/services/user-settings';
 import { useToast } from '@/hooks/use-toast';
 // Removed env-config import for client-side component
 
@@ -21,6 +21,7 @@ export default function SettingsPage() {
     const shopifyStoreUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'Not configured';
     
     const [includeSourceImages, setIncludeSourceImages] = useState(false);
+    const [enableCustomCandleAI, setEnableCustomCandleAI] = useState(false);
     const [settingsLoading, setSettingsLoading] = useState(true);
 
     const handleSignOut = () => {
@@ -39,6 +40,7 @@ export default function SettingsPage() {
                 setSettingsLoading(true);
                 const settings = await getUserSettings(user.uid);
                 setIncludeSourceImages(settings.imageStudioSettings.includeSourceImages);
+                setEnableCustomCandleAI(settings.customCandleSettings.enableCustomCandleAI);
             } catch (error) {
                 console.error('Error loading user settings:', error);
                 toast({
@@ -71,6 +73,30 @@ export default function SettingsPage() {
             console.error('Error updating setting:', error);
             // Revert the toggle on error
             setIncludeSourceImages(!checked);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to update setting. Please try again.",
+            });
+        }
+    };
+
+    const handleCustomCandleToggle = async (checked: boolean) => {
+        if (!user?.uid) return;
+        
+        try {
+            setEnableCustomCandleAI(checked);
+            await updateCustomCandleSetting(user.uid, checked);
+            toast({
+                title: "Setting Updated",
+                description: checked 
+                    ? "Custom Candle AI feature is now enabled. Orders will be processed through the AI pipeline."
+                    : "Custom Candle AI feature is now disabled. Orders will not be processed automatically.",
+            });
+        } catch (error) {
+            console.error('Error updating setting:', error);
+            // Revert the toggle on error
+            setEnableCustomCandleAI(!checked);
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -120,6 +146,26 @@ export default function SettingsPage() {
                         <Switch 
                             checked={includeSourceImages}
                             onCheckedChange={handleSourceImagesToggle}
+                            disabled={settingsLoading}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><SettingsIcon/> Custom Candle AI Settings</CardTitle>
+                        <CardDescription>Configure the AI-powered custom candle ordering system.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">Enable Custom Candle AI Processing</p>
+                            <p className="text-xs text-muted-foreground">
+                                When enabled, custom candle orders will be processed through the AI pipeline with cybersecurity validation and human review.
+                            </p>
+                        </div>
+                        <Switch 
+                            checked={enableCustomCandleAI}
+                            onCheckedChange={handleCustomCandleToggle}
                             disabled={settingsLoading}
                         />
                     </CardContent>
