@@ -4,6 +4,7 @@ import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MagicRequestOverview } from '@/components/magic-request/overview';
+import { MagicRequestPricing } from '@/components/magic-request/pricing';
 import { MagicRequestVariants } from '@/components/magic-request/variants';
 import { MagicRequestReviews } from '@/components/magic-request/reviews';
 import { MagicRequestLogs } from '@/components/magic-request/logs';
@@ -26,6 +27,7 @@ export default function MagicRequestPage() {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="variants">Variants</TabsTrigger>
             <TabsTrigger value="reviews">Pending Reviews</TabsTrigger>
             <TabsTrigger value="logs">Security Logs</TabsTrigger>
@@ -33,6 +35,10 @@ export default function MagicRequestPage() {
 
           <TabsContent value="overview">
             <MagicRequestOverview />
+          </TabsContent>
+
+          <TabsContent value="pricing">
+            <MagicRequestPricing />
           </TabsContent>
 
           <TabsContent value="variants">
