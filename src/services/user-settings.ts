@@ -5,11 +5,17 @@ export interface UserSettings {
   imageStudioSettings: {
     includeSourceImages: boolean;
   };
+  customCandleSettings: {
+    enableCustomCandleAI: boolean;
+  };
 }
 
 const defaultSettings: UserSettings = {
   imageStudioSettings: {
     includeSourceImages: false,
+  },
+  customCandleSettings: {
+    enableCustomCandleAI: false,
   },
 };
 
@@ -23,6 +29,9 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       const result = {
         imageStudioSettings: {
           includeSourceImages: data.imageStudioSettings?.includeSourceImages ?? defaultSettings.imageStudioSettings.includeSourceImages,
+        },
+        customCandleSettings: {
+          enableCustomCandleAI: data.customCandleSettings?.enableCustomCandleAI ?? defaultSettings.customCandleSettings.enableCustomCandleAI,
         },
       };
       return result;
@@ -56,6 +65,21 @@ export async function updateImageStudioSetting(userId: string, includeSourceImag
     await setDoc(settingsRef, data, { merge: true });
   } catch (error) {
     console.error('[UserSettings] Error updating image studio setting:', error);
+    throw error;
+  }
+}
+
+export async function updateCustomCandleSetting(userId: string, enableCustomCandleAI: boolean): Promise<void> {
+  try {
+    const settingsRef = doc(db, 'userSettings', userId);
+    const data = {
+      customCandleSettings: {
+        enableCustomCandleAI,
+      },
+    };
+    await setDoc(settingsRef, data, { merge: true });
+  } catch (error) {
+    console.error('Error updating custom candle setting:', error);
     throw error;
   }
 }
