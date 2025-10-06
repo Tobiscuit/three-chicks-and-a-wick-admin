@@ -179,7 +179,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 console.log('✅ [ProductForm] body_html contains HTML tags:', body_html?.includes('<p>') || body_html?.includes('<ul>') || body_html?.includes('<strong>'));
                 
                 setValue('title', title, { shouldDirty: true });
-                setValue('description', formatHtmlForEditing(body_html), { shouldDirty: true });
+                setValue('description', body_html, { shouldDirty: true });
                 setValue('price', String(price), { shouldDirty: true });
                 setValue('sku', sku, { shouldDirty: true });
                 setValue('tags', tags, { shouldDirty: true });
