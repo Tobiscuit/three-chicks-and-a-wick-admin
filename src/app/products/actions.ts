@@ -160,7 +160,32 @@ export async function deleteProductAction(productId: string) {
             console.error('Shopify delete errors:', errorMessage);
             return { success: false, error: errorMessage };
         }
-        
+        // Also archive and delete description history (best-effort)
+        try {
+            console.log('[SERVER] Archiving description history for product before delete:', productId);
+            const versions = await loadDescriptionHistory(productId);
+            if (versions && versions.length > 0) {
+                const expireDays = 30; // TTL window in days (adjustable)
+                const expireAt = new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000);
+                await adminDb.collection('recycle_bin').add({
+                    type: 'description_history',
+                    productId,
+                    versions,
+                    deletedAt: new Date(),
+                    expireAt, // Configure TTL on this field in Firestore
+                });
+                console.log('[SERVER] Description history archived to recycle_bin with expireAt:', expireAt.toISOString());
+            } else {
+                console.log('[SERVER] No description history to archive');
+            }
+
+            console.log('[SERVER] Deleting description history for product:', productId);
+            await deleteDescriptionHistory(productId);
+            console.log('[SERVER] Description history deleted');
+        } catch (historyError) {
+            console.warn('[SERVER] Failed to delete description history (non-fatal):', historyError);
+        }
+
         revalidatePath('/products');
         return { success: true };
     } catch (error) {
