@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { DollarSign, Save, RotateCcw, Plus, Trash2, Calculator } from 'lucide-react';
+import { DollarSign, Save, RotateCcw, Plus, Trash2, Calculator, RefreshCw } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { bulkUpdateMagicRequestPricing } from '@/app/magic-request/actions';
 
 interface PricingConfig {
   waxPricing: {
@@ -41,6 +42,7 @@ export function MagicRequestPricing() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [config, setConfig] = useState<PricingConfig | null>(null);
   const [originalConfig, setOriginalConfig] = useState<PricingConfig | null>(null);
@@ -110,7 +112,7 @@ export function MagicRequestPricing() {
       
       toast({
         title: 'Configuration Saved',
-        description: 'Pricing configuration has been updated successfully',
+        description: 'Pricing configuration has been updated. Click "Update Shopify Variants" to apply changes.',
       });
     } catch (error) {
       console.error('Error saving config:', error);
@@ -121,6 +123,43 @@ export function MagicRequestPricing() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUpdateShopifyVariants = async () => {
+    if (!config) return;
+
+    try {
+      setUpdating(true);
+      
+      toast({
+        title: 'Updating Variants',
+        description: 'Recalculating and updating Shopify variant prices...',
+      });
+
+      const result = await bulkUpdateMagicRequestPricing({
+        waxPricing: config.waxPricing,
+        wickPricing: config.wickPricing,
+        jarPricing: config.jarPricing,
+      });
+
+      if (result.success) {
+        toast({
+          title: 'Variants Updated',
+          description: `Successfully updated ${result.variantsUpdated} variants in ${result.apiCalls} API calls`,
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error updating variants:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Failed to update Shopify variants',
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -235,13 +274,17 @@ export function MagicRequestPricing() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleReset} disabled={saving}>
+              <Button variant="outline" onClick={handleReset} disabled={saving || updating}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Discard
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving || updating}>
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button onClick={handleUpdateShopifyVariants} disabled={updating || hasChanges} variant="secondary">
+                <RefreshCw className={`h-4 w-4 mr-2 ${updating ? 'animate-spin' : ''}`} />
+                {updating ? 'Updating Variants...' : 'Update Shopify Variants'}
               </Button>
             </div>
           </div>
