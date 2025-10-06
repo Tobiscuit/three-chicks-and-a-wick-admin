@@ -159,10 +159,10 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const finalImageResponse = await ai.generate({
         model: modelName,
         prompt: prompt,
-        config: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      });
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
+    });
 
       // Extract media from the nested response structure
       // The media might be at content[0] or content[1], so we need to find it
