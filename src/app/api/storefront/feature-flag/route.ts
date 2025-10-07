@@ -11,7 +11,7 @@ import { verifyAdminAuth, getAdminSecret, getAppSyncConfig } from '@/lib/server-
 export async function POST(request: NextRequest) {
   try {
     // 1. Verify user is authenticated and authorized
-    const authResult = await verifyAdminAuth();
+    const authResult = await verifyAdminAuth(request);
     
     if (!authResult.authorized) {
       return NextResponse.json(
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // 1. Verify user is authenticated and authorized
-    const authResult = await verifyAdminAuth();
+    const authResult = await verifyAdminAuth(request);
     
     if (!authResult.authorized) {
       return NextResponse.json(

@@ -5,7 +5,31 @@
  * which then proxy requests to the Storefront's AppSync API.
  * 
  * The admin secret is NEVER exposed to the browser - it stays server-side only.
+ * 
+ * Uses Firebase ID tokens (JWT) for authentication - OAuth 2.0 Bearer Token pattern.
  */
+
+import { auth } from '@/lib/firebase';
+
+/**
+ * Get Firebase ID token for authenticated requests
+ */
+async function getIdToken(): Promise<string | null> {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('[AppSync Client] No authenticated user');
+      return null;
+    }
+    
+    // Get the ID token (refreshes automatically if expired)
+    const idToken = await user.getIdToken();
+    return idToken;
+  } catch (error) {
+    console.error('[AppSync Client] Error getting ID token:', error);
+    return null;
+  }
+}
 
 // Types
 export interface MagicRequestOption {
@@ -62,7 +86,17 @@ const getDefaultConfig = (): MagicRequestConfig => ({
 
 export async function getFeatureFlag(key: string): Promise<FeatureFlag | null> {
   try {
-    const response = await fetch(`/api/storefront/feature-flag?key=${encodeURIComponent(key)}`);
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.error('[getFeatureFlag] No ID token available');
+      return null;
+    }
+
+    const response = await fetch(`/api/storefront/feature-flag?key=${encodeURIComponent(key)}`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+      },
+    });
     
     if (!response.ok) {
       console.error('Error fetching feature flag:', response.statusText);
@@ -95,10 +129,16 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
 }
 
 export async function setFeatureFlag(key: string, value: boolean): Promise<FeatureFlag> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
   const response = await fetch('/api/storefront/feature-flag', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
     },
     body: JSON.stringify({ key, value }),
   });
@@ -124,7 +164,17 @@ export async function setFeatureFlag(key: string, value: boolean): Promise<Featu
 
 export async function getMagicRequestConfig(): Promise<MagicRequestConfig> {
   try {
-    const response = await fetch('/api/storefront/magic-request-config');
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.warn('[getMagicRequestConfig] No ID token available, using default config');
+      return getDefaultConfig();
+    }
+
+    const response = await fetch('/api/storefront/magic-request-config', {
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+      },
+    });
     
     if (!response.ok) {
       console.warn('Error fetching Magic Request config, using default');
@@ -140,10 +190,16 @@ export async function getMagicRequestConfig(): Promise<MagicRequestConfig> {
 }
 
 export async function updateMagicRequestConfig(config: Omit<MagicRequestConfig, 'updatedAt'>): Promise<MagicRequestConfig> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
   const response = await fetch('/api/storefront/magic-request-config', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
     },
     body: JSON.stringify(config),
   });
