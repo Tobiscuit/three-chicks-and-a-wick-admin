@@ -9,47 +9,62 @@ import { cookies } from 'next/headers';
 import { adminAuth } from '@/lib/firebase-admin';
 
 /**
- * Verify Firebase auth token and check email authorization
+ * Verify Firebase ID token and check email authorization
  * This should only be called from Server Actions or API Routes
+ * 
+ * Uses ID token verification (OAuth 2.0 Bearer Token pattern)
+ * - Stateless authentication
+ * - Short-lived tokens (1 hour)
+ * - Industry standard approach
  */
-export async function verifyAdminAuth(): Promise<{
+export async function verifyAdminAuth(request?: Request): Promise<{
   authorized: boolean;
   email?: string;
   uid?: string;
   error?: string;
 }> {
   try {
-    // Get the session cookie
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('__session')?.value;
+    // Get ID token from Authorization header
+    let idToken: string | undefined;
 
-    if (!sessionCookie) {
-      return { authorized: false, error: 'No session cookie found' };
+    if (request) {
+      // From API route: Extract from Authorization header
+      const authHeader = request.headers.get('Authorization');
+      idToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : undefined;
+    } else {
+      // From Server Action: Try to get from cookies (Firebase might set it)
+      const cookieStore = await cookies();
+      idToken = cookieStore.get('__session')?.value;
     }
 
-    // Verify the session cookie using Firebase Admin SDK
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    if (!idToken) {
+      return { authorized: false, error: 'No authentication token found' };
+    }
+
+    // Verify the ID token using Firebase Admin SDK
+    // This validates the JWT signature, expiration, and issuer
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     
-    if (!decodedClaims || !decodedClaims.email) {
-      return { authorized: false, error: 'Invalid session' };
+    if (!decodedToken || !decodedToken.email) {
+      return { authorized: false, error: 'Invalid token' };
     }
 
     // Check email whitelist
     const authorizedEmails = process.env.NEXT_PUBLIC_AUTHORIZED_EMAILS?.split(',').map(e => e.trim()) || [];
     
-    if (!authorizedEmails.includes(decodedClaims.email)) {
+    if (!authorizedEmails.includes(decodedToken.email)) {
       return { 
         authorized: false, 
         error: 'Email not authorized',
-        email: decodedClaims.email,
-        uid: decodedClaims.uid
+        email: decodedToken.email,
+        uid: decodedToken.uid
       };
     }
 
     return {
       authorized: true,
-      email: decodedClaims.email,
-      uid: decodedClaims.uid
+      email: decodedToken.email,
+      uid: decodedToken.uid
     };
   } catch (error) {
     console.error('[Server Auth] Verification error:', error);
