@@ -275,21 +275,22 @@ export function ProductsTable({ products }: ProductsTableProps) {
         </CardHeader>
         <CardContent>
           {view === 'list' ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden w-[100px] sm:table-cell">
-                    Image
-                  </TableHead>
-                  <TableHead className="min-w-[200px]">Name</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Price</TableHead>
-                  <TableHead className="w-[60px]">
-                    #
-                  </TableHead>
-                  <TableHead className="text-right w-[60px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="hidden w-[100px] sm:table-cell">
+                      Image
+                    </TableHead>
+                    <TableHead className="min-w-[200px]">Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Price</TableHead>
+                    <TableHead className="w-[60px]">
+                      #
+                    </TableHead>
+                    <TableHead className="text-right w-[60px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
                   <TableRow 
@@ -305,9 +306,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex flex-col gap-1">
-                        <div className="truncate max-w-[200px]">{product.title}</div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span className="hidden sm:inline">
+                        <div className="truncate max-w-[200px] sm:max-w-none">{product.title}</div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden">
+                          <span>
                             {new Intl.NumberFormat('en-US', { 
                               style: 'currency', 
                               currency: product.priceRange.minVariantPrice.currencyCode 
@@ -381,8 +382,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
+              </TableBody>
+            </Table>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map(product => (
