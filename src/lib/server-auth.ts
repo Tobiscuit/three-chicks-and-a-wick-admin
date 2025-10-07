@@ -6,7 +6,7 @@
  */
 
 import { cookies } from 'next/headers';
-import { auth } from '@/lib/firebase-admin';
+import { adminAuth } from '@/lib/firebase-admin';
 
 /**
  * Verify Firebase auth token and check email authorization
@@ -28,7 +28,7 @@ export async function verifyAdminAuth(): Promise<{
     }
 
     // Verify the session cookie using Firebase Admin SDK
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
     
     if (!decodedClaims || !decodedClaims.email) {
       return { authorized: false, error: 'Invalid session' };
