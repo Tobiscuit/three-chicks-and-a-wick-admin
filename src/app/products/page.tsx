@@ -69,9 +69,8 @@ async function ProductsData() {
 export default function ProductsPage() {
     return (
         <AuthWrapper>
-            <div className="space-y-4">
+            <div className="space-y-4 px-4 sm:px-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <h1 className="text-2xl font-semibold">Products</h1>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <DiagnosticButton />
                         <Button asChild className="w-full sm:w-auto">
