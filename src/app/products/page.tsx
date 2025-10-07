@@ -71,7 +71,7 @@ export default function ProductsPage() {
         <AuthWrapper>
             <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <h1 className="text-2xl font-semibold hidden sm:block">Products</h1>
+                    <h1 className="text-2xl font-semibold">Products</h1>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <DiagnosticButton />
                         <Button asChild className="w-full sm:w-auto">
