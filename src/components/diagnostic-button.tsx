@@ -68,7 +68,7 @@ Please copy this error message and share it for debugging.`;
         variant="outline"
         size="sm"
         onClick={() => runListChannelsCheck()}
-        className="text-xs"
+        className="text-xs hidden sm:flex"
       >
         <Bug className="mr-2 h-3 w-3" />
         Log Sales Channels
@@ -79,7 +79,7 @@ Please copy this error message and share it for debugging.`;
           size="sm"
           onClick={handleExposeMetafield}
           disabled={isExposing}
-          className="text-xs"
+          className="text-xs hidden sm:flex"
         >
           <Eye className="mr-2 h-3 w-3" />
           {isExposing ? "Exposing..." : "Expose Metafield"}
