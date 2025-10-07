@@ -251,7 +251,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -281,20 +281,20 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   <TableHead className="hidden w-[100px] sm:table-cell">
                     Image
                   </TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead className="min-w-[200px]">Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Price</TableHead>
-                  <TableHead>
+                  <TableHead className="w-[60px]">
                     #
                   </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right w-[60px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
                   <TableRow 
                     key={product.id} 
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleRowClick(product.id)}
                   >
                     <TableCell className="hidden sm:table-cell">
@@ -303,7 +303,23 @@ export function ProductsTable({ products }: ProductsTableProps) {
                         fallbackImageUrl={product.featuredImage?.url}
                       />
                     </TableCell>
-                    <TableCell className="font-medium max-w-[150px] truncate">{product.title}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col gap-1">
+                        <div className="truncate max-w-[200px]">{product.title}</div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="hidden sm:inline">
+                            {new Intl.NumberFormat('en-US', { 
+                              style: 'currency', 
+                              currency: product.priceRange.minVariantPrice.currencyCode 
+                            }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
+                          </span>
+                          <StatusCell
+                            product={product}
+                            inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
+                          />
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <StatusCell
                         product={product}
@@ -326,7 +342,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       <SecureDeleteDialog product={product} onDelete={handleDelete}>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                                   <MoreVertical className="h-4 w-4" />
                                   <span className="sr-only">More options</span>
                               </Button>
@@ -368,7 +384,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
           </TableBody>
         </Table>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map(product => (
                 <ProductGridItem 
                   key={product.id}
@@ -393,8 +409,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
           onClose={() => setQuickEditProduct(null)}
         />
       )}
-      <Link href="/products/new" className="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-50">
-          <PlusCircle className="h-6 w-6" />
+      <Link href="/products/new" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-primary text-primary-foreground rounded-full p-3 sm:p-4 shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-50">
+          <PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="sr-only">Add Product</span>
       </Link>
     </>
