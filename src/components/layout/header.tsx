@@ -27,11 +27,10 @@ export function Header() {
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <SidebarTrigger className="md:hidden" />
       <div className="flex w-full items-center justify-between">
-        <h1 className="text-xl font-semibold md:text-2xl">{title}</h1>
-        <Button variant="outline" size="icon" className="rounded-full">
-            <User className="h-5 w-5" />
-            <span className="sr-only">Toggle user menu</span>
-        </Button>
+        <h1 className="text-xl font-semibold md:text-2xl hidden sm:block">{title}</h1>
+        <div className="hidden">
+          {/* Profile icon removed - user info is already in sidebar */}
+        </div>
       </div>
     </header>
   )

@@ -282,13 +282,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     <TableHead className="hidden w-[100px] sm:table-cell">
                       Image
                     </TableHead>
-                    <TableHead className="min-w-[200px]">Name</TableHead>
+                    <TableHead className="min-w-[150px] sm:min-w-[200px]">Name</TableHead>
                     <TableHead className="hidden sm:table-cell">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Price</TableHead>
-                    <TableHead className="w-[60px]">
+                    <TableHead className="w-[50px]">
                       #
                     </TableHead>
-                    <TableHead className="text-right w-[60px]">Actions</TableHead>
+                    <TableHead className="text-right w-[50px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
               <TableBody>
