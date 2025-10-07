@@ -49,8 +49,8 @@ export async function verifyAdminAuth(request?: Request): Promise<{
       return { authorized: false, error: 'Invalid token' };
     }
 
-    // Check email whitelist
-    const authorizedEmails = process.env.NEXT_PUBLIC_AUTHORIZED_EMAILS?.split(',').map(e => e.trim()) || [];
+    // Check email whitelist (server-side only - NOT exposed to client)
+    const authorizedEmails = process.env.AUTHORIZED_EMAILS?.split(',').map(e => e.trim()) || [];
     
     if (!authorizedEmails.includes(decodedToken.email)) {
       return { 
