@@ -82,7 +82,7 @@ export function MagicRequestVariants() {
     const newConfig = { ...config };
     const options = [...(newConfig[category] as MagicRequestOption[])];
     options[index] = { ...options[index], [field]: value };
-    newConfig[category] = options;
+    (newConfig[category] as MagicRequestOption[]) = options;
 
     setConfig(newConfig);
     setHasChanges(true);
@@ -102,7 +102,7 @@ export function MagicRequestVariants() {
       order: maxOrder + 1,
     });
 
-    newConfig[category] = options;
+    (newConfig[category] as MagicRequestOption[]) = options;
     setConfig(newConfig);
     setHasChanges(true);
   };
@@ -113,7 +113,7 @@ export function MagicRequestVariants() {
     const newConfig = { ...config };
     const options = [...(newConfig[category] as MagicRequestOption[])];
     options.splice(index, 1);
-    newConfig[category] = options;
+    (newConfig[category] as MagicRequestOption[]) = options;
 
     setConfig(newConfig);
     setHasChanges(true);

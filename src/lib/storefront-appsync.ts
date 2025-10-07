@@ -3,31 +3,47 @@
  * 
  * This module allows the admin panel to communicate with the storefront's
  * AppSync GraphQL API to manage feature flags and Magic Request configuration.
+ * 
+ * Uses AWS Amplify's modern generateClient approach for GraphQL operations.
  */
 
-import { ApolloClient, InMemoryCache, HttpLink, gql } from '@apollo/client';
+import { Amplify } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/api';
 
-// Apollo Client for Storefront AppSync
-const createApolloClient = () => {
+// Configure Amplify for AppSync
+const configureAmplify = () => {
   const appsyncUrl = process.env.NEXT_PUBLIC_APPSYNC_URL;
   const appsyncApiKey = process.env.NEXT_PUBLIC_APPSYNC_API_KEY;
+  const appsyncRegion = process.env.NEXT_PUBLIC_APPSYNC_REGION || 'us-east-1';
 
   if (!appsyncUrl || !appsyncApiKey) {
-    throw new Error('Missing AppSync configuration. Please set NEXT_PUBLIC_APPSYNC_URL and NEXT_PUBLIC_APPSYNC_API_KEY');
+    console.warn('Missing AppSync configuration. AppSync integration will not be available.');
+    return false;
   }
 
-  return new ApolloClient({
-    link: new HttpLink({
-      uri: appsyncUrl,
-      headers: {
-        'x-api-key': appsyncApiKey,
+  try {
+    Amplify.configure({
+      API: {
+        GraphQL: {
+          endpoint: appsyncUrl,
+          region: appsyncRegion,
+          defaultAuthMode: 'apiKey',
+          apiKey: appsyncApiKey,
+        },
       },
-    }),
-    cache: new InMemoryCache(),
-  });
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to configure Amplify:', error);
+    return false;
+  }
 };
 
-const apolloClient = createApolloClient();
+// Initialize Amplify
+const isConfigured = configureAmplify();
+
+// Create Amplify GraphQL client
+const client = isConfigured ? generateClient() : null;
 
 // Admin Secret for authorization
 const getAdminSecret = () => {
@@ -62,7 +78,7 @@ export interface FeatureFlag {
 }
 
 // GraphQL Queries and Mutations
-const GET_FEATURE_FLAG = gql`
+const getFeatureFlagQuery = `
   query GetFeatureFlag($key: String!) {
     getFeatureFlag(key: $key) {
       key
@@ -73,7 +89,7 @@ const GET_FEATURE_FLAG = gql`
   }
 `;
 
-const GET_FEATURE_FLAGS = gql`
+const getFeatureFlagsQuery = `
   query GetFeatureFlags {
     getFeatureFlags {
       key
@@ -84,7 +100,7 @@ const GET_FEATURE_FLAGS = gql`
   }
 `;
 
-const SET_FEATURE_FLAG = gql`
+const setFeatureFlagMutation = `
   mutation SetFeatureFlag($input: SetFeatureFlagInput!) {
     setFeatureFlag(input: $input) {
       key
@@ -95,7 +111,7 @@ const SET_FEATURE_FLAG = gql`
   }
 `;
 
-const GET_MAGIC_REQUEST_CONFIG = gql`
+const getMagicRequestConfigQuery = `
   query GetMagicRequestConfig {
     getMagicRequestConfig {
       waxTypes {
@@ -127,7 +143,7 @@ const GET_MAGIC_REQUEST_CONFIG = gql`
   }
 `;
 
-const UPDATE_MAGIC_REQUEST_CONFIG = gql`
+const updateMagicRequestConfigMutation = `
   mutation UpdateMagicRequestConfig($input: MagicRequestConfigInput!) {
     updateMagicRequestConfig(input: $input) {
       waxTypes {
@@ -159,15 +175,44 @@ const UPDATE_MAGIC_REQUEST_CONFIG = gql`
   }
 `;
 
+// Default config fallback
+const getDefaultConfig = (): MagicRequestConfig => ({
+  waxTypes: [
+    { name: 'Soy', value: 'Soy', enabled: true, order: 1 },
+    { name: 'Beeswax', value: 'Beeswax', enabled: true, order: 2 },
+    { name: 'Coconut Soy', value: 'Coconut Soy', enabled: true, order: 3 },
+  ],
+  candleSizes: [
+    { name: 'The Spark', value: 'The Spark (8oz)', enabled: true, order: 1 },
+    { name: 'The Flame', value: 'The Flame (12oz)', enabled: true, order: 2 },
+    { name: 'The Glow', value: 'The Glow (16oz)', enabled: true, order: 3 },
+  ],
+  wickTypes: [
+    { name: 'Cotton', value: 'Cotton', enabled: true, order: 1 },
+    { name: 'Hemp', value: 'Hemp', enabled: true, order: 2 },
+    { name: 'Wood', value: 'Wood', enabled: true, order: 3 },
+  ],
+  jarTypes: [
+    { name: 'Standard Tin', value: 'Standard Tin', enabled: true, order: 1 },
+    { name: 'Amber Glass', value: 'Amber Glass', enabled: true, order: 2 },
+    { name: 'Frosted Glass', value: 'Frosted Glass', enabled: true, order: 3 },
+    { name: 'Ceramic', value: 'Ceramic', enabled: true, order: 4 },
+  ],
+});
+
 // Feature Flag Functions
 export async function getFeatureFlag(key: string): Promise<FeatureFlag | null> {
+  if (!client) {
+    console.warn('AppSync client not configured');
+    return null;
+  }
+
   try {
-    const { data } = await apolloClient.query({
-      query: GET_FEATURE_FLAG,
+    const result = await client.graphql({
+      query: getFeatureFlagQuery,
       variables: { key },
-      fetchPolicy: 'network-only', // Always get fresh data
     });
-    return data.getFeatureFlag;
+    return (result as any).data.getFeatureFlag;
   } catch (error) {
     console.error('Error fetching feature flag:', error);
     return null;
@@ -175,12 +220,16 @@ export async function getFeatureFlag(key: string): Promise<FeatureFlag | null> {
 }
 
 export async function getFeatureFlags(): Promise<FeatureFlag[]> {
+  if (!client) {
+    console.warn('AppSync client not configured');
+    return [];
+  }
+
   try {
-    const { data } = await apolloClient.query({
-      query: GET_FEATURE_FLAGS,
-      fetchPolicy: 'network-only',
+    const result = await client.graphql({
+      query: getFeatureFlagsQuery,
     });
-    return data.getFeatureFlags || [];
+    return (result as any).data.getFeatureFlags || [];
   } catch (error) {
     console.error('Error fetching feature flags:', error);
     return [];
@@ -188,10 +237,14 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
 }
 
 export async function setFeatureFlag(key: string, value: boolean): Promise<FeatureFlag> {
+  if (!client) {
+    throw new Error('AppSync client not configured');
+  }
+
   const adminSecret = getAdminSecret();
 
-  const { data } = await apolloClient.mutate({
-    mutation: SET_FEATURE_FLAG,
+  const result = await client.graphql({
+    query: setFeatureFlagMutation,
     variables: {
       input: {
         key,
@@ -201,51 +254,36 @@ export async function setFeatureFlag(key: string, value: boolean): Promise<Featu
     },
   });
 
-  return data.setFeatureFlag;
+  return (result as any).data.setFeatureFlag;
 }
 
 // Magic Request Config Functions
 export async function getMagicRequestConfig(): Promise<MagicRequestConfig> {
+  if (!client) {
+    console.warn('AppSync client not configured, returning default config');
+    return getDefaultConfig();
+  }
+
   try {
-    const { data } = await apolloClient.query({
-      query: GET_MAGIC_REQUEST_CONFIG,
-      fetchPolicy: 'network-only',
+    const result = await client.graphql({
+      query: getMagicRequestConfigQuery,
     });
-    return data.getMagicRequestConfig;
+    return (result as any).data.getMagicRequestConfig;
   } catch (error) {
     console.error('Error fetching Magic Request config:', error);
-    // Return default config if API call fails
-    return {
-      waxTypes: [
-        { name: 'Soy', value: 'Soy', enabled: true, order: 1 },
-        { name: 'Beeswax', value: 'Beeswax', enabled: true, order: 2 },
-        { name: 'Coconut Soy', value: 'Coconut Soy', enabled: true, order: 3 },
-      ],
-      candleSizes: [
-        { name: 'The Spark', value: 'The Spark (8oz)', enabled: true, order: 1 },
-        { name: 'The Flame', value: 'The Flame (12oz)', enabled: true, order: 2 },
-        { name: 'The Glow', value: 'The Glow (16oz)', enabled: true, order: 3 },
-      ],
-      wickTypes: [
-        { name: 'Cotton', value: 'Cotton', enabled: true, order: 1 },
-        { name: 'Hemp', value: 'Hemp', enabled: true, order: 2 },
-        { name: 'Wood', value: 'Wood', enabled: true, order: 3 },
-      ],
-      jarTypes: [
-        { name: 'Standard Tin', value: 'Standard Tin', enabled: true, order: 1 },
-        { name: 'Amber Glass', value: 'Amber Glass', enabled: true, order: 2 },
-        { name: 'Frosted Glass', value: 'Frosted Glass', enabled: true, order: 3 },
-        { name: 'Ceramic', value: 'Ceramic', enabled: true, order: 4 },
-      ],
-    };
+    return getDefaultConfig();
   }
 }
 
 export async function updateMagicRequestConfig(config: Omit<MagicRequestConfig, 'updatedAt'>): Promise<MagicRequestConfig> {
+  if (!client) {
+    throw new Error('AppSync client not configured');
+  }
+
   const adminSecret = getAdminSecret();
 
-  const { data } = await apolloClient.mutate({
-    mutation: UPDATE_MAGIC_REQUEST_CONFIG,
+  const result = await client.graphql({
+    query: updateMagicRequestConfigMutation,
     variables: {
       input: {
         ...config,
@@ -254,6 +292,5 @@ export async function updateMagicRequestConfig(config: Omit<MagicRequestConfig, 
     },
   });
 
-  return data.updateMagicRequestConfig;
+  return (result as any).data.updateMagicRequestConfig;
 }
-
