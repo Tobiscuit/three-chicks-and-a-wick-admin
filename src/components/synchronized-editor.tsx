@@ -299,8 +299,8 @@ export function SynchronizedEditor({
                      onChange={handleContentChange}
                      placeholder={placeholder}
                    />
-                   {/* Debug info */}
-                   <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                   {/* Debug info - hidden on mobile */}
+                   <div className="mt-2 p-2 bg-muted/50 rounded text-xs hidden sm:block">
                      <strong>Debug:</strong> Content length: {content?.length || 0} chars
                      {content && <div className="mt-1">Content preview: {content.substring(0, 50)}...</div>}
                    </div>
@@ -320,10 +320,10 @@ export function SynchronizedEditor({
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
-                AI Rewriter
+                Smart Editor
               </CardTitle>
               <CardDescription>
-                Enhanced view of your content with AI rewriting capabilities.
+                Get help improving your product description with smart suggestions.
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -332,9 +332,11 @@ export function SynchronizedEditor({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowHistory(!showHistory)}
+                className="text-xs sm:text-sm"
               >
-                <History className="mr-2 h-4 w-4" />
-                History
+                <History className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">History</span>
+                <span className="sm:hidden">Past</span>
               </Button>
               {currentVersionIndex > 0 && (
                 <Button
@@ -342,9 +344,11 @@ export function SynchronizedEditor({
                   variant="outline"
                   size="sm"
                   onClick={resetToOriginal}
+                  className="text-xs sm:text-sm"
                 >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset
+                  <RotateCcw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Reset</span>
+                  <span className="sm:hidden">Undo</span>
                 </Button>
               )}
             </div>
@@ -396,11 +400,11 @@ export function SynchronizedEditor({
               {/* AI Rewrite Input */}
               <div className="border-t pt-4 space-y-3">
                 <div>
-                  <label className="text-sm font-medium">How would you like to enhance this description?</label>
+                  <label className="text-sm font-medium">How would you like to improve this description?</label>
                   <textarea
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
-                    placeholder="e.g., Make it more luxurious, add sensory details, focus on the scent..."
+                    placeholder="e.g., Make it sound more appealing, add details about the scent, focus on benefits..."
                     className="mt-1 w-full px-3 py-2 border border-input bg-background text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
                     rows={3}
                   />
@@ -413,12 +417,12 @@ export function SynchronizedEditor({
                   {isRewriting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Rewriting...
+                      Improving...
                     </>
                   ) : (
                     <>
                       <Wand2 className="mr-2 h-4 w-4" />
-                      Rewrite with AI
+                      Improve Description
                     </>
                   )}
                 </Button>
