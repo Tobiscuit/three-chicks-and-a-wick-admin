@@ -367,7 +367,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" asChild>
                   <Link href="/products">
@@ -376,23 +376,23 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   </Link>
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-semibold">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-xl sm:text-2xl font-semibold">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
+                    <p className="text-muted-foreground text-sm sm:text-base">
                         {isEditMode ? `Editing "${initialData?.title}"` : 'Fill in the details below to add a new product.'}
                     </p>
                 </div>
             </div>
-            <div className="flex gap-2">
-                 <Button variant="outline" type="button" onClick={() => router.push('/products')}>Cancel</Button>
-                 <Button type="submit" disabled={isSubmitting || !formState.isDirty}>
+            <div className="flex gap-2 w-full sm:w-auto">
+                 <Button variant="outline" type="button" onClick={() => router.push('/products')} className="flex-1 sm:flex-none">Cancel</Button>
+                 <Button type="submit" disabled={isSubmitting || !formState.isDirty} className="flex-1 sm:flex-none">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditMode ? 'Save Changes' : 'Add Product'}
                  </Button>
             </div>
         </div>
         <TooltipProvider>
-            <div className="grid gap-6 md:grid-cols-3">
-            <div className="grid gap-6 md:col-span-2">
+            <div className="grid gap-4 md:gap-6 md:grid-cols-3">
+            <div className="grid gap-4 md:gap-6 md:col-span-2">
                 <Card>
                 <CardHeader><CardTitle>Product Details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -438,7 +438,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <CardTitle>Media</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mb-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
                             {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
                                 <div key={index} className="relative aspect-square group">
                                     <Image
@@ -500,7 +500,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 </Card>
                 <Card>
                 <CardHeader><CardTitle>Pricing &amp; Inventory</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
+                <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                     <FormField
                         control={form.control}
                         name="price"
