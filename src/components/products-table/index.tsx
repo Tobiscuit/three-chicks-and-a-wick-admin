@@ -318,12 +318,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <div className="relative">
+                        <div className="relative sm:hidden">
                           <ProductImageCell 
                             productId={product.id}
                             fallbackImageUrl={product.featuredImage?.url}
                           />
-                          <div className="absolute -top-1 -right-1 sm:hidden">
+                          <div className="absolute -top-1 -right-1">
                             <Badge variant="secondary" className="text-xs h-5 px-1">
                               <InventoryCell
                                 inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
