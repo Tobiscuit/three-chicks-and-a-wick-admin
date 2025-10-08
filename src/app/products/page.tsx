@@ -73,7 +73,7 @@ export default function ProductsPage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div className="flex flex-col sm:flex-row gap-2">
                         <DiagnosticButton />
-                        <Button asChild className="w-full sm:w-auto">
+                        <Button asChild className="w-full sm:w-auto hidden sm:flex">
                             <Link href="/products/new">
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Add Product
