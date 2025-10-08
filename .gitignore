@@ -78,6 +78,7 @@ apphosting.yaml
 # Test scripts
 test-inventory-webhook.ps1
 *.ps1
+scripts/test-feature-flag.js
 
 # Environment variable files
 vercel-env-vars.txt
