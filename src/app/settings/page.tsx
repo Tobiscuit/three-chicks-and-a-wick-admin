@@ -1,27 +1,20 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/components/auth/auth-provider';
 import { auth } from '@/lib/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Palette, Store, Settings as SettingsIcon } from 'lucide-react';
+import { LogOut, Palette, Store } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
-import { getUserSettings, updateImageStudioSetting } from '@/services/user-settings';
-import { useToast } from '@/hooks/use-toast';
-// Removed env-config import for client-side component
+import { ImageStudioSettings } from '@/components/settings/image-studio-settings';
 
 export default function SettingsPage() {
     const { user } = useAuth();
-    const { toast } = useToast();
     const shopifyStoreUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'Not configured';
     
-    const [includeSourceImages, setIncludeSourceImages] = useState(false);
-    const [settingsLoading, setSettingsLoading] = useState(true);
 
     const handleSignOut = () => {
         auth.signOut();
@@ -30,54 +23,6 @@ export default function SettingsPage() {
     // Determine the first letter for the Avatar fallback
     const fallbackLetter = user?.displayName ? user.displayName.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : "A");
 
-    // Load user settings on mount
-    useEffect(() => {
-        const loadUserSettings = async () => {
-            if (!user?.uid) return;
-            
-            try {
-                setSettingsLoading(true);
-                const settings = await getUserSettings(user.uid);
-                setIncludeSourceImages(settings.imageStudioSettings.includeSourceImages);
-            } catch (error) {
-                console.error('Error loading user settings:', error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Failed to load settings. Using defaults.",
-                });
-            } finally {
-                setSettingsLoading(false);
-            }
-        };
-
-        loadUserSettings();
-    }, [user?.uid, toast]);
-
-    // Handle setting change
-    const handleSourceImagesToggle = async (checked: boolean) => {
-        if (!user?.uid) return;
-        
-        try {
-            setIncludeSourceImages(checked);
-            await updateImageStudioSetting(user.uid, checked);
-            toast({
-                title: "Setting Updated",
-                description: checked 
-                    ? "Source images will now be included when saving products from Image Studio."
-                    : "Only the composed image will be saved when creating products from Image Studio.",
-            });
-        } catch (error) {
-            console.error('Error updating setting:', error);
-            // Revert the toggle on error
-            setIncludeSourceImages(!checked);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to update setting. Please try again.",
-            });
-        }
-    };
 
 
     return (
@@ -106,25 +51,7 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><SettingsIcon/> Image Studio Settings</CardTitle>
-                        <CardDescription>Configure how Image Studio behaves when creating products.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">Include source images when saving new products</p>
-                            <p className="text-xs text-muted-foreground">
-                                When enabled, the original images used for composition will be saved to the product's media gallery along with the final shot.
-                            </p>
-                        </div>
-                        <Switch 
-                            checked={includeSourceImages}
-                            onCheckedChange={handleSourceImagesToggle}
-                            disabled={settingsLoading}
-                        />
-                    </CardContent>
-                </Card>
+                {user?.uid && <ImageStudioSettings userId={user.uid} />}
 
 
                 <Card>
