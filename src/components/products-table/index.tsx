@@ -251,11 +251,11 @@ export function ProductsTable({ products }: ProductsTableProps) {
     <>
       <Card>
         <CardHeader className="p-2 sm:p-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products by name or tag..."
+                placeholder="Search by name or tag"
                 className="w-full pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -286,7 +286,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
         <CardContent className="p-2 sm:p-6">
           {view === 'list' ? (
             <div className="overflow-x-auto -mx-2 sm:mx-0">
-              <Table className="w-full min-w-[350px]">
+              <Table className="w-full min-w-[320px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="hidden w-[100px] sm:table-cell">
@@ -298,7 +298,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     <TableHead className="w-[35px] hidden sm:table-cell">
                       #
                     </TableHead>
-                    <TableHead className="text-right w-[35px]">Actions</TableHead>
+                    <TableHead className="text-right w-[35px]">
+                      <MoreVertical className="h-4 w-4 mx-auto" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
               <TableBody>
@@ -315,7 +317,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       />
                     </TableCell>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div className="relative">
                           <ProductImageCell 
                             productId={product.id}
