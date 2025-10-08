@@ -93,8 +93,8 @@ export function getAdminSecret(): string {
  * Get AppSync configuration (server-side only)
  */
 export function getAppSyncConfig() {
-  const url = process.env.STOREFRONT_APPSYNC_URL;
-  const apiKey = process.env.STOREFRONT_APPSYNC_API_KEY;
+  const url = process.env.NEXT_PUBLIC_STOREFRONT_APPSYNC_URL;
+  const apiKey = process.env.NEXT_PUBLIC_STOREFRONT_APPSYNC_API_KEY;
   
   if (!url || !apiKey) {
     throw new Error('AppSync configuration not found');
