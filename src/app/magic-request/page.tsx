@@ -29,11 +29,7 @@ export default function MagicRequestPage() {
     <AuthWrapper>
       <div className="space-y-4 px-2 sm:px-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Wand2 className="h-6 w-6 sm:h-8 sm:w-8" />
-            Magic Request
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+          <p className="text-muted-foreground text-sm sm:text-base">
             Manage your custom candle ordering system with smart validation and review.
           </p>
         </div>
