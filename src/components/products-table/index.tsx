@@ -275,20 +275,20 @@ export function ProductsTable({ products }: ProductsTableProps) {
         </CardHeader>
         <CardContent className="p-2 sm:p-6">
           {view === 'list' ? (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <Table className="w-full min-w-[350px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="hidden w-[100px] sm:table-cell">
                       Image
                     </TableHead>
-                    <TableHead className="min-w-[120px] sm:min-w-[200px]">Name</TableHead>
+                    <TableHead className="min-w-[100px] sm:min-w-[200px]">Name</TableHead>
                     <TableHead className="hidden sm:table-cell">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Price</TableHead>
-                    <TableHead className="w-[40px]">
+                    <TableHead className="w-[35px]">
                       #
                     </TableHead>
-                    <TableHead className="text-right w-[40px]">Actions</TableHead>
+                    <TableHead className="text-right w-[35px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
               <TableBody>
@@ -343,8 +343,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       <SecureDeleteDialog product={product} onDelete={handleDelete}>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
+                                  <MoreVertical className="h-3 w-3" />
                                   <span className="sr-only">More options</span>
                               </Button>
                           </DropdownMenuTrigger>
