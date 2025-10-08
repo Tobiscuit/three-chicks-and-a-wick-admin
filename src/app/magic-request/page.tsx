@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,9 +9,22 @@ import { MagicRequestPricing } from '@/components/magic-request/pricing';
 import { MagicRequestVariants } from '@/components/magic-request/variants';
 import { MagicRequestReviews } from '@/components/magic-request/reviews';
 import { MagicRequestLogs } from '@/components/magic-request/logs';
-import { Wand2 } from 'lucide-react';
+import { Wand2, ChevronDown } from 'lucide-react';
 
 export default function MagicRequestPage() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false);
+
+  const tabs = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'pricing', label: 'Pricing' },
+    { value: 'variants', label: 'Variants' },
+    { value: 'reviews', label: 'Reviews' },
+    { value: 'logs', label: 'Logs' }
+  ];
+
+  const currentTab = tabs.find(tab => tab.value === activeTab);
+
   return (
     <AuthWrapper>
       <div className="space-y-4 px-2 sm:px-0">
@@ -24,35 +38,57 @@ export default function MagicRequestPage() {
           </p>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="pricing" className="text-xs sm:text-sm">Pricing</TabsTrigger>
-            <TabsTrigger value="variants" className="text-xs sm:text-sm">Variants</TabsTrigger>
-            <TabsTrigger value="reviews" className="text-xs sm:text-sm">Reviews</TabsTrigger>
-            <TabsTrigger value="logs" className="text-xs sm:text-sm">Logs</TabsTrigger>
-          </TabsList>
+        <div className="space-y-4">
+          {/* Desktop tabs */}
+          <div className="hidden sm:block">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-5">
+                {tabs.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          {/* Mobile dropdown navigation */}
+          <div className="sm:hidden">
+            <div className="relative">
+              <button
+                onClick={() => setIsMobileDropdownOpen(!isMobileDropdownOpen)}
+                className="w-full p-3 bg-background border border-border rounded-md flex items-center justify-between"
+              >
+                <span>{currentTab?.label}</span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              
+              {isMobileDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg z-10">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.value}
+                      onClick={() => {
+                        setActiveTab(tab.value);
+                        setIsMobileDropdownOpen(false);
+                      }}
+                      className="w-full p-3 text-left hover:bg-muted first:rounded-t-md last:rounded-b-md"
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
-          <TabsContent value="overview">
-            <MagicRequestOverview />
-          </TabsContent>
-
-          <TabsContent value="pricing">
-            <MagicRequestPricing />
-          </TabsContent>
-
-          <TabsContent value="variants">
-            <MagicRequestVariants />
-          </TabsContent>
-
-          <TabsContent value="reviews">
-            <MagicRequestReviews />
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <MagicRequestLogs />
-          </TabsContent>
-        </Tabs>
+          {/* Tab content */}
+          {activeTab === 'overview' && <MagicRequestOverview />}
+          {activeTab === 'pricing' && <MagicRequestPricing />}
+          {activeTab === 'variants' && <MagicRequestVariants />}
+          {activeTab === 'reviews' && <MagicRequestReviews />}
+          {activeTab === 'logs' && <MagicRequestLogs />}
+        </div>
       </div>
     </AuthWrapper>
   );
