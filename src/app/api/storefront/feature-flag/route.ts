@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       query: `
         mutation SetFeatureFlag($input: FeatureFlagInput!) {
           setFeatureFlag(input: $input) {
-            key
+            name
             value
             updatedAt
             updatedBy
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       `,
       variables: {
         input: {
-          key,
+          name: key,
           value,
           adminSecret
         }
@@ -127,16 +127,16 @@ export async function GET(request: NextRequest) {
     // 4. Query AppSync (no admin secret needed for read operations)
     const graphqlQuery = {
       query: `
-        query GetFeatureFlag($key: String!) {
-          getFeatureFlag(key: $key) {
-            key
+        query GetFeatureFlag($name: String!) {
+          getFeatureFlag(name: $name) {
+            name
             value
             updatedAt
             updatedBy
           }
         }
       `,
-      variables: { key }
+      variables: { name: key }
     };
 
     const response = await fetch(url, {
