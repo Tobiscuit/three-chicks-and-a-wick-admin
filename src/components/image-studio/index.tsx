@@ -310,17 +310,17 @@ export function ImageStudio() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-          <div className="space-y-8 lg:col-span-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-5">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8 lg:col-span-2">
             <Card>
-              <CardHeader>
-                <CardTitle>1. Upload Product Images</CardTitle>
-                <CardDescription>
-                  Provide one or two angles of your product for the most accurate results.
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">1. Upload Product Images</CardTitle>
+                <CardDescription className="text-sm">
+                  Add one or two photos of your product for best results.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-6 pt-0">
                   <FormField
                     control={form.control}
                     name="primaryProductImage"
@@ -351,11 +351,11 @@ export function ImageStudio() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>2. Choose Background</CardTitle>
-                <CardDescription>Select a pre-made background or generate a new one.</CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">2. Choose Background</CardTitle>
+                <CardDescription className="text-sm">Pick a ready-made background or create a custom one.</CardDescription>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <FormField
                   control={form.control}
                   name="backgroundType"
@@ -365,9 +365,9 @@ export function ImageStudio() {
                       onValueChange={(value) => field.onChange(value as 'gallery' | 'generate')}
                       className="w-full"
                     >
-                      <TabsList className="h-9 gap-1 p-0">
-                        <TabsTrigger value="gallery" className="px-3 py-1 text-sm"><ImageIcon className="mr-2"/>Gallery</TabsTrigger>
-                        <TabsTrigger value="generate" className="px-3 py-1 text-sm"><Wand2 className="mr-2"/>Generate</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-2 h-9 gap-1 p-0">
+                        <TabsTrigger value="gallery" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><ImageIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4"/>Gallery</TabsTrigger>
+                        <TabsTrigger value="generate" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><Wand2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4"/>Create New</TabsTrigger>
                       </TabsList>
                       <TabsContent value="generate" className="mt-2">
                         <FormField
@@ -375,10 +375,11 @@ export function ImageStudio() {
                           name="backgroundPrompt"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Background Prompt</FormLabel>
+                              <FormLabel className="text-sm">Describe Your Background</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="Describe the background you want to create..."
+                                  placeholder="e.g., A cozy rustic wooden table with soft natural lighting..."
+                                  className="text-sm"
                                   {...field}
                                   disabled={backgroundType !== 'generate'}
                                 />
@@ -390,7 +391,7 @@ export function ImageStudio() {
                       </TabsContent>
                       <TabsContent value="gallery" className="mt-2">
                          {galleryLoading ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                                 <Skeleton className="w-full aspect-square rounded-md" />
                                 <Skeleton className="w-full aspect-square rounded-md" />
                                 <Skeleton className="w-full aspect-square rounded-md" />
@@ -409,8 +410,8 @@ export function ImageStudio() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <ScrollArea className="h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 md:p-3">
-                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                                        <ScrollArea className="h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 sm:p-3">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                                                 {galleryLoading ? (
                                                     // Skeleton loaders while fetching
                                                     Array.from({ length: 6 }).map((_, index) => (
@@ -462,20 +463,20 @@ export function ImageStudio() {
           </div>
 
           <div className="lg:col-span-3">
-            <Card className="sticky top-20">
-              <CardHeader>
-                <CardTitle>3. Final Touches &amp; Generation</CardTitle>
-                <CardDescription>Add optional details and generate your final image.</CardDescription>
+            <Card className="lg:sticky lg:top-20">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">3. Create Your Image</CardTitle>
+                <CardDescription className="text-sm">Add optional details and generate your product photo.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
                 <FormField
                   control={form.control}
                   name="contextualDetails"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contextual Details (Optional)</FormLabel>
+                      <FormLabel className="text-sm">Extra Details (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., a subtle pattern of vanilla beans" {...field} />
+                        <Input placeholder="e.g., add a subtle pattern of vanilla beans" className="text-sm" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -483,15 +484,15 @@ export function ImageStudio() {
                 />
 
                 <div className="space-y-2">
-                    <FormLabel>Result</FormLabel>
+                    <FormLabel className="text-sm">Your Image</FormLabel>
                     <div className="aspect-[4/3] w-full rounded-lg border bg-card-foreground/5 flex items-center justify-center overflow-hidden">
                         {isSubmitting ? (
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="relative w-full h-[400px]">
+                            <div className="flex flex-col items-center gap-4 p-4">
+                                <div className="relative w-full h-[250px] sm:h-[400px]">
                                     <Skeleton className="w-full h-full rounded-lg animate-pulse" />
                                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                        <Loader2 className="h-8 w-8 animate-spin" />
-                                        <p>Generating your masterpiece...</p>
+                                        <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
+                                        <p className="text-xs sm:text-sm">Creating your image...</p>
                                     </div>
                                 </div>
                             </div>
@@ -505,28 +506,31 @@ export function ImageStudio() {
                                 className="object-contain w-full h-full"
                             />
                         ) : (
-                            <div className="text-center text-muted-foreground">
-                                <Sparkles className="h-10 w-10 mx-auto"/>
-                                <p className="mt-2">Your generated image will appear here</p>
+                            <div className="text-center text-muted-foreground p-4">
+                                <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 mx-auto"/>
+                                <p className="mt-2 text-xs sm:text-sm">Your image will appear here</p>
                             </div>
                         )}
                     </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-wrap gap-2">
-                <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="flex-1 min-w-0">
+              <CardFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6">
+                <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:flex-1">
                   {isSubmitting ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
+                        <span className="hidden sm:inline">Generating...</span>
+                        <span className="sm:hidden">Creating...</span>
                     </>
                   ) : (
                     <>
-                        <Wand2 className="mr-2"/> Generate Image
+                        <Wand2 className="mr-2 h-4 w-4"/> 
+                        <span className="hidden sm:inline">Generate Image</span>
+                        <span className="sm:hidden">Create Image</span>
                     </>
                   )}
                 </Button>
-                <Button variant="secondary" type="button" disabled={!generatedImage || isSubmitting} className="flex-1 min-w-0" onClick={() => {
+                <Button variant="secondary" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => {
                   if(!generatedImage) return;
                   const link = document.createElement('a');
                   link.href = generatedImage;
@@ -535,10 +539,12 @@ export function ImageStudio() {
                   link.click();
                   document.body.removeChild(link);
                 }}>
-                  <Download className="mr-2"/> Download
+                  <Download className="mr-2 h-4 w-4"/> Download
                 </Button>
-                 <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="flex-1 min-w-0" onClick={() => setShowAddProductModal(true)}>
-                    <PackagePlus className="mr-2"/> Add as Product with AI
+                 <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => setShowAddProductModal(true)}>
+                    <PackagePlus className="mr-2 h-4 w-4"/> 
+                    <span className="hidden sm:inline">Add as Product</span>
+                    <span className="sm:hidden">Add Product</span>
                 </Button>
               </CardFooter>
             </Card>
@@ -643,28 +649,29 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
     
     return (
         <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[525px]">
+            <DialogContent className="max-w-[95vw] sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
                         <DialogHeader>
-                            <DialogTitle>Add as Product with AI</DialogTitle>
-                            <DialogDescription>
-                                Provide a few details, and we'll generate the product listing for you.
+                            <DialogTitle className="text-lg sm:text-xl">Add as Product</DialogTitle>
+                            <DialogDescription className="text-sm">
+                                Tell us a few details and we'll create your product listing.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="py-4 space-y-4">
+                        <div className="py-4 space-y-3 sm:space-y-4">
                             <Image src={generatedImage} alt="Generated product" width={525} height={400} unoptimized={true} className="rounded-lg object-contain w-full h-auto aspect-[4/3] border bg-muted" />
                             <FormField
                                 control={form.control}
                                 name="price"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Price</FormLabel>
+                                        <FormLabel className="text-sm">Price</FormLabel>
                                         <FormControl>
                                             <CurrencyInput
                                                 placeholder="25.00"
                                                 value={field.value}
                                                 onChange={(val) => field.onChange(val)}
+                                                className="text-sm"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -676,9 +683,9 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
                                 name="quantity"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Quantity</FormLabel>
+                                        <FormLabel className="text-sm">Quantity</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                            <Input type="number" placeholder="100" className="text-sm" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -689,11 +696,11 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
                                 name="contextualDetails"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Contextual Details</FormLabel>
+                                        <FormLabel className="text-sm">Product Details</FormLabel>
                                         <FormControl>
                                             <Textarea
                                                 placeholder="e.g., smells like a cozy autumn evening, with notes of spiced pear and cinnamon. Has a crackling wood wick..."
-                                                className="min-h-24"
+                                                className="min-h-20 sm:min-h-24 text-sm"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -702,11 +709,12 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
                                 )}
                             />
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={onClose} type="button" disabled={isGenerating}>Cancel</Button>
-                            <Button type="submit" disabled={isGenerating}>
+                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button variant="outline" onClick={onClose} type="button" disabled={isGenerating} className="w-full sm:w-auto">Cancel</Button>
+                            <Button type="submit" disabled={isGenerating} className="w-full sm:w-auto">
                                 {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Generate and Pre-fill
+                                <span className="hidden sm:inline">Generate and Pre-fill</span>
+                                <span className="sm:hidden">Create Product</span>
                             </Button>
                         </DialogFooter>
                     </form>
