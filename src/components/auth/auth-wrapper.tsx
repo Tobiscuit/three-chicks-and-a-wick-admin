@@ -91,7 +91,7 @@ export const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
       <SidebarInset>
         <div className="flex flex-col min-h-dvh">
             <Header />
-            <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8">
+            <main className="flex-1 flex flex-col p-2 md:p-6 lg:p-8">
                 {children}
             </main>
         </div>
