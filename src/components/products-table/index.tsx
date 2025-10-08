@@ -283,13 +283,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-2 sm:p-6">
+        <CardContent className="p-2 sm:p-4">
           {view === 'list' ? (
             <div className="overflow-x-auto -mx-2 sm:mx-0">
               <Table className="w-full min-w-[320px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="hidden w-[100px] sm:table-cell">
+                    <TableHead className="hidden w-[100px] sm:table-cell text-center">
                       Image
                     </TableHead>
                     <TableHead className="min-w-[100px] sm:min-w-[200px]">Name</TableHead>
@@ -310,11 +310,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleRowClick(product.id)}
                   >
-                    <TableCell className="hidden sm:table-cell">
-                      <ProductImageCell 
-                        productId={product.id}
-                        fallbackImageUrl={product.featuredImage?.url}
-                      />
+                    <TableCell className="hidden sm:table-cell text-center">
+                      <div className="flex justify-center">
+                        <ProductImageCell 
+                          productId={product.id}
+                          fallbackImageUrl={product.featuredImage?.url}
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
