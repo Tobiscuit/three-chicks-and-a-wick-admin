@@ -284,16 +284,16 @@ export function SynchronizedEditor({
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-6">
       {/* Rich Text Editor (Top) */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="p-2 sm:p-6 pb-2 sm:pb-3">
           <CardTitle className="text-lg">Manual Editor</CardTitle>
           <CardDescription>
             Type and format your product description using the rich text editor below.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6 pt-0">
                    <RichTextEditor
                      content={content}
                      onChange={handleContentChange}
@@ -315,7 +315,7 @@ export function SynchronizedEditor({
 
       {/* AI Rewriter (Bottom) */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="p-2 sm:p-6 pb-2 sm:pb-3">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -354,7 +354,7 @@ export function SynchronizedEditor({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6 pt-0">
           {isLoadingHistory ? (
             <div className="flex items-center justify-center py-4">
               <div className="text-center space-y-2">
