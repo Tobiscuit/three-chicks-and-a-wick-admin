@@ -295,7 +295,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     <TableHead className="min-w-[100px] sm:min-w-[200px]">Name</TableHead>
                     <TableHead className="hidden sm:table-cell">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Price</TableHead>
-                    <TableHead className="w-[35px]">
+                    <TableHead className="w-[35px] hidden sm:table-cell">
                       #
                     </TableHead>
                     <TableHead className="text-right w-[35px]">Actions</TableHead>
@@ -316,11 +316,19 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="hidden sm:block">
+                        <div className="relative">
                           <ProductImageCell 
                             productId={product.id}
                             fallbackImageUrl={product.featuredImage?.url}
                           />
+                          <div className="absolute -top-1 -right-1 sm:hidden">
+                            <Badge variant="secondary" className="text-xs h-5 px-1">
+                              <InventoryCell
+                                inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
+                                fallback={product.totalInventory}
+                              />
+                            </Badge>
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="truncate max-w-[200px] sm:max-w-none">{product.title}</div>
@@ -335,12 +343,6 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               product={product}
                               inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
                             />
-                            <Badge variant="secondary" className="text-xs">
-                              <InventoryCell
-                                inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
-                                fallback={product.totalInventory}
-                              />
-                            </Badge>
                           </div>
                         </div>
                       </div>
@@ -357,7 +359,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                             currency: product.priceRange.minVariantPrice.currencyCode 
                         }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <InventoryCell
                         inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
                         fallback={product.totalInventory}
