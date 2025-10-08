@@ -86,7 +86,7 @@ export function MagicRequestOverview() {
                 Magic Request Status
               </CardTitle>
               <CardDescription className="mt-2">
-                Enable or disable the AI-powered custom candle ordering system
+                Turn custom candle orders on or off for your customers
               </CardDescription>
             </div>
             <div className="flex items-center gap-4">
@@ -112,15 +112,15 @@ export function MagicRequestOverview() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 mt-0.5 text-green-500 flex-shrink-0" />
-                  <span>AI pipeline processes custom candle orders through Chandler AI</span>
+                  <span>Smart system processes custom candle orders automatically</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 mt-0.5 text-green-500 flex-shrink-0" />
-                  <span>Cybersecurity AI validates orders for security vulnerabilities</span>
+                  <span>Quality checks ensure orders meet your standards</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 mt-0.5 text-green-500 flex-shrink-0" />
-                  <span>Orders flagged as SUSPICIOUS appear in the Pending Reviews tab</span>
+                  <span>Orders needing review appear in the Reviews tab</span>
                 </li>
               </ul>
             </div>
@@ -177,7 +177,7 @@ export function MagicRequestOverview() {
           <CardContent>
             <div className="text-2xl font-bold">Coming Soon</div>
             <p className="text-xs text-muted-foreground">
-              Orders flagged as SUSPICIOUS awaiting review
+              Orders waiting for your review
             </p>
           </CardContent>
         </Card>
@@ -192,21 +192,21 @@ export function MagicRequestOverview() {
           <CardContent>
             <div className="text-2xl font-bold">Coming Soon</div>
             <p className="text-xs text-muted-foreground">
-              Orders blocked by cybersecurity AI
+              Orders that didn't meet quality standards
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Security Pipeline Info */}
+      {/* Quality Control Pipeline */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Security Pipeline
+            Quality Control Process
           </CardTitle>
           <CardDescription>
-            Multi-layered protection against security vulnerabilities
+            How we ensure every custom order meets your standards
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -216,9 +216,9 @@ export function MagicRequestOverview() {
                 <span className="font-semibold text-primary">1</span>
               </div>
               <div>
-                <h4 className="font-semibold">Chandler AI</h4>
+                <h4 className="font-semibold">Smart Processing</h4>
                 <p className="text-sm text-muted-foreground">
-                  Processes customer input with structured prompting and schema validation
+                  Our system understands customer requests and creates detailed order specifications
                 </p>
               </div>
             </div>
@@ -228,9 +228,9 @@ export function MagicRequestOverview() {
                 <span className="font-semibold text-primary">2</span>
               </div>
               <div>
-                <h4 className="font-semibold">Cybersecurity AI</h4>
+                <h4 className="font-semibold">Quality Check</h4>
                 <p className="text-sm text-muted-foreground">
-                  Validates output for XSS, injection, prompt injection, and business logic bypasses
+                  Every order is reviewed to ensure it meets your business standards and requirements
                 </p>
               </div>
             </div>
@@ -240,9 +240,9 @@ export function MagicRequestOverview() {
                 <span className="font-semibold text-primary">3</span>
               </div>
               <div>
-                <h4 className="font-semibold">Human Review</h4>
+                <h4 className="font-semibold">Your Review</h4>
                 <p className="text-sm text-muted-foreground">
-                  Admin manually approves or rejects orders flagged as SUSPICIOUS
+                  Orders that need attention are sent to you for final approval before processing
                 </p>
               </div>
             </div>

@@ -13,24 +13,24 @@ import { Wand2 } from 'lucide-react';
 export default function MagicRequestPage() {
   return (
     <AuthWrapper>
-      <div className="space-y-6">
+      <div className="space-y-4 px-2 sm:px-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Wand2 className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Wand2 className="h-6 w-6 sm:h-8 sm:w-8" />
             Magic Request
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage AI-powered custom candle ordering system with security validation and human review.
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+            Manage your custom candle ordering system with smart validation and review.
           </p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing</TabsTrigger>
-            <TabsTrigger value="variants">Variants</TabsTrigger>
-            <TabsTrigger value="reviews">Pending Reviews</TabsTrigger>
-            <TabsTrigger value="logs">Security Logs</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="pricing" className="text-xs sm:text-sm">Pricing</TabsTrigger>
+            <TabsTrigger value="variants" className="text-xs sm:text-sm">Variants</TabsTrigger>
+            <TabsTrigger value="reviews" className="text-xs sm:text-sm">Reviews</TabsTrigger>
+            <TabsTrigger value="logs" className="text-xs sm:text-sm">Logs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
