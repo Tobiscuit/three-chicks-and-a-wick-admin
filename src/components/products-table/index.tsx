@@ -251,28 +251,30 @@ export function ProductsTable({ products }: ProductsTableProps) {
     <>
       <Card>
         <CardHeader className="p-2 sm:p-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products by name or tag..."
-              className="w-full pl-10 pr-20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products by name or tag..."
+                className="w-full pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center bg-muted rounded-full p-1">
                 <Button 
-                  variant={view === 'list' ? 'secondary' : 'outline'} 
-                  size="icon" 
-                  className="h-8 w-8"
+                  variant={view === 'list' ? 'default' : 'ghost'} 
+                  size="sm" 
+                  className="h-7 px-3 rounded-full"
                   onClick={() => setView('list')}
                 >
                     <List className="h-4 w-4" />
                     <span className="sr-only">List View</span>
                 </Button>
                 <Button 
-                  variant={view === 'grid' ? 'secondary' : 'outline'} 
-                  size="icon" 
-                  className="h-8 w-8"
+                  variant={view === 'grid' ? 'default' : 'ghost'} 
+                  size="sm" 
+                  className="h-7 px-3 rounded-full"
                   onClick={() => setView('grid')}
                 >
                     <LayoutGrid className="h-4 w-4" />
@@ -313,19 +315,33 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       />
                     </TableCell>
                     <TableCell className="font-medium">
-                      <div className="flex flex-col gap-1">
-                        <div className="truncate max-w-[200px] sm:max-w-none">{product.title}</div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden">
-                          <span>
-                            {new Intl.NumberFormat('en-US', { 
-                              style: 'currency', 
-                              currency: product.priceRange.minVariantPrice.currencyCode 
-                            }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
-                          </span>
-                          <StatusCell
-                            product={product}
-                            inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
+                      <div className="flex items-center gap-3">
+                        <div className="hidden sm:block">
+                          <ProductImageCell 
+                            productId={product.id}
+                            fallbackImageUrl={product.featuredImage?.url}
                           />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate max-w-[200px] sm:max-w-none">{product.title}</div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden">
+                            <span>
+                              {new Intl.NumberFormat('en-US', { 
+                                style: 'currency', 
+                                currency: product.priceRange.minVariantPrice.currencyCode 
+                              }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
+                            </span>
+                            <StatusCell
+                              product={product}
+                              inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
+                            />
+                            <Badge variant="secondary" className="text-xs">
+                              <InventoryCell
+                                inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
+                                fallback={product.totalInventory}
+                              />
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </TableCell>
