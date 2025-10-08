@@ -416,7 +416,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </Table>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
               {filteredProducts.map(product => (
                 <ProductGridItem 
                   key={product.id}
@@ -489,7 +489,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
   return (
     <SecureDeleteDialog product={product} onDelete={onDelete}>
       <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
-        <div className="relative">
+        <div className="relative aspect-square">
           <ProductImageCell 
             productId={product.id}
             fallbackImageUrl={product.featuredImage?.url}
@@ -535,9 +535,9 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
               </DropdownMenu>
           </div>
         </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-lg truncate">{product.title}</h3>
-          <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+        <CardContent className="p-3">
+          <h3 className="font-semibold text-sm leading-tight">{product.title}</h3>
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
               <span>
                   {new Intl.NumberFormat('en-US', {
                       style: 'currency',
