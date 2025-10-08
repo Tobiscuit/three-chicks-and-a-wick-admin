@@ -366,7 +366,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6 lg:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" asChild>
@@ -394,8 +394,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             <div className="grid gap-4 md:gap-6 md:grid-cols-3">
             <div className="grid gap-4 md:gap-6 md:col-span-2">
                 <Card>
-                <CardHeader><CardTitle>Product Details</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
+                <CardHeader className="p-4 sm:p-6"><CardTitle className="text-lg sm:text-xl">Product Details</CardTitle></CardHeader>
+                <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
                     <FormField control={form.control} name="title" render={({ field }) => ( 
                         <FormItem>
                             <FormLabel>Title</FormLabel>
@@ -434,10 +434,10 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Media</CardTitle>
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg sm:text-xl">Media</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
                             {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
                                 <div key={index} className="relative aspect-square group">
@@ -499,8 +499,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     </CardContent>
                 </Card>
                 <Card>
-                <CardHeader><CardTitle>Pricing &amp; Inventory</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <CardHeader className="p-4 sm:p-6"><CardTitle className="text-lg sm:text-xl">Pricing &amp; Inventory</CardTitle></CardHeader>
+                <CardContent className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 p-4 sm:p-6 pt-0">
                     <FormField
                         control={form.control}
                         name="price"
@@ -535,12 +535,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 </CardContent>
                 </Card>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Product Status</CardTitle>
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg sm:text-xl">Product Status</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                     <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -557,8 +557,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader><CardTitle>Organization</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardHeader className="p-4 sm:p-6"><CardTitle className="text-lg sm:text-xl">Organization</CardTitle></CardHeader>
+                    <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
                         {featuredCollection && (
                           <FormField
                             control={form.control}
