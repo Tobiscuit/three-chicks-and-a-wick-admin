@@ -376,7 +376,6 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   </Link>
                 </Button>
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-semibold">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
                     <p className="text-muted-foreground text-sm sm:text-base">
                         {isEditMode ? `Editing "${initialData?.title}"` : 'Fill in the details below to add a new product.'}
                     </p>
@@ -391,7 +390,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             </div>
         </div>
         <TooltipProvider>
-            <div className="grid gap-4 md:gap-6 md:grid-cols-3">
+            <div className="grid gap-4 md:gap-6 md:grid-cols-3 overflow-x-hidden">
             <div className="grid gap-4 md:gap-6 md:col-span-2">
                 <Card>
                 <CardHeader className="p-4 sm:p-6"><CardTitle className="text-lg sm:text-xl">Product Details</CardTitle></CardHeader>
@@ -438,7 +437,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <CardTitle className="text-lg sm:text-xl">Media</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 sm:p-6 pt-0">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-4">
                             {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
                                 <div key={index} className="relative aspect-square group">
                                     <Image
