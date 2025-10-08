@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // 4. Call AppSync with admin secret (server-side only!)
     const graphqlQuery = {
       query: `
-        mutation SetFeatureFlag($input: SetFeatureFlagInput!) {
+        mutation SetFeatureFlag($input: FeatureFlagInput!) {
           setFeatureFlag(input: $input) {
             key
             value
