@@ -44,11 +44,10 @@ Focus on specific, actionable advice based on the data. Be concise and practical
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-2.0-flash-exp',
+      model: 'googleai/gemini-2.5-flash',
       config: {
         temperature: 0.7,
         maxOutputTokens: 2000,
-        responseFormat: 'json',
       },
     });
 
