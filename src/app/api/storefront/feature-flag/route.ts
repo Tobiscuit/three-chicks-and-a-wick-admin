@@ -139,9 +139,6 @@ export async function GET(request: NextRequest) {
       variables: { key }
     };
 
-    console.log('[Feature Flag API] GET - Requesting key:', key);
-    console.log('[Feature Flag API] GET - AppSync URL:', url);
-
     const response = await fetch(url, {
       method: 'POST',
       headers: {
