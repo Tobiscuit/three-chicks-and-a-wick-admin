@@ -17,16 +17,38 @@ export const generateBusinessStrategyFlow = ai.defineFlow(
     inputSchema: z.any(),
     outputSchema: z.string(),
   },
-  async (productInfo) => {
-    const prompt = `You are a branding and marketing expert for e-commerce.
-    When writing the description, use the "body_html" field.`;
+  async (businessSnapshot) => {
+    const prompt = `You are a business strategy consultant analyzing an e-commerce store's performance.
+
+Business Data:
+- Total Revenue: $${businessSnapshot.total_revenue?.toFixed(2) || '0.00'}
+- Total Orders: ${businessSnapshot.orders?.length || 0}
+- Average Order Value: $${businessSnapshot.average_order_value?.toFixed(2) || '0.00'}
+- Total Products: ${businessSnapshot.products?.length || 0}
+- Low Stock Products: ${businessSnapshot.low_stock_products?.length || 0}
+
+Recent Sales Trends:
+${businessSnapshot.sales_by_day ? JSON.stringify(businessSnapshot.sales_by_day, null, 2) : 'No recent sales data'}
+
+Top Selling Products:
+${businessSnapshot.top_products?.map((p: any, i: number) => `${i + 1}. ${p.title} (${p.sales} sales)`).join('\n') || 'No product data'}
+
+Generate actionable business recommendations in JSON format with these categories:
+{
+  "pricing_recommendations": [list of 3-5 pricing strategy recommendations],
+  "marketing_suggestions": [list of 3-5 marketing ideas to increase sales],
+  "inventory_alerts": [list of inventory concerns or optimizations]
+}
+
+Focus on specific, actionable advice based on the data. Be concise and practical.`;
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-2.5-pro',
+      model: 'googleai/gemini-2.0-flash-exp',
       config: {
         temperature: 0.7,
-        maxOutputTokens: 1000,
+        maxOutputTokens: 2000,
+        responseFormat: 'json',
       },
     });
 
