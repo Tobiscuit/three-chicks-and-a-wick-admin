@@ -21,7 +21,7 @@ export function MagicRequestOverview() {
   const loadFeatureFlag = async () => {
     try {
       setLoading(true);
-      const flag = await getFeatureFlag('enableMagicRequest');
+      const flag = await getFeatureFlag('magic-request-enabled');
       setIsEnabled(flag?.value ?? false);
     } catch (error) {
       console.error('Error loading feature flag:', error);
@@ -38,7 +38,7 @@ export function MagicRequestOverview() {
   const handleToggle = async (checked: boolean) => {
     try {
       setUpdating(true);
-      await setFeatureFlag('enableMagicRequest', checked);
+      await setFeatureFlag('magic-request-enabled', checked);
       setIsEnabled(checked);
       
       toast({
