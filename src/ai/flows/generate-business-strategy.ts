@@ -33,18 +33,20 @@ ${businessSnapshot.sales_by_day ? JSON.stringify(businessSnapshot.sales_by_day, 
 Top Selling Products:
 ${businessSnapshot.top_products?.map((p: any, i: number) => `${i + 1}. ${p.title} (${p.sales} sales)`).join('\n') || 'No product data'}
 
-Generate actionable business recommendations in JSON format with these categories:
+IMPORTANT: You must respond with ONLY valid JSON. No markdown, no code blocks, no explanations.
+
+Generate actionable business recommendations in this exact JSON structure:
 {
-  "pricing_recommendations": [list of 3-5 pricing strategy recommendations],
-  "marketing_suggestions": [list of 3-5 marketing ideas to increase sales],
-  "inventory_alerts": [list of inventory concerns or optimizations]
+  "pricing_recommendations": [list of 3-5 specific pricing strategy recommendations],
+  "marketing_suggestions": [list of 3-5 actionable marketing ideas to increase sales],
+  "inventory_alerts": [list of inventory concerns or optimizations, or empty array if none]
 }
 
-Focus on specific, actionable advice based on the data. Be concise and practical.`;
+Focus on specific, actionable advice based on the data. Be concise and practical. Return ONLY the JSON object.`;
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-2.5-flash',
+      model: 'googleai/gemini-2.5-pro',
       config: {
         temperature: 0.7,
         maxOutputTokens: 2000,
