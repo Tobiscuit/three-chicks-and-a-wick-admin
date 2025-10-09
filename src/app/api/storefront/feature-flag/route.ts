@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Feature Flag API] AppSync error:', errorText);
+      console.error('[Feature Flag API] AppSync HTTP error:', response.status, errorText);
       return NextResponse.json(
-        { error: 'Failed to update feature flag' },
+        { error: 'Failed to update feature flag', details: errorText },
         { status: response.status }
       );
     }
@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
 
     // Check for GraphQL errors
     if (result.errors) {
-      console.error('[Feature Flag API] GraphQL errors:', result.errors);
+      console.error('[Feature Flag API] GraphQL errors:', JSON.stringify(result.errors, null, 2));
       return NextResponse.json(
-        { error: result.errors[0]?.message || 'GraphQL error' },
+        { error: result.errors[0]?.message || 'GraphQL error', details: result.errors },
         { status: 400 }
       );
     }
@@ -139,6 +139,9 @@ export async function GET(request: NextRequest) {
       variables: { key }
     };
 
+    console.log('[Feature Flag API] GET - Requesting key:', key);
+    console.log('[Feature Flag API] GET - AppSync URL:', url);
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -149,8 +152,10 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Feature Flag API] GET - AppSync HTTP error:', response.status, errorText);
       return NextResponse.json(
-        { error: 'Failed to fetch feature flag' },
+        { error: 'Failed to fetch feature flag', details: errorText },
         { status: response.status }
       );
     }
@@ -158,8 +163,9 @@ export async function GET(request: NextRequest) {
     const result = await response.json();
 
     if (result.errors) {
+      console.error('[Feature Flag API] GET - GraphQL errors:', JSON.stringify(result.errors, null, 2));
       return NextResponse.json(
-        { error: result.errors[0]?.message || 'GraphQL error' },
+        { error: result.errors[0]?.message || 'GraphQL error', details: result.errors },
         { status: 400 }
       );
     }
