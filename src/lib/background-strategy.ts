@@ -60,7 +60,7 @@ export async function isStrategyCacheFresh(): Promise<boolean> {
 }
 
 /**
- * Cache strategy data to AppSync
+ * Cache strategy data to AppSync (with localStorage fallback)
  */
 async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
     try {
@@ -83,8 +83,18 @@ async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
 
         console.log('Strategy cached to AppSync successfully');
     } catch (error) {
-        console.error('Failed to cache strategy to AppSync:', error);
-        throw error;
+        console.error('Failed to cache strategy to AppSync, falling back to localStorage:', error);
+        
+        // Fallback to localStorage when AppSync fails
+        const cacheData = {
+            strategy: strategyData,
+            lastUpdated: new Date().toLocaleString(),
+            generatedAt: Date.now(),
+            expiresAt: Date.now() + CACHE_DURATION
+        };
+        
+        localStorage.setItem('ai-strategy-cache', JSON.stringify(cacheData));
+        console.log('Strategy cached to localStorage as fallback');
     }
 }
 

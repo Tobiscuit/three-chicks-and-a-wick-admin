@@ -98,8 +98,7 @@ export async function POST(request: NextRequest) {
       variables: {
         input: {
           strategy,
-          expiresAt,
-          adminSecret
+          expiresAt
         }
       }
     };
