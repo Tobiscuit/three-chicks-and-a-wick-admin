@@ -55,8 +55,34 @@ export async function getCachedStrategy(): Promise<StrategyCache | null> {
  * Check if strategy cache is fresh (less than 16 hours old)
  */
 export async function isStrategyCacheFresh(): Promise<boolean> {
+    console.log('🔍 [Strategy Debug] Checking AppSync cache...');
+    
+    // Try AppSync first
     const cached = await getCachedStrategy();
-    return cached !== null;
+    if (cached) {
+        console.log('✅ [Strategy Debug] AppSync cache found and fresh');
+        return true;
+    }
+    
+    console.log('⚠️ [Strategy Debug] AppSync cache failed, checking localStorage...');
+    
+    // Fallback to localStorage if AppSync fails
+    const localCached = localStorage.getItem('ai-strategy-cache');
+    if (localCached) {
+        try {
+            const { generatedAt } = JSON.parse(localCached);
+            const cacheAge = Date.now() - generatedAt;
+            const isFresh = cacheAge < CACHE_DURATION;
+            console.log('🔍 [Strategy Debug] localStorage cache age:', Math.round(cacheAge / 1000 / 60), 'minutes, fresh?', isFresh);
+            return isFresh;
+        } catch (error) {
+            console.log('❌ [Strategy Debug] localStorage cache parse error:', error);
+            return false;
+        }
+    }
+    
+    console.log('❌ [Strategy Debug] No cache found anywhere');
+    return false;
 }
 
 /**
@@ -103,13 +129,18 @@ async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
  * This should be called on user login
  */
 export async function startBackgroundStrategyGeneration(): Promise<void> {
+    console.log('🔍 [Strategy Debug] Checking cache freshness...');
+    
     // Only generate if cache is stale or doesn't exist
-    if (await isStrategyCacheFresh()) {
-        console.log('Strategy cache is fresh, skipping background generation');
+    const isFresh = await isStrategyCacheFresh();
+    console.log('🔍 [Strategy Debug] Cache fresh?', isFresh);
+    
+    if (isFresh) {
+        console.log('✅ [Strategy Debug] Strategy cache is fresh, skipping background generation');
         return;
     }
     
-    console.log('Starting background AI strategy generation...');
+    console.log('🚀 [Strategy Debug] Starting background AI strategy generation...');
     
     try {
         // Import dynamically to avoid circular dependencies
