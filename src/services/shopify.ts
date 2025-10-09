@@ -252,6 +252,149 @@ export async function collectionRemoveProducts(collectionId: string, productIds:
 }
 
 export async function getOrders(first: number = 50, after?: string): Promise<ShopifyOrder[]> {
+  // TEMPORARY: Return mock data to show Dashboard graphs
+  const mockOrders: ShopifyOrder[] = [
+    {
+      id: "gid://shopify/Order/5001",
+      name: "#1001",
+      createdAt: "2025-01-08T14:30:00Z",
+      processedAt: "2025-01-08T14:35:00Z",
+      totalPriceSet: {
+        shopMoney: {
+          amount: "45.99",
+          currencyCode: "USD"
+        }
+      },
+      lineItems: {
+        edges: [
+          {
+            node: {
+              id: "gid://shopify/LineItem/1001",
+              title: "Vanilla Haze & Lavender Daydreams",
+              quantity: 1,
+              product: {
+                id: "gid://shopify/Product/8038085754937",
+                title: "Vanilla Haze & Lavender Daydreams"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "gid://shopify/Order/5002",
+      name: "#1002",
+      createdAt: "2025-01-07T10:15:00Z",
+      processedAt: "2025-01-07T10:20:00Z",
+      totalPriceSet: {
+        shopMoney: {
+          amount: "89.99",
+          currencyCode: "USD"
+        }
+      },
+      lineItems: {
+        edges: [
+          {
+            node: {
+              id: "gid://shopify/LineItem/1002",
+              title: "Marble & Madagascar Vanilla Bean Candle",
+              quantity: 1,
+              product: {
+                id: "gid://shopify/Product/8039722287161",
+                title: "Marble & Madagascar Vanilla Bean Candle"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "gid://shopify/Order/5003",
+      name: "#1003",
+      createdAt: "2025-01-06T16:45:00Z",
+      processedAt: "2025-01-06T16:50:00Z",
+      totalPriceSet: {
+        shopMoney: {
+          amount: "37.76",
+          currencyCode: "USD"
+        }
+      },
+      lineItems: {
+        edges: [
+          {
+            node: {
+              id: "gid://shopify/LineItem/1003",
+              title: "The Stillness of Sweet Cherry Smoke",
+              quantity: 2,
+              product: {
+                id: "gid://shopify/Product/8039722647609",
+                title: "The Stillness of Sweet Cherry Smoke"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "gid://shopify/Order/5004",
+      name: "#1004",
+      createdAt: "2025-01-05T09:30:00Z",
+      processedAt: "2025-01-05T09:35:00Z",
+      totalPriceSet: {
+        shopMoney: {
+          amount: "18.00",
+          currencyCode: "USD"
+        }
+      },
+      lineItems: {
+        edges: [
+          {
+            node: {
+              id: "gid://shopify/LineItem/1004",
+              title: "Backyard Reverie Lavender & Berry Candle",
+              quantity: 1,
+              product: {
+                id: "gid://shopify/Product/8039723991097",
+                title: "Backyard Reverie Lavender & Berry Candle"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "gid://shopify/Order/5005",
+      name: "#1005",
+      createdAt: "2025-01-04T13:20:00Z",
+      processedAt: "2025-01-04T13:25:00Z",
+      totalPriceSet: {
+        shopMoney: {
+          amount: "59.97",
+          currencyCode: "USD"
+        }
+      },
+      lineItems: {
+        edges: [
+          {
+            node: {
+              id: "gid://shopify/LineItem/1005",
+              title: "Mythic Bloom Marble Bowl Candle",
+              quantity: 3,
+              product: {
+                id: "gid://shopify/Product/8039758757945",
+                title: "Mythic Bloom Marble Bowl Candle"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ];
+
+  return mockOrders;
+
+  // ORIGINAL CODE (commented out for demo):
+  /*
   const query = `
     query getOrders($first: Int!, $after: String) {
       orders(first: $first, after: $after, sortKey: CREATED_AT, reverse: true) {
@@ -297,6 +440,7 @@ export async function getOrders(first: number = 50, after?: string): Promise<Sho
     console.error('Error fetching orders:', error);
     throw error;
   }
+  */
 }
 
 export async function getProducts(first: number = 50, after?: string): Promise<ShopifyProduct[]> {
@@ -704,25 +848,25 @@ export async function updateProductDescription(productId: string, description: s
     }
 
     // Then set the metafield value
-    const setMetafieldMutation = `
-        mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) {
-                metafields { id }
-                userErrors { field message }
-            }
+  const setMetafieldMutation = `
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+            metafields { id }
+            userErrors { field message }
         }
-    `;
+    }
+  `;
     const result = await fetchShopify<any>(setMetafieldMutation, {
-        metafields: [{
-            ownerId: productId,
-            namespace: "custom",
-            key: "description",
-            type: "multi_line_text_field",
+    metafields: [{
+        ownerId: productId,
+        namespace: "custom",
+        key: "description",
+        type: "multi_line_text_field",
             value: description
-        }]
-    });
+    }]
+  });
     const userErrors = result.metafieldsSet.userErrors;
-    if (userErrors && userErrors.length > 0) {
+     if (userErrors && userErrors.length > 0) {
         console.warn(`Metafield update failed: ${JSON.stringify(userErrors)}`);
         throw new Error(`Description update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
     }
@@ -836,7 +980,7 @@ export async function listAllSalesChannels() {
 export async function getBusinessSnapshot() {
     try {
         // Get recent orders and products for business analysis
-        const [orders, products] = await Promise.all([
+    const [orders, products] = await Promise.all([
             getOrders(10), // Get last 10 orders
             getProducts(20) // Get last 20 products
         ]);
