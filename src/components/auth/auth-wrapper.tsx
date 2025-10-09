@@ -13,6 +13,7 @@ import { ShieldAlert } from 'lucide-react';
 import { AppSidebar } from '../layout/app-sidebar';
 import { SidebarProvider, SidebarInset } from '../ui/sidebar';
 import { Header } from '../layout/header';
+import { startBackgroundStrategyGeneration } from '@/lib/background-strategy';
 
 const AccessDeniedPage = () => {
     const { user } = useAuth();
@@ -56,6 +57,11 @@ export const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
           const result = await checkAuthorization(idToken);
           if (!result.isAuthorized) {
             console.warn("[Client] Authorization denied:", result.error);
+          } else {
+            // User is authorized - start background strategy generation
+            startBackgroundStrategyGeneration().catch(error => {
+              console.error('Background strategy generation failed:', error);
+            });
           }
           setIsAuthorized(result.isAuthorized);
         } catch (error: any) {

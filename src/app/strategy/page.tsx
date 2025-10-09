@@ -10,6 +10,7 @@ import { getBusinessSnapshot } from '@/services/shopify';
 import { generateBusinessStrategy } from '@/ai/flows/generate-business-strategy';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCachedStrategy, isStrategyCacheFresh } from '@/lib/background-strategy';
 
 type Strategy = {
     pricing_recommendations: string[];
@@ -28,20 +29,14 @@ export default function StrategyPage() {
             setLoading(true);
             setError(null);
             
-            // Check if we have cached strategy from today (only for force refresh)
-            const cacheKey = 'ai-strategy-cache';
-            const today = new Date().toDateString();
-            
+            // Check if we have cached strategy (only for force refresh)
             if (!forceRefresh) {
-                const cached = localStorage.getItem(cacheKey);
+                const cached = getCachedStrategy();
                 if (cached) {
-                    const { strategy: cachedStrategy, date, lastUpdated: cachedTime } = JSON.parse(cached);
-                    if (date === today) {
-                        setStrategy(cachedStrategy);
-                        setLastUpdated(cachedTime);
-                        setLoading(false);
-                        return;
-                    }
+                    setStrategy(cached.strategy);
+                    setLastUpdated(cached.lastUpdated);
+                    setLoading(false);
+                    return;
                 }
             }
             
@@ -79,10 +74,11 @@ export default function StrategyPage() {
                 
                 // Cache the result
                 const now = new Date();
+                const generatedAt = Date.now();
                 const cacheData = {
                     strategy: strategyData,
-                    date: today,
-                    lastUpdated: now.toLocaleString()
+                    lastUpdated: now.toLocaleString(),
+                    generatedAt: generatedAt
                 };
                 localStorage.setItem(cacheKey, JSON.stringify(cacheData));
                 setLastUpdated(now.toLocaleString());
@@ -100,10 +96,11 @@ export default function StrategyPage() {
                 
                 // Cache the fallback too
                 const now = new Date();
+                const generatedAt = Date.now();
                 const cacheData = {
                     strategy: fallbackStrategy,
-                    date: today,
-                    lastUpdated: now.toLocaleString()
+                    lastUpdated: now.toLocaleString(),
+                    generatedAt: generatedAt
                 };
                 localStorage.setItem(cacheKey, JSON.stringify(cacheData));
                 setLastUpdated(now.toLocaleString());
@@ -118,23 +115,16 @@ export default function StrategyPage() {
     };
 
     useEffect(() => {
-        // Load cached strategy immediately, then fetch in background if needed
-        const cacheKey = 'ai-strategy-cache';
-        const today = new Date().toDateString();
-        
-        const cached = localStorage.getItem(cacheKey);
+        // Load cached strategy immediately if available
+        const cached = getCachedStrategy();
         if (cached) {
-            const { strategy: cachedStrategy, date, lastUpdated: cachedTime } = JSON.parse(cached);
-            if (date === today) {
-                setStrategy(cachedStrategy);
-                setLastUpdated(cachedTime);
-                setLoading(false);
-                return; // Don't fetch if we have today's cache
-            }
+            setStrategy(cached.strategy);
+            setLastUpdated(cached.lastUpdated);
+            setLoading(false);
+        } else {
+            // No cache available - fetch strategy
+            fetchStrategy();
         }
-        
-        // No cache or outdated cache - fetch in background
-        fetchStrategy();
     }, []);
 
     const renderStrategyContent = () => {
