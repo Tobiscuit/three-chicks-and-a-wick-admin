@@ -44,14 +44,33 @@ Generate actionable business recommendations in this exact JSON structure:
 
 Focus on specific, actionable advice based on the data. Be concise and practical. Return ONLY the JSON object.`;
 
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'googleai/gemini-2.5-pro',
-      config: {
-        temperature: 0.7,
-        maxOutputTokens: 2000,
-      },
-    });
+        // Try Pro model first, fallback to Flash if overloaded
+        let llmResponse;
+        try {
+          llmResponse = await ai.generate({
+            prompt: prompt,
+            model: 'googleai/gemini-2.5-pro',
+            config: {
+              temperature: 0.7,
+              maxOutputTokens: 2000,
+            },
+          });
+        } catch (error: any) {
+          // If Pro model is overloaded (503), try Flash model
+          if (error.message?.includes('503') || error.message?.includes('overloaded')) {
+            console.log('Gemini Pro overloaded, falling back to Flash model');
+            llmResponse = await ai.generate({
+              prompt: prompt,
+              model: 'googleai/gemini-2.5-flash',
+              config: {
+                temperature: 0.7,
+                maxOutputTokens: 2000,
+              },
+            });
+          } else {
+            throw error; // Re-throw if it's not a 503 error
+          }
+        }
 
     return llmResponse.text;
   }
