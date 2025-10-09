@@ -3,52 +3,89 @@
  * 
  * This service handles generating AI business strategies in the background
  * when users log in, ensuring fresh insights are available when needed.
+ * Uses AppSync + DynamoDB for cross-device caching.
  */
 
-const CACHE_KEY = 'ai-strategy-cache';
 const CACHE_DURATION = 16 * 60 * 60 * 1000; // 16 hours in milliseconds
 
 interface StrategyCache {
     strategy: any;
     lastUpdated: string;
     generatedAt: number;
+    expiresAt: number;
+}
+
+/**
+ * Get cached strategy from AppSync if available and fresh
+ */
+export async function getCachedStrategy(): Promise<StrategyCache | null> {
+    try {
+        const response = await fetch('/api/storefront/strategy-cache', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch strategy cache:', response.status);
+            return null;
+        }
+
+        const result = await response.json();
+        const cacheData = result.getStrategyCache;
+
+        if (cacheData && cacheData.expiresAt > Date.now()) {
+            return {
+                strategy: JSON.parse(cacheData.strategy),
+                lastUpdated: new Date(cacheData.generatedAt).toLocaleString(),
+                generatedAt: cacheData.generatedAt,
+                expiresAt: cacheData.expiresAt
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error fetching cached strategy:', error);
+        return null;
+    }
 }
 
 /**
  * Check if strategy cache is fresh (less than 16 hours old)
  */
-export function isStrategyCacheFresh(): boolean {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (!cached) return false;
-    
-    try {
-        const { generatedAt } = JSON.parse(cached) as StrategyCache;
-        const cacheAge = Date.now() - generatedAt;
-        return cacheAge < CACHE_DURATION;
-    } catch {
-        return false;
-    }
+export async function isStrategyCacheFresh(): Promise<boolean> {
+    const cached = await getCachedStrategy();
+    return cached !== null;
 }
 
 /**
- * Get cached strategy if available and fresh
+ * Cache strategy data to AppSync
  */
-export function getCachedStrategy(): StrategyCache | null {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (!cached) return null;
-    
+async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
     try {
-        const data = JSON.parse(cached) as StrategyCache;
-        const cacheAge = Date.now() - data.generatedAt;
+        const expiresAt = Date.now() + CACHE_DURATION;
         
-        if (cacheAge < CACHE_DURATION) {
-            return data;
+        const response = await fetch('/api/storefront/strategy-cache', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                strategy: JSON.stringify(strategyData),
+                expiresAt
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to cache strategy: ${response.status}`);
         }
-    } catch {
-        // Invalid cache, ignore
+
+        console.log('Strategy cached to AppSync successfully');
+    } catch (error) {
+        console.error('Failed to cache strategy to AppSync:', error);
+        throw error;
     }
-    
-    return null;
 }
 
 /**
@@ -57,7 +94,7 @@ export function getCachedStrategy(): StrategyCache | null {
  */
 export async function startBackgroundStrategyGeneration(): Promise<void> {
     // Only generate if cache is stale or doesn't exist
-    if (isStrategyCacheFresh()) {
+    if (await isStrategyCacheFresh()) {
         console.log('Strategy cache is fresh, skipping background generation');
         return;
     }
@@ -102,16 +139,9 @@ export async function startBackgroundStrategyGeneration(): Promise<void> {
             };
         }
         
-        // Cache the result
-        const now = new Date();
-        const cacheData: StrategyCache = {
-            strategy: strategyData,
-            lastUpdated: now.toLocaleString(),
-            generatedAt: Date.now()
-        };
-        
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        console.log('Background strategy generation completed and cached');
+        // Cache the result to AppSync
+        await cacheStrategyToAppSync(strategyData);
+        console.log('Background strategy generation completed and cached to AppSync');
         
     } catch (error) {
         console.error('Background strategy generation failed:', error);

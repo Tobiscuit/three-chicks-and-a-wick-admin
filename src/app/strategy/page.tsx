@@ -31,7 +31,7 @@ export default function StrategyPage() {
             
             // Check if we have cached strategy (only for force refresh)
             if (!forceRefresh) {
-                const cached = getCachedStrategy();
+                const cached = await getCachedStrategy();
                 if (cached) {
                     setStrategy(cached.strategy);
                     setLastUpdated(cached.lastUpdated);
@@ -72,16 +72,26 @@ export default function StrategyPage() {
                 
                 setStrategy(strategyData);
                 
-                // Cache the result
-                const now = new Date();
-                const generatedAt = Date.now();
-                const cacheData = {
-                    strategy: strategyData,
-                    lastUpdated: now.toLocaleString(),
-                    generatedAt: generatedAt
-                };
-                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-                setLastUpdated(now.toLocaleString());
+                // Cache the result to AppSync
+                const expiresAt = Date.now() + (16 * 60 * 60 * 1000); // 16 hours
+                const cacheResponse = await fetch('/api/storefront/strategy-cache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        strategy: JSON.stringify(strategyData),
+                        expiresAt
+                    })
+                });
+                
+                if (cacheResponse.ok) {
+                    console.log('Strategy cached to AppSync successfully');
+                } else {
+                    console.error('Failed to cache strategy to AppSync');
+                }
+                
+                setLastUpdated(new Date().toLocaleString());
             } catch (parseError) {
                 console.error('Failed to parse strategy JSON:', parseError);
                 console.error('Raw result:', result);
@@ -95,15 +105,23 @@ export default function StrategyPage() {
                 setStrategy(fallbackStrategy);
                 
                 // Cache the fallback too
-                const now = new Date();
-                const generatedAt = Date.now();
-                const cacheData = {
-                    strategy: fallbackStrategy,
-                    lastUpdated: now.toLocaleString(),
-                    generatedAt: generatedAt
-                };
-                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-                setLastUpdated(now.toLocaleString());
+                const expiresAt = Date.now() + (16 * 60 * 60 * 1000); // 16 hours
+                try {
+                    await fetch('/api/storefront/strategy-cache', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            strategy: JSON.stringify(fallbackStrategy),
+                            expiresAt
+                        })
+                    });
+                } catch (cacheError) {
+                    console.error('Failed to cache fallback strategy:', cacheError);
+                }
+                
+                setLastUpdated(new Date().toLocaleString());
             }
         } catch (err: any) {
             console.error("Failed to generate strategy:", err);
@@ -116,15 +134,19 @@ export default function StrategyPage() {
 
     useEffect(() => {
         // Load cached strategy immediately if available
-        const cached = getCachedStrategy();
-        if (cached) {
-            setStrategy(cached.strategy);
-            setLastUpdated(cached.lastUpdated);
-            setLoading(false);
-        } else {
-            // No cache available - fetch strategy
-            fetchStrategy();
-        }
+        const loadCachedStrategy = async () => {
+            const cached = await getCachedStrategy();
+            if (cached) {
+                setStrategy(cached.strategy);
+                setLastUpdated(cached.lastUpdated);
+                setLoading(false);
+            } else {
+                // No cache available - fetch strategy
+                fetchStrategy();
+            }
+        };
+        
+        loadCachedStrategy();
     }, []);
 
     const renderStrategyContent = () => {
