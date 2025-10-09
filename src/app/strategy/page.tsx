@@ -28,7 +28,7 @@ export default function StrategyPage() {
             setLoading(true);
             setError(null);
             
-            // Check if we have cached strategy from today
+            // Check if we have cached strategy from today (only for force refresh)
             const cacheKey = 'ai-strategy-cache';
             const today = new Date().toDateString();
             
@@ -60,7 +60,21 @@ export default function StrategyPage() {
 
             // Parse the string result into a Strategy object
             try {
-                const strategyData = JSON.parse(result);
+                let strategyData;
+                
+                // Try to extract JSON from the result if it's wrapped in markdown or other text
+                const jsonMatch = result.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    strategyData = JSON.parse(jsonMatch[0]);
+                } else {
+                    strategyData = JSON.parse(result);
+                }
+                
+                // Validate that we have the expected structure
+                if (!strategyData.pricing_recommendations || !strategyData.marketing_suggestions) {
+                    throw new Error('Invalid strategy structure');
+                }
+                
                 setStrategy(strategyData);
                 
                 // Cache the result
@@ -73,11 +87,14 @@ export default function StrategyPage() {
                 localStorage.setItem(cacheKey, JSON.stringify(cacheData));
                 setLastUpdated(now.toLocaleString());
             } catch (parseError) {
+                console.error('Failed to parse strategy JSON:', parseError);
+                console.error('Raw result:', result);
+                
                 // If parsing fails, create a fallback strategy object
                 const fallbackStrategy = {
-                    pricing_recommendations: [result],
-                    marketing_suggestions: [],
-                    inventory_alerts: []
+                    pricing_recommendations: ["Unable to parse AI response. Please try regenerating the strategy."],
+                    marketing_suggestions: ["There was an issue processing the marketing recommendations."],
+                    inventory_alerts: ["Unable to analyze inventory data."]
                 };
                 setStrategy(fallbackStrategy);
                 
@@ -101,6 +118,22 @@ export default function StrategyPage() {
     };
 
     useEffect(() => {
+        // Load cached strategy immediately, then fetch in background if needed
+        const cacheKey = 'ai-strategy-cache';
+        const today = new Date().toDateString();
+        
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { strategy: cachedStrategy, date, lastUpdated: cachedTime } = JSON.parse(cached);
+            if (date === today) {
+                setStrategy(cachedStrategy);
+                setLastUpdated(cachedTime);
+                setLoading(false);
+                return; // Don't fetch if we have today's cache
+            }
+        }
+        
+        // No cache or outdated cache - fetch in background
         fetchStrategy();
     }, []);
 
