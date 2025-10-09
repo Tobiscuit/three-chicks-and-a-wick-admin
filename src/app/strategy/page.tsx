@@ -21,11 +21,29 @@ export default function StrategyPage() {
     const [strategy, setStrategy] = useState<Strategy | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-    const fetchStrategy = async () => {
+    const fetchStrategy = async (forceRefresh = false) => {
         try {
             setLoading(true);
             setError(null);
+            
+            // Check if we have cached strategy from today
+            const cacheKey = 'ai-strategy-cache';
+            const today = new Date().toDateString();
+            
+            if (!forceRefresh) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const { strategy: cachedStrategy, date, lastUpdated: cachedTime } = JSON.parse(cached);
+                    if (date === today) {
+                        setStrategy(cachedStrategy);
+                        setLastUpdated(cachedTime);
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
             
             // 1. Get business snapshot from Shopify
             const snapshot = await getBusinessSnapshot();
@@ -44,13 +62,34 @@ export default function StrategyPage() {
             try {
                 const strategyData = JSON.parse(result);
                 setStrategy(strategyData);
+                
+                // Cache the result
+                const now = new Date();
+                const cacheData = {
+                    strategy: strategyData,
+                    date: today,
+                    lastUpdated: now.toLocaleString()
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                setLastUpdated(now.toLocaleString());
             } catch (parseError) {
                 // If parsing fails, create a fallback strategy object
-                setStrategy({
+                const fallbackStrategy = {
                     pricing_recommendations: [result],
                     marketing_suggestions: [],
                     inventory_alerts: []
-                });
+                };
+                setStrategy(fallbackStrategy);
+                
+                // Cache the fallback too
+                const now = new Date();
+                const cacheData = {
+                    strategy: fallbackStrategy,
+                    date: today,
+                    lastUpdated: now.toLocaleString()
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                setLastUpdated(now.toLocaleString());
             }
         } catch (err: any) {
             console.error("Failed to generate strategy:", err);
@@ -142,16 +181,23 @@ export default function StrategyPage() {
                                 Actionable recommendations based on your latest Shopify data.
                             </CardDescription>
                         </div>
-                        <Button onClick={() => fetchStrategy()} disabled={loading}>
-                            {loading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Generating...
-                                </>
-                            ): (
-                                "Regenerate Strategy"
+                        <div className="flex flex-col items-end gap-2">
+                            <Button onClick={() => fetchStrategy(true)} disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generating...
+                                    </>
+                                ): (
+                                    "Regenerate Strategy"
+                                )}
+                            </Button>
+                            {lastUpdated && (
+                                <p className="text-xs text-muted-foreground">
+                                    Last updated: {lastUpdated}
+                                </p>
                             )}
-                        </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
