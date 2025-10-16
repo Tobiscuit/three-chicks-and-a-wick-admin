@@ -18,9 +18,13 @@ interface StrategyCache {
 /**
  * Get cached strategy from AppSync if available and fresh
  */
-export async function getCachedStrategy(): Promise<StrategyCache | null> {
+export async function getCachedStrategy(userId?: string): Promise<StrategyCache | null> {
     try {
-        const response = await fetch('/api/storefront/strategy-cache', {
+        const url = userId 
+            ? `/api/storefront/strategy-cache?userId=${userId}` 
+            : '/api/storefront/strategy-cache';
+            
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -54,11 +58,11 @@ export async function getCachedStrategy(): Promise<StrategyCache | null> {
 /**
  * Check if strategy cache is fresh (less than 16 hours old)
  */
-export async function isStrategyCacheFresh(): Promise<boolean> {
+export async function isStrategyCacheFresh(userId?: string): Promise<boolean> {
     console.log('🔍 [Strategy Debug] Checking AppSync cache...');
     
     // Try AppSync first
-    const cached = await getCachedStrategy();
+    const cached = await getCachedStrategy(userId);
     if (cached) {
         console.log('✅ [Strategy Debug] AppSync cache found and fresh');
         return true;
@@ -88,7 +92,7 @@ export async function isStrategyCacheFresh(): Promise<boolean> {
 /**
  * Cache strategy data to AppSync (with localStorage fallback)
  */
-async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
+async function cacheStrategyToAppSync(strategyData: any, userId?: string): Promise<void> {
     try {
         const expiresAt = Date.now() + CACHE_DURATION;
         
@@ -99,7 +103,8 @@ async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
             },
             body: JSON.stringify({
                 strategy: JSON.stringify(strategyData),
-                expiresAt
+                expiresAt,
+                userId
             })
         });
 
@@ -128,11 +133,11 @@ async function cacheStrategyToAppSync(strategyData: any): Promise<void> {
  * Start background strategy generation if cache is stale
  * This should be called on user login
  */
-export async function startBackgroundStrategyGeneration(): Promise<void> {
+export async function startBackgroundStrategyGeneration(userId?: string): Promise<void> {
     console.log('🔍 [Strategy Debug] Checking cache freshness...');
     
     // Only generate if cache is stale or doesn't exist
-    const isFresh = await isStrategyCacheFresh();
+    const isFresh = await isStrategyCacheFresh(userId);
     console.log('🔍 [Strategy Debug] Cache fresh?', isFresh);
     
     if (isFresh) {
@@ -181,7 +186,7 @@ export async function startBackgroundStrategyGeneration(): Promise<void> {
         }
         
         // Cache the result to AppSync
-        await cacheStrategyToAppSync(strategyData);
+        await cacheStrategyToAppSync(strategyData, userId);
         console.log('Background strategy generation completed and cached to AppSync');
         
     } catch (error) {

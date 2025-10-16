@@ -11,6 +11,7 @@ import { generateBusinessStrategy } from '@/ai/flows/generate-business-strategy'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCachedStrategy, isStrategyCacheFresh } from '@/lib/background-strategy';
+import { useAuth } from '@/components/auth/auth-context';
 
 type Strategy = {
     pricing_recommendations: string[];
@@ -19,6 +20,7 @@ type Strategy = {
 }
 
 export default function StrategyPage() {
+    const { user } = useAuth();
     const [strategy, setStrategy] = useState<Strategy | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function StrategyPage() {
             
             // Check if we have cached strategy (only for force refresh)
             if (!forceRefresh) {
-                const cached = await getCachedStrategy();
+                const cached = await getCachedStrategy(user?.uid);
                 if (cached) {
                     setStrategy(cached.strategy);
                     setLastUpdated(cached.lastUpdated);
@@ -72,7 +74,7 @@ export default function StrategyPage() {
                 
                 setStrategy(strategyData);
                 
-                // Cache the result to AppSync
+                // Cache the result to AppSync with user ID for per-user caching
                 const expiresAt = Date.now() + (16 * 60 * 60 * 1000); // 16 hours
                 const cacheResponse = await fetch('/api/storefront/strategy-cache', {
                     method: 'POST',
@@ -81,7 +83,8 @@ export default function StrategyPage() {
                     },
                     body: JSON.stringify({
                         strategy: JSON.stringify(strategyData),
-                        expiresAt
+                        expiresAt,
+                        userId: user?.uid
                     })
                 });
                 
@@ -104,7 +107,7 @@ export default function StrategyPage() {
                 };
                 setStrategy(fallbackStrategy);
                 
-                // Cache the fallback too
+                // Cache the fallback too with user ID
                 const expiresAt = Date.now() + (16 * 60 * 60 * 1000); // 16 hours
                 try {
                     await fetch('/api/storefront/strategy-cache', {
@@ -114,7 +117,8 @@ export default function StrategyPage() {
                         },
                         body: JSON.stringify({
                             strategy: JSON.stringify(fallbackStrategy),
-                            expiresAt
+                            expiresAt,
+                            userId: user?.uid
                         })
                     });
                 } catch (cacheError) {
