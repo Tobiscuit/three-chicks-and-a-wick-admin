@@ -58,8 +58,8 @@ export const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
           if (!result.isAuthorized) {
             console.warn("[Client] Authorization denied:", result.error);
           } else {
-            // User is authorized - start background strategy generation
-            startBackgroundStrategyGeneration().catch(error => {
+            // User is authorized - start background strategy generation with user ID for per-user caching
+            startBackgroundStrategyGeneration(user.uid).catch(error => {
               console.error('Background strategy generation failed:', error);
             });
           }

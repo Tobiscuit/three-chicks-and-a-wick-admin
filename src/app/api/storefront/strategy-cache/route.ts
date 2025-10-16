@@ -9,18 +9,26 @@ export async function GET(request: NextRequest) {
     const { url, apiKey } = getAppSyncConfig();
     const adminSecret = getAdminSecret();
     
+    // Get userId from query params for per-user caching
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const cacheId = userId ? `user:${userId}` : 'global';
+    
     // GraphQL query to get strategy cache
     const graphqlQuery = {
       query: `
-        query GetStrategyCache {
-          getStrategyCache {
+        query GetStrategyCache($id: ID!) {
+          getStrategyCache(id: $id) {
             id
             strategy
             generatedAt
             expiresAt
           }
         }
-      `
+      `,
+      variables: {
+        id: cacheId
+      }
     };
 
     console.log('[Strategy Cache API] GET - Fetching strategy cache from AppSync');
@@ -74,7 +82,7 @@ export async function POST(request: NextRequest) {
     const adminSecret = getAdminSecret();
     
     const body = await request.json();
-    const { strategy, expiresAt } = body;
+    const { strategy, expiresAt, userId } = body;
 
     if (!strategy || !expiresAt) {
       return NextResponse.json(
@@ -82,6 +90,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Use userId for per-user caching, or 'global' for shared cache
+    const cacheId = userId ? `user:${userId}` : 'global';
 
     // GraphQL mutation to set strategy cache
     const graphqlQuery = {
@@ -97,6 +108,7 @@ export async function POST(request: NextRequest) {
       `,
       variables: {
         input: {
+          id: cacheId,
           strategy,
           expiresAt
         }
