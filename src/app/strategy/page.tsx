@@ -11,7 +11,7 @@ import { generateBusinessStrategy } from '@/ai/flows/generate-business-strategy'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCachedStrategy, isStrategyCacheFresh } from '@/lib/background-strategy';
-import { useAuth } from '@/components/auth/auth-context';
+import { useAuth } from '@/components/auth/auth-provider';
 
 type Strategy = {
     pricing_recommendations: string[];
