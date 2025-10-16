@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Configuration archive (contains sensitive backup files)
+/config-archive/
+
 # Dependencies
 /node_modules
 **/node_modules
@@ -106,3 +109,5 @@ temp
 # Internal documentation
 /docs-internal/
 *.INTERNAL.md
+
+.vercel
