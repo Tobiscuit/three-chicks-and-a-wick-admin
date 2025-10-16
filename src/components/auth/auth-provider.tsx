@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onIdTokenChanged, User, getRedirectResult } from 'firebase/auth';
+import { onIdTokenChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -28,21 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // Check for redirect result first (for signInWithRedirect)
-    const checkRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log('Redirect sign-in successful:', result.user.email);
-        }
-      } catch (error: any) {
-        console.error('Redirect sign-in error:', error);
-      }
-    };
-    
-    checkRedirectResult();
-
-    // Then listen for auth state changes
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       setLoading(true);
       if (user) {

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,11 +26,12 @@ export const LoginPage = () => {
   const handleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // Use redirect instead of popup for better Safari/iOS compatibility
-      await signInWithRedirect(auth, provider);
-      // Note: Toast won't show because page redirects, but auth-wrapper will handle success
+      await signInWithPopup(auth, provider);
+      toast({
+        title: "Success",
+        description: "Signed in successfully!",
+      });
     } catch (error: any) {
-      // Redirect errors are rare, but handle them gracefully
       if (error.code === 'auth/cancelled-popup-request') {
         console.log("Sign-in cancelled by user.");
         return;
