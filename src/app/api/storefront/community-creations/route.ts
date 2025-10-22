@@ -5,11 +5,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyIdToken } from '@/lib/server-auth';
+import { verifyAdminAuth } from '@/lib/server-auth';
 
 // AppSync configuration (server-side only)
-const APPSYNC_URL = process.env.NEXT_PUBLIC_APPSYNC_URL || 'https://k27zfa7alffqzmrgdjnw4pe5oa.appsync-api.us-east-1.amazonaws.com/graphql';
-const APPSYNC_API_KEY = process.env.NEXT_PUBLIC_APPSYNC_API_KEY || 'da2-spzif6mumbeshobov3eoynwq5i';
+const APPSYNC_URL = process.env.STOREFRONT_APPSYNC_URL;
+const APPSYNC_API_KEY = process.env.STOREFRONT_APPSYNC_API_KEY;
 
 // GraphQL Query
 const GET_COMMUNITY_CREATIONS = `
