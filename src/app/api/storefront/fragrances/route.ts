@@ -108,6 +108,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check required environment variables
+    if (!APPSYNC_URL || !APPSYNC_API_KEY) {
+      console.error('Missing required environment variables');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     // Check if requesting a single fragrance by ID
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -171,6 +180,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', details: authResult.error },
         { status: 401 }
+      );
+    }
+
+    // Check required environment variables
+    if (!APPSYNC_URL || !APPSYNC_API_KEY) {
+      console.error('Missing required environment variables');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
       );
     }
 
@@ -253,6 +271,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Check required environment variables
+    if (!APPSYNC_URL || !APPSYNC_API_KEY) {
+      console.error('Missing required environment variables');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { id, input } = body;
 
@@ -331,6 +358,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', details: authResult.error },
         { status: 401 }
+      );
+    }
+
+    // Check required environment variables
+    if (!APPSYNC_URL || !APPSYNC_API_KEY) {
+      console.error('Missing required environment variables');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
       );
     }
 
