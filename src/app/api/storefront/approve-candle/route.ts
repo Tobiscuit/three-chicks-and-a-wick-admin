@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check admin secret is configured
-    if (!ADMIN_SECRET) {
-      console.error('STOREFRONT_ADMIN_SECRET not configured');
+    // Check required environment variables
+    if (!APPSYNC_URL || !APPSYNC_API_KEY || !ADMIN_SECRET) {
+      console.error('Missing required environment variables');
       return NextResponse.json(
         { success: false, error: 'Server configuration error' },
         { status: 500 }
