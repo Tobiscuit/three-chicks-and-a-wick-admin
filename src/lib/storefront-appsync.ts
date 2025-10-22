@@ -54,6 +54,46 @@ export interface FeatureFlag {
   updatedBy?: string;
 }
 
+export interface Fragrance {
+  id: string;
+  name: string;
+  description?: string;
+  quantityOz: number;
+  costPerOz?: number;
+  status: 'IN_STOCK' | 'LOW' | 'OUT_OF_STOCK';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface FragranceInput {
+  name: string;
+  description?: string;
+  quantityOz: number;
+  costPerOz?: number;
+  status: 'IN_STOCK' | 'LOW' | 'OUT_OF_STOCK';
+}
+
+export interface FragranceList {
+  items: Fragrance[];
+  count: number;
+}
+
+export interface CommunityItem {
+  jobId: string;
+  candleName?: string;
+  html: string;
+  createdAt: number;
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: string;
+  reviewedAt?: number;
+  rejectionReason?: string;
+}
+
+export interface CommunityCreationsPage {
+  items: CommunityItem[];
+  nextToken?: string;
+}
+
 // Default config fallback
 const getDefaultConfig = (): MagicRequestConfig => ({
   waxTypes: [
@@ -213,6 +253,257 @@ export async function updateMagicRequestConfig(config: Omit<MagicRequestConfig, 
   
   if (!result.success) {
     throw new Error(result.error || 'Failed to update configuration');
+  }
+
+  return result.data;
+}
+
+/**
+ * Fragrance Inventory Functions
+ * These call the Admin Panel's API routes, which then proxy to AppSync
+ */
+
+export async function listFragrances(): Promise<FragranceList> {
+  try {
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.error('[listFragrances] No ID token available');
+      return { items: [], count: 0 };
+    }
+
+    const response = await fetch('/api/storefront/fragrances', {
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Error fetching fragrances:', response.statusText);
+      return { items: [], count: 0 };
+    }
+
+    const result = await response.json();
+    return result.success ? result.data : { items: [], count: 0 };
+  } catch (error) {
+    console.error('Error fetching fragrances:', error);
+    return { items: [], count: 0 };
+  }
+}
+
+export async function getFragrance(id: string): Promise<Fragrance | null> {
+  try {
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.error('[getFragrance] No ID token available');
+      return null;
+    }
+
+    const response = await fetch(`/api/storefront/fragrances?id=${encodeURIComponent(id)}`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Error fetching fragrance:', response.statusText);
+      return null;
+    }
+
+    const result = await response.json();
+    return result.success ? result.data : null;
+  } catch (error) {
+    console.error('Error fetching fragrance:', error);
+    return null;
+  }
+}
+
+export async function createFragrance(input: FragranceInput): Promise<Fragrance> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
+  const response = await fetch('/api/storefront/fragrances', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ input }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create fragrance');
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to create fragrance');
+  }
+
+  return result.data;
+}
+
+export async function updateFragrance(id: string, input: FragranceInput): Promise<Fragrance> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
+  const response = await fetch('/api/storefront/fragrances', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ id, input }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update fragrance');
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to update fragrance');
+  }
+
+  return result.data;
+}
+
+export async function deleteFragrance(id: string): Promise<{ success: boolean; message: string }> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
+  const response = await fetch(`/api/storefront/fragrances?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete fragrance');
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to delete fragrance');
+  }
+
+  return result.data;
+}
+
+/**
+ * Community Creations (Shared Candles) Functions
+ * These call the Admin Panel's API routes, which then proxy to AppSync
+ */
+
+export async function getCommunityCreations(
+  limit: number = 50, 
+  nextToken?: string,
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
+): Promise<CommunityCreationsPage> {
+  try {
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.error('[getCommunityCreations] No ID token available');
+      return { items: [] };
+    }
+
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (nextToken) {
+      params.append('nextToken', nextToken);
+    }
+    if (reviewStatus) {
+      params.append('reviewStatus', reviewStatus);
+    }
+
+    const response = await fetch(`/api/storefront/community-creations?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Error fetching community creations:', response.statusText);
+      return { items: [] };
+    }
+
+    const result = await response.json();
+    return result.success ? result.data : { items: [] };
+  } catch (error) {
+    console.error('Error fetching community creations:', error);
+    return { items: [] };
+  }
+}
+
+/**
+ * Approval/Rejection Functions for Shared Candles
+ * These call the Admin Panel's API routes, which then proxy to AppSync
+ */
+
+export async function approveSharedCandle(jobId: string): Promise<CommunityItem> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
+  const response = await fetch('/api/storefront/approve-candle', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ jobId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to approve candle');
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to approve candle');
+  }
+
+  return result.data;
+}
+
+export async function rejectSharedCandle(jobId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  const idToken = await getIdToken();
+  if (!idToken) {
+    throw new Error('No ID token available - user may not be authenticated');
+  }
+
+  const response = await fetch('/api/storefront/reject-candle', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ jobId, reason }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to reject candle');
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to reject candle');
   }
 
   return result.data;

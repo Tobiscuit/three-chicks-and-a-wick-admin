@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MagicRequestOverview } from '@/components/magic-request/overview';
 import { MagicRequestPricing } from '@/components/magic-request/pricing';
 import { MagicRequestVariants } from '@/components/magic-request/variants';
+import { MagicRequestFragrances } from '@/components/magic-request/fragrances';
 import { MagicRequestReviews } from '@/components/magic-request/reviews';
 import { MagicRequestLogs } from '@/components/magic-request/logs';
 import { Wand2, ChevronDown } from 'lucide-react';
@@ -19,6 +20,7 @@ export default function MagicRequestPage() {
     { value: 'overview', label: 'Overview' },
     { value: 'pricing', label: 'Pricing' },
     { value: 'variants', label: 'Variants' },
+    { value: 'fragrances', label: 'Fragrances' },
     { value: 'reviews', label: 'Reviews' },
     { value: 'logs', label: 'Logs' }
   ];
@@ -38,7 +40,7 @@ export default function MagicRequestPage() {
           {/* Desktop tabs */}
           <div className="hidden sm:block">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 {tabs.map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value}>
                     {tab.label}
@@ -82,6 +84,7 @@ export default function MagicRequestPage() {
           {activeTab === 'overview' && <MagicRequestOverview />}
           {activeTab === 'pricing' && <MagicRequestPricing />}
           {activeTab === 'variants' && <MagicRequestVariants />}
+          {activeTab === 'fragrances' && <MagicRequestFragrances />}
           {activeTab === 'reviews' && <MagicRequestReviews />}
           {activeTab === 'logs' && <MagicRequestLogs />}
         </div>
