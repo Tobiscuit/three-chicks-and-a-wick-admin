@@ -45,12 +45,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const idToken = authHeader.substring(7);
-    const decodedToken = await verifyIdToken(idToken);
-    
-    if (!decodedToken) {
+    // Verify admin authentication
+    const authResult = await verifyAdminAuth(request);
+    if (!authResult.authorized) {
       return NextResponse.json(
-        { success: false, error: 'Invalid token' },
+        { success: false, error: 'Unauthorized', details: authResult.error },
         { status: 401 }
       );
     }
