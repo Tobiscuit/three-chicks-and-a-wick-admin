@@ -64,7 +64,8 @@ export const DEFAULT_CONTAINER_SIZE_OPTIONS: ContainerSize[] = [
     size: '16oz',
     costPerUnit: 0.96, // $11.56 / 12 = $0.96 per jar
     supplier: 'Bulk Supplier',
-    quantity: 0
+    quantity: 0,
+    unit: 'pieces'
   },
   {
     id: 'metal-tin-8oz',
@@ -73,7 +74,8 @@ export const DEFAULT_CONTAINER_SIZE_OPTIONS: ContainerSize[] = [
     size: '8oz',
     costPerUnit: 1.80, // Average of $1.70-$1.89
     supplier: 'Bulk Supplier',
-    quantity: 0
+    quantity: 0,
+    unit: 'pieces'
   }
 ];
 
