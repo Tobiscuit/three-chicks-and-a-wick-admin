@@ -75,7 +75,7 @@ export default function ContainerSizeManager() {
     const ingredientMap = {
       wax: ingredients.waxTypes,
       containerSize: ingredients.containerSizes,
-      wicks: ingredients.wicks
+      wick: ingredients.wicks  // Fix: use 'wick' as key but access 'wicks' property
     };
     
     return Object.keys(ingredientMap[type]);
