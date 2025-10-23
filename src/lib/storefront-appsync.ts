@@ -43,7 +43,7 @@ export interface MagicRequestConfig {
   waxTypes: MagicRequestOption[];
   candleSizes: MagicRequestOption[];
   wickTypes: MagicRequestOption[];
-  jarTypes: MagicRequestOption[];
+  containers: MagicRequestOption[];
   updatedAt?: string;
 }
 
@@ -111,7 +111,7 @@ const getDefaultConfig = (): MagicRequestConfig => ({
     { name: 'Hemp', value: 'Hemp', enabled: true, order: 2 },
     { name: 'Wood', value: 'Wood', enabled: true, order: 3 },
   ],
-  jarTypes: [
+  containers: [
     { name: 'Standard Tin', value: 'Standard Tin', enabled: true, order: 1 },
     { name: 'Amber Glass', value: 'Amber Glass', enabled: true, order: 2 },
     { name: 'Frosted Glass', value: 'Frosted Glass', enabled: true, order: 3 },

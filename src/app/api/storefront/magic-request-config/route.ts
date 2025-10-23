@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const config = await request.json();
     
     // Validate config structure
-    if (!config.waxTypes || !config.candleSizes || !config.wickTypes || !config.jarTypes) {
+    if (!config.waxTypes || !config.candleSizes || !config.wickTypes || !config.containers) {
       return NextResponse.json(
         { error: 'Invalid config: missing required fields' },
         { status: 400 }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
               enabled
               order
             }
-            jarTypes {
+            containers {
               name
               value
               enabled
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
               enabled
               order
             }
-            jarTypes {
+            containers {
               name
               value
               enabled

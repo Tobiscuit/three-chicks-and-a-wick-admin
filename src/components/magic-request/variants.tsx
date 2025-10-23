@@ -252,7 +252,7 @@ export function MagicRequestVariants() {
         {renderOptionList('waxTypes', 'Wax Types', 'Types of wax available for custom candles')}
         {renderOptionList('candleSizes', 'Candle Sizes', 'Available candle sizes with pricing', true)}
         {renderOptionList('wickTypes', 'Wick Types', 'Types of wicks customers can choose from')}
-        {renderOptionList('jarTypes', 'Jar Types', 'Container options for custom candles')}
+        {renderOptionList('containers', 'Container Types', 'Container options for custom candles')}
       </div>
     </div>
   );
