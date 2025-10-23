@@ -5,8 +5,6 @@ import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MagicRequestOverview } from '@/components/magic-request/overview';
-import { MagicRequestPricing } from '@/components/magic-request/pricing';
-import { MagicRequestVariants } from '@/components/magic-request/variants';
 import { MagicRequestFragrances } from '@/components/magic-request/fragrances';
 import { MagicRequestReviews } from '@/components/magic-request/reviews';
 import { MagicRequestLogs } from '@/components/magic-request/logs';
@@ -19,10 +17,8 @@ export default function MagicRequestPage() {
 
   const tabs = [
     { value: 'overview', label: 'Overview' },
-    { value: 'pricing', label: 'Pricing' },
-    { value: 'variants', label: 'Variants' },
     { value: 'fragrances', label: 'Fragrances' },
-    { value: 'container-sizes', label: 'Container Sizes' },
+    { value: 'ingredients', label: 'Ingredients' },
     { value: 'reviews', label: 'Reviews' },
     { value: 'logs', label: 'Logs' }
   ];
@@ -42,7 +38,7 @@ export default function MagicRequestPage() {
           {/* Desktop tabs */}
           <div className="hidden sm:block">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-7">
+              <TabsList className="grid w-full grid-cols-5">
                 {tabs.map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value}>
                     {tab.label}
@@ -84,10 +80,8 @@ export default function MagicRequestPage() {
 
           {/* Tab content */}
           {activeTab === 'overview' && <MagicRequestOverview />}
-          {activeTab === 'pricing' && <MagicRequestPricing />}
-          {activeTab === 'variants' && <MagicRequestVariants />}
           {activeTab === 'fragrances' && <MagicRequestFragrances />}
-          {activeTab === 'container-sizes' && <ContainerSizeManager />}
+          {activeTab === 'ingredients' && <ContainerSizeManager />}
           {activeTab === 'reviews' && <MagicRequestReviews />}
           {activeTab === 'logs' && <MagicRequestLogs />}
         </div>
