@@ -162,6 +162,92 @@ function calculateWaxNeeded(containerSize: string): number {
 }
 
 /**
+ * Get Magic Request ingredients from Shopify metafields
+ * Aggregates unique wax types, wick types, and containers from all Magic Request products
+ */
+export async function getMagicRequestIngredientsFromShopify(): Promise<{
+  waxTypes: string[];
+  wickTypes: string[];
+  containers: string[];
+}> {
+  try {
+    const query = `
+      query GetMagicRequestIngredients {
+        products(first: 50, query: "product_type:Magic Request") {
+          edges {
+            node {
+              id
+              title
+              mrWaxTypes: metafield(namespace: "magic_request", key: "waxTypes") {
+                value
+              }
+              mrWickTypes: metafield(namespace: "magic_request", key: "wickTypes") {
+                value
+              }
+              mrContainerType: metafield(namespace: "magic_request", key: "containerType") {
+                value
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const result = await fetchShopify<any>(query);
+    const products = result.products.edges.map((edge: any) => edge.node);
+    
+    const waxTypesSet = new Set<string>();
+    const wickTypesSet = new Set<string>();
+    const containersSet = new Set<string>();
+    
+    products.forEach((product: any) => {
+      // Parse list metafields (JSON arrays)
+      if (product.mrWaxTypes?.value) {
+        try {
+          const waxTypes = JSON.parse(product.mrWaxTypes.value);
+          if (Array.isArray(waxTypes)) {
+            waxTypes.forEach((wax: string) => waxTypesSet.add(wax));
+          }
+        } catch (e) {
+          console.warn('Failed to parse waxTypes metafield:', product.mrWaxTypes.value);
+        }
+      }
+      
+      if (product.mrWickTypes?.value) {
+        try {
+          const wickTypes = JSON.parse(product.mrWickTypes.value);
+          if (Array.isArray(wickTypes)) {
+            wickTypes.forEach((wick: string) => wickTypesSet.add(wick));
+          }
+        } catch (e) {
+          console.warn('Failed to parse wickTypes metafield:', product.mrWickTypes.value);
+        }
+      }
+      
+      // Container type is a single line text field
+      if (product.mrContainerType?.value) {
+        containersSet.add(product.mrContainerType.value);
+      }
+    });
+    
+    return {
+      waxTypes: Array.from(waxTypesSet).sort(),
+      wickTypes: Array.from(wickTypesSet).sort(),
+      containers: Array.from(containersSet).sort()
+    };
+  } catch (error) {
+    console.error('Error fetching Magic Request ingredients from Shopify:', error);
+    // Fallback to mock data if query fails
+    const mock = getMockIngredientInventory();
+    return {
+      waxTypes: Object.keys(mock.waxTypes).sort(),
+      wickTypes: Object.keys(mock.wicks).sort(),
+      containers: Object.keys(mock.containerSizes).sort()
+    };
+  }
+}
+
+/**
  * Get container-size options from Shopify
  */
 export async function getContainerSizeOptionsFromShopify(): Promise<ContainerSize[]> {
