@@ -19,7 +19,7 @@ export type DeployResult = {
   diff: {
     vesselsToCreate: string[];
     vesselsToUpdate: string[];
-    vesselsToDisable: string[]; // Set mr.enabled=false (reversible)
+    vesselsToDisable: string[]; // Set magic_request.enabled=false (reversible)
     vesselsToDelete: string[];  // Actually delete from Shopify (irreversible)
     summary: string;
   };
