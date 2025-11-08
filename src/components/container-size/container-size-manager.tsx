@@ -8,20 +8,27 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  ContainerSize, 
-  IngredientInventory, 
-  calculateAvailableVariants, 
+import {
+  ContainerSize,
+  IngredientInventory,
   getMockIngredientInventory,
-  updateIngredientInventory
+  updateIngredientInventory,
 } from '@/services/container-size-management';
 import { useToast } from '@/hooks/use-toast';
 import { fetchMagicRequestIngredients } from '@/app/magic-request/ingredients-actions';
+import { getAvailableVariantCombosAction, type VariantCombination } from '@/app/magic-request/pricing-actions';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export default function ContainerSizeManager() {
   const { toast } = useToast();
   const [ingredients, setIngredients] = useState<IngredientInventory>(getMockIngredientInventory());
-  const [availableVariants, setAvailableVariants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingIngredients, setLoadingIngredients] = useState(true);
   const [shopifyIngredients, setShopifyIngredients] = useState<{
@@ -29,6 +36,9 @@ export default function ContainerSizeManager() {
     wickTypes: string[];
     containers: string[];
   } | null>(null);
+  const [shopifyVariants, setShopifyVariants] = useState<VariantCombination[]>([]);
+  const [loadingVariants, setLoadingVariants] = useState(true);
+  const [variantError, setVariantError] = useState<string | null>(null);
   const [selectedIngredient, setSelectedIngredient] = useState<{
     type: 'wax' | 'containerSize' | 'wick';
     name: string;
@@ -40,13 +50,8 @@ export default function ContainerSizeManager() {
   // Load ingredients from Shopify on mount
   useEffect(() => {
     loadIngredientsFromShopify();
+    loadShopifyVariants();
   }, []);
-
-  // Calculate available variants when ingredients change
-  useEffect(() => {
-    const variants = calculateAvailableVariants(ingredients);
-    setAvailableVariants(variants);
-  }, [ingredients]);
 
   const loadIngredientsFromShopify = async () => {
     try {
@@ -67,6 +72,28 @@ export default function ContainerSizeManager() {
       });
     } finally {
       setLoadingIngredients(false);
+    }
+  };
+
+  const loadShopifyVariants = async () => {
+    try {
+      setVariantError(null);
+      setLoadingVariants(true);
+      const result = await getAvailableVariantCombosAction();
+      if (result.success && result.data) {
+        setShopifyVariants(result.data);
+      } else {
+        throw new Error(result.error || 'Failed to load variant combinations');
+      }
+    } catch (error) {
+      console.error('Error loading variant combos:', error);
+      setVariantError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to load variant combinations'
+      );
+    } finally {
+      setLoadingVariants(false);
     }
   };
 
@@ -139,8 +166,10 @@ export default function ContainerSizeManager() {
   };
 
   const lowStockIngredients = getLowStockIngredients();
-  const canMakeCount = availableVariants.filter(v => v.canMake).length;
-  const totalVariants = availableVariants.length;
+  const totalVariants = shopifyVariants.length;
+  const uniqueContainers = new Set(shopifyVariants.map((variant) => variant.container));
+  const uniqueWaxes = new Set(shopifyVariants.map((variant) => variant.wax));
+  const uniqueWicks = new Set(shopifyVariants.map((variant) => variant.wick));
 
   return (
     <div className="space-y-6">
@@ -161,7 +190,7 @@ export default function ContainerSizeManager() {
                 <h4 className="font-semibold mb-2">Choose Your Wax</h4>
                 <div className="flex flex-wrap gap-2">
                   {shopifyIngredients.waxTypes.map((wax) => (
-                    <Badge key={wax} variant="outline" className="px-3 py-1.5 text-sm">
+                    <Badge key={wax} variant="secondary" className="px-3 py-1.5 text-sm">
                       {wax}
                     </Badge>
                   ))}
@@ -175,7 +204,7 @@ export default function ContainerSizeManager() {
                 <h4 className="font-semibold mb-2">Choose Your Wick</h4>
                 <div className="flex flex-wrap gap-2">
                   {shopifyIngredients.wickTypes.map((wick) => (
-                    <Badge key={wick} variant="outline" className="px-3 py-1.5 text-sm">
+                    <Badge key={wick} variant="secondary" className="px-3 py-1.5 text-sm">
                       {wick}
                     </Badge>
                   ))}
@@ -189,7 +218,7 @@ export default function ContainerSizeManager() {
                 <h4 className="font-semibold mb-2">Choose Your Container</h4>
                 <div className="flex flex-wrap gap-2">
                   {shopifyIngredients.containers.map((container) => (
-                    <Badge key={container} variant="outline" className="px-3 py-1.5 text-sm">
+                    <Badge key={container} variant="secondary" className="px-3 py-1.5 text-sm">
                       {container}
                     </Badge>
                   ))}
@@ -215,16 +244,18 @@ export default function ContainerSizeManager() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{canMakeCount}</div>
-              <div className="text-sm text-gray-600">Available Variants</div>
-            </div>
-            <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{totalVariants}</div>
-              <div className="text-sm text-gray-600">Total Variants</div>
+              <div className="text-sm text-gray-600">Total Variant Combos</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{lowStockIngredients.length}</div>
-              <div className="text-sm text-gray-600">Low Stock Items</div>
+              <div className="text-2xl font-bold text-indigo-600">{uniqueContainers.size}</div>
+              <div className="text-sm text-gray-600">Unique Containers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {uniqueWaxes.size} × {uniqueWicks.size}
+              </div>
+              <div className="text-sm text-gray-600">Wax × Wick Options</div>
             </div>
           </div>
 
@@ -344,24 +375,52 @@ export default function ContainerSizeManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableVariants.map((variant, index) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">
-                    {variant.wax} {variant.containerSize} {variant.wick}
-                  </h4>
-                  <Badge variant={variant.canMake ? 'default' : 'secondary'}>
-                    {variant.canMake ? 'Available' : 'Unavailable'}
-                  </Badge>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <div>Max Quantity: {variant.estimatedQuantity}</div>
-                  <div>Shopify Status: {variant.inventory_quantity > 0 ? 'Enabled' : 'Disabled'}</div>
-                </div>
+          {loadingVariants ? (
+            <p className="text-sm text-muted-foreground">
+              Calculating variant combinations...
+            </p>
+          ) : variantError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{variantError}</AlertDescription>
+            </Alert>
+          ) : shopifyVariants.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No variant combinations found. Add vessels, waxes, and wicks to Shopify to see combinations here.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  Showing {shopifyVariants.length} combinations generated from your Shopify configuration.
+                </span>
+                <Button variant="outline" size="sm" onClick={loadShopifyVariants}>
+                  Refresh Combos
+                </Button>
               </div>
-            ))}
-          </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Container</TableHead>
+                      <TableHead>Wax</TableHead>
+                      <TableHead>Wick</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shopifyVariants.map((variant) => (
+                      <TableRow key={variant.id}>
+                        <TableCell className="font-medium">{variant.container}</TableCell>
+                        <TableCell>{variant.wax}</TableCell>
+                        <TableCell>{variant.wick}</TableCell>
+                        <TableCell className="text-right">${variant.price}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
