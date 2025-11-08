@@ -55,7 +55,7 @@ console.log('[Shopify] Store URL:', SHOPIFY_CONFIG.STORE_URL);
 console.log('[Shopify] API Version:', SHOPIFY_CONFIG.API_VERSION);
 console.log('[Shopify] Full API URL:', SHOPIFY_API_URL);
 
-export async function fetchShopify<T>(query: string, variables?: Record<string, any>): Promise<T> {
+export async function fetchShopify<T = any>(query: string, variables?: Record<string, any>): Promise<T> {
   if (!SHOPIFY_API_URL || !SHOPIFY_ADMIN_TOKEN) {
     throw new Error('Shopify environment variables are not set.');
   }

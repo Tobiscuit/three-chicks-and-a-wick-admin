@@ -13,13 +13,22 @@ import {
   IngredientInventory, 
   calculateAvailableVariants, 
   getMockIngredientInventory,
-  updateIngredientInventory 
+  updateIngredientInventory
 } from '@/services/container-size-management';
+import { useToast } from '@/hooks/use-toast';
+import { fetchMagicRequestIngredients } from '@/app/magic-request/ingredients-actions';
 
 export default function ContainerSizeManager() {
+  const { toast } = useToast();
   const [ingredients, setIngredients] = useState<IngredientInventory>(getMockIngredientInventory());
   const [availableVariants, setAvailableVariants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingIngredients, setLoadingIngredients] = useState(true);
+  const [shopifyIngredients, setShopifyIngredients] = useState<{
+    waxTypes: string[];
+    wickTypes: string[];
+    containers: string[];
+  } | null>(null);
   const [selectedIngredient, setSelectedIngredient] = useState<{
     type: 'wax' | 'containerSize' | 'wick';
     name: string;
@@ -28,11 +37,38 @@ export default function ContainerSizeManager() {
     supplier: string;
   } | null>(null);
 
+  // Load ingredients from Shopify on mount
+  useEffect(() => {
+    loadIngredientsFromShopify();
+  }, []);
+
   // Calculate available variants when ingredients change
   useEffect(() => {
     const variants = calculateAvailableVariants(ingredients);
     setAvailableVariants(variants);
   }, [ingredients]);
+
+  const loadIngredientsFromShopify = async () => {
+    try {
+      setLoadingIngredients(true);
+      const result = await fetchMagicRequestIngredients();
+      
+      if (result.success && result.data) {
+        setShopifyIngredients(result.data);
+      } else {
+        throw new Error(result.error || 'Failed to fetch ingredients');
+      }
+    } catch (error) {
+      console.error('Error loading ingredients from Shopify:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load ingredients from Shopify. Showing mock data.',
+      });
+    } finally {
+      setLoadingIngredients(false);
+    }
+  };
 
   const handleIngredientUpdate = async () => {
     if (!selectedIngredient) return;
@@ -108,6 +144,67 @@ export default function ContainerSizeManager() {
 
   return (
     <div className="space-y-6">
+      {/* Display Shopify Ingredients */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Options (from Shopify)</CardTitle>
+          <CardDescription>
+            Current wax types, wick types, and containers configured in your Shopify store.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingIngredients ? (
+            <p className="text-sm text-muted-foreground">Loading from Shopify...</p>
+          ) : shopifyIngredients ? (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Choose Your Wax</h4>
+                <div className="flex flex-wrap gap-2">
+                  {shopifyIngredients.waxTypes.map((wax) => (
+                    <Badge key={wax} variant="outline" className="px-3 py-1.5 text-sm">
+                      {wax}
+                    </Badge>
+                  ))}
+                  {shopifyIngredients.waxTypes.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No wax types found</p>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Choose Your Wick</h4>
+                <div className="flex flex-wrap gap-2">
+                  {shopifyIngredients.wickTypes.map((wick) => (
+                    <Badge key={wick} variant="outline" className="px-3 py-1.5 text-sm">
+                      {wick}
+                    </Badge>
+                  ))}
+                  {shopifyIngredients.wickTypes.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No wick types found</p>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Choose Your Container</h4>
+                <div className="flex flex-wrap gap-2">
+                  {shopifyIngredients.containers.map((container) => (
+                    <Badge key={container} variant="outline" className="px-3 py-1.5 text-sm">
+                      {container}
+                    </Badge>
+                  ))}
+                  {shopifyIngredients.containers.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No containers found</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Failed to load ingredients</p>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Container-Size Management</CardTitle>

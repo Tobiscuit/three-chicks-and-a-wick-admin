@@ -17,7 +17,7 @@
 import { fetchShopify } from '@/services/shopify';
 import { SHOPIFY_CONFIG } from '@/lib/env-config';
 
-type VesselConfig = {
+export type VesselConfig = {
   name: string;
   sizeOz: number;
   baseCostCents: number;
@@ -26,12 +26,12 @@ type VesselConfig = {
   status?: 'enabled' | 'disabled' | 'deleted'; // Admin Panel can set this
 };
 
-type WaxConfig = {
+export type WaxConfig = {
   name: string;
   pricePerOzCents: number;
 };
 
-type WickConfig = {
+export type WickConfig = {
   name: string;
   costCents: number;
 };
@@ -183,7 +183,13 @@ export async function deployMagicRequestVessel(
         }
       }
     `;
-    const existing = await fetchShopify(checkQuery, { identifier: { handle } });
+    const existing = await fetchShopify<{
+      productByIdentifier: {
+        id: string;
+        title: string;
+        variants: { edges: { node: { id: string; price: string; selectedOptions: { name: string; value: string }[] } }[] };
+      } | null;
+    }>(checkQuery, { identifier: { handle } });
     
     let productId: string;
     
@@ -200,7 +206,12 @@ export async function deployMagicRequestVessel(
           }
         }
       `;
-      const createResult = await fetchShopify(createMutation, {
+      const createResult = await fetchShopify<{
+        productCreate: {
+          product: { id: string } | null;
+          userErrors: { field: string[]; message: string }[];
+        };
+      }>(createMutation, {
         input: {
           title,
           handle,
@@ -210,6 +221,14 @@ export async function deployMagicRequestVessel(
           descriptionHtml: `<p>Custom ${title} vessel for Magic Request candles.</p>`,
         },
       });
+      if (!createResult.productCreate.product) {
+        throw new Error(
+          `Failed to create product ${title}: ${createResult.productCreate.userErrors
+            .map((e) => e.message)
+            .join(', ') || 'Unknown error'}`
+        );
+      }
+
       productId = createResult.productCreate.product.id;
       reportProgress('product_created', `Product created: ${productId}`, 25);
     }
@@ -231,12 +250,13 @@ export async function deployMagicRequestVessel(
     
     await fetchShopify(setProductMetafieldsMutation, {
       metafields: [
-        { ownerId: productId, namespace: 'mr', key: 'sizeOz', type: 'number_integer', value: String(vessel.sizeOz) },
-        { ownerId: productId, namespace: 'mr', key: 'vesselBaseCostCents', type: 'number_integer', value: String(vessel.baseCostCents) },
-        { ownerId: productId, namespace: 'mr', key: 'marginPct', type: 'number_decimal', value: String(vessel.marginPct ?? config.marginPct) },
-        { ownerId: productId, namespace: 'mr', key: 'supplier', type: 'single_line_text_field', value: vessel.supplier ?? config.supplier },
-        { ownerId: productId, namespace: 'mr', key: 'deploymentVersion', type: 'single_line_text_field', value: deploymentVersion },
-        // New metafields for Ingredients tab (using magic_request namespace - Shopify requires 3+ chars)
+        // Pricing metafields (migrated to magic_request.* namespace for consistency and Shopify's 3+ char requirement)
+        { ownerId: productId, namespace: 'magic_request', key: 'sizeOz', type: 'number_integer', value: String(vessel.sizeOz) },
+        { ownerId: productId, namespace: 'magic_request', key: 'vesselBaseCostCents', type: 'number_integer', value: String(vessel.baseCostCents) },
+        { ownerId: productId, namespace: 'magic_request', key: 'marginPct', type: 'number_decimal', value: String(vessel.marginPct ?? config.marginPct) },
+        { ownerId: productId, namespace: 'magic_request', key: 'supplier', type: 'single_line_text_field', value: vessel.supplier ?? config.supplier },
+        { ownerId: productId, namespace: 'magic_request', key: 'deploymentVersion', type: 'single_line_text_field', value: deploymentVersion },
+        // Ingredient metafields for Ingredients tab
         { ownerId: productId, namespace: 'magic_request', key: 'waxTypes', type: 'list.single_line_text_field', value: JSON.stringify(waxValues) },
         { ownerId: productId, namespace: 'magic_request', key: 'wickTypes', type: 'list.single_line_text_field', value: JSON.stringify(wickValues) },
         { ownerId: productId, namespace: 'magic_request', key: 'containerType', type: 'single_line_text_field', value: containerType },
@@ -383,9 +403,10 @@ export async function deployMagicRequestVessel(
       variantMetafields.push({
         ownerId: variant.id,
         metafields: [
-          { ownerId: variant.id, namespace: 'mr', key: 'waxPricePerOzCents', type: 'number_integer', value: String(config.waxes[waxName].pricePerOzCents) },
-          { ownerId: variant.id, namespace: 'mr', key: 'wickCostCents', type: 'number_integer', value: String(config.wicks[wickName].costCents) },
-          { ownerId: variant.id, namespace: 'mr', key: 'enabled', type: 'number_integer', value: '1' },
+          // Pricing metafields (using magic_request.* namespace)
+          { ownerId: variant.id, namespace: 'magic_request', key: 'waxPricePerOzCents', type: 'number_integer', value: String(config.waxes[waxName].pricePerOzCents) },
+          { ownerId: variant.id, namespace: 'magic_request', key: 'wickCostCents', type: 'number_integer', value: String(config.wicks[wickName].costCents) },
+          { ownerId: variant.id, namespace: 'magic_request', key: 'enabled', type: 'number_integer', value: '1' },
         ],
       });
     }
@@ -584,7 +605,7 @@ export async function deployMagicRequestVessel(
 export type DeploymentDiff = {
   vesselsToCreate: string[];
   vesselsToUpdate: string[];
-  vesselsToDisable: string[]; // Set mr.enabled=false (reversible)
+  vesselsToDisable: string[]; // Set magic_request.enabled=false (reversible)
   vesselsToDelete: string[];  // Actually delete from Shopify (irreversible)
   summary: string;
 };
@@ -714,7 +735,7 @@ export async function deployMagicRequestProducts(
   
   onProgress?.({ step: 'diff_complete', message: diff.summary, progress: 10 });
   
-  // 2. Disable vessels (set mr.enabled=false on all variants)
+  // 2. Disable vessels (set magic_request.enabled=false on all variants)
   if (diff.vesselsToDisable.length > 0) {
     onProgress?.({ step: 'disable_vessels', message: `Disabling ${diff.vesselsToDisable.length} vessel(s)...`, progress: 15 });
     
@@ -741,11 +762,11 @@ export async function deployMagicRequestProducts(
         if (productData.product) {
           const variants = productData.product.variants.edges.map((e: any) => e.node);
           
-          // Set mr.enabled=false on all variants
+          // Set magic_request.enabled=false on all variants
           if (variants.length > 0) {
             const metafields = variants.map((v: any) => ({
               ownerId: v.id,
-              namespace: 'mr',
+              namespace: 'magic_request',
               key: 'enabled',
               type: 'number_integer',
               value: '0', // false
