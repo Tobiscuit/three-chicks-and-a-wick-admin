@@ -79,8 +79,10 @@ export default function ContainerSizeManager() {
     try {
       setVariantError(null);
       setLoadingVariants(true);
+      console.log('[Variants][Client] Requesting variant combinations...');
       const result = await getAvailableVariantCombosAction();
       if (result.success && result.data) {
+        console.log('[Variants][Client] Received combinations:', result.data.length);
         setShopifyVariants(result.data);
       } else {
         throw new Error(result.error || 'Failed to load variant combinations');

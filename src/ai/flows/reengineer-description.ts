@@ -28,7 +28,7 @@ export async function rewriteDescriptionFlow({
         generationConfig: { responseMimeType: "application/json" }
       });
 
-      const prompt = `Rewrite this candle description: "${userPrompt}"
+      const prompt = `Rewrite this candle description: "${userPrompt}"image.png
 
 ${originalDescription}
 
