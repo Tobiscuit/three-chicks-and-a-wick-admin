@@ -45,6 +45,12 @@ export async function getAvailableVariantCombosAction(): Promise<{
 }> {
   try {
     const config = await getCurrentPricingConfig();
+    console.log(
+      '[Variants] Pricing config loaded',
+      `vessels=${Object.keys(config.vessels).length}`,
+      `waxes=${Object.keys(config.waxes).length}`,
+      `wicks=${Object.keys(config.wicks).length}`
+    );
     const variants: VariantCombination[] = [];
 
     for (const [vesselKey, vesselConfig] of Object.entries(config.vessels)) {
@@ -80,6 +86,8 @@ export async function getAvailableVariantCombosAction(): Promise<{
       }
     }
 
+    console.log('[Variants] Generated combinations:', variants.length);
+
     variants.sort((a, b) => {
       if (a.container !== b.container) {
         return a.container.localeCompare(b.container);
@@ -92,12 +100,12 @@ export async function getAvailableVariantCombosAction(): Promise<{
 
     return { success: true, data: variants };
   } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to generate variant combinations';
+    console.error('[Variants] Error generating combinations:', errorMessage);
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to generate variant combinations',
+      error: errorMessage,
     };
   }
 }

@@ -1,24 +1,30 @@
 // Check if we're running on server-side
 const isServer = typeof window === 'undefined';
+const ENV_CONFIG_DEBUG = process.env.ENV_CONFIG_DEBUG === 'true';
+const debugLog = (...args: unknown[]) => {
+  if (ENV_CONFIG_DEBUG) {
+    console.log(...args);
+  }
+};
 
-// Comprehensive logging for both server and client
-console.log('=== ENV-CONFIG DEBUG START ===');
-console.log('Environment:', isServer ? 'SERVER' : 'CLIENT');
-console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
-console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
-console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
+if (ENV_CONFIG_DEBUG) {
+  console.log('=== ENV-CONFIG DEBUG START ===');
+  console.log('Environment:', isServer ? 'SERVER' : 'CLIENT');
+  console.log('Raw USE_A_PREFIX:', JSON.stringify(process.env.USE_A_PREFIX));
+  console.log('Type of USE_A_PREFIX:', typeof process.env.USE_A_PREFIX);
+  console.log('USE_A_PREFIX === "true":', process.env.USE_A_PREFIX === 'true');
 
-const allEnvVars = Object.keys(process.env);
-console.log('Total env vars:', allEnvVars.length);
-console.log('A_ prefixed vars:', allEnvVars.filter(key => key.startsWith('A_')));
-console.log('NEXT_PUBLIC vars:', allEnvVars.filter(key => key.startsWith('NEXT_PUBLIC_')));
-console.log('FIREBASE vars:', allEnvVars.filter(key => key.includes('FIREBASE')));
+  const allEnvVars = Object.keys(process.env);
+  console.log('Total env vars:', allEnvVars.length);
+  console.log('A_ prefixed vars:', allEnvVars.filter(key => key.startsWith('A_')));
+  console.log('NEXT_PUBLIC vars:', allEnvVars.filter(key => key.startsWith('NEXT_PUBLIC_')));
+  console.log('FIREBASE vars:', allEnvVars.filter(key => key.includes('FIREBASE')));
 
-// Check specific variables that might be causing issues
-console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
-console.log('A_FIREBASE_PROJECT_ID:', process.env.A_FIREBASE_PROJECT_ID);
-console.log('NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
-console.log('=== ENV-CONFIG DEBUG END ===');
+  console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+  console.log('A_FIREBASE_PROJECT_ID:', process.env.A_FIREBASE_PROJECT_ID);
+  console.log('NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  console.log('=== ENV-CONFIG DEBUG END ===');
+}
 
 const USE_A_PREFIX = isServer ? process.env.USE_A_PREFIX === 'true' : false;
 
@@ -43,12 +49,12 @@ function getPublicEnvVar(key: string, fallback?: string): string | undefined {
 }
 
 function getRequiredEnvVar(key: string): string {
-  console.log(`[ENV-CONFIG] getRequiredEnvVar called for: ${key}`);
-  console.log(`[ENV-CONFIG] USE_A_PREFIX: ${USE_A_PREFIX}`);
-  console.log(`[ENV-CONFIG] Looking for: ${USE_A_PREFIX ? 'A_' : ''}${key}`);
+  debugLog(`[ENV-CONFIG] getRequiredEnvVar called for: ${key}`);
+  debugLog(`[ENV-CONFIG] USE_A_PREFIX: ${USE_A_PREFIX}`);
+  debugLog(`[ENV-CONFIG] Looking for: ${USE_A_PREFIX ? 'A_' : ''}${key}`);
   
   const value = getEnvVar(key);
-  console.log(`[ENV-CONFIG] Found value: ${value ? 'SET' : 'NOT SET'}`);
+  debugLog(`[ENV-CONFIG] Found value: ${value ? 'SET' : 'NOT SET'}`);
   
   if (!value) {
     const errorMsg = `Required environment variable ${USE_A_PREFIX ? 'A_' : ''}${key} is not set`;
