@@ -59,6 +59,8 @@ pnpm-debug.log*
 .env.*.local
 /.secret*
 /.credentials*
+.env.vercel
+/scripts
 
 # Vercel
 .vercel

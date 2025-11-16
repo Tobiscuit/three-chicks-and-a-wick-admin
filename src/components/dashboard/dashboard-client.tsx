@@ -4,6 +4,7 @@
 import { StatsCard } from '@/components/dashboard/stats-card';
 import { SalesChart } from '@/components/dashboard/sales-chart';
 import { TopProducts } from '@/components/dashboard/top-products';
+import { RecentOrders } from '@/components/dashboard/recent-orders';
 import { DollarSign, Package, ShoppingCart } from 'lucide-react';
 import type { ShopifyProduct } from '@/services/shopify';
 
@@ -44,6 +45,7 @@ export function DashboardClient({ stats, topProducts }: DashboardClientProps) {
                 <SalesChart data={stats.chartData} />
                 <TopProducts products={topProducts} />
             </div>
+            <RecentOrders />
         </>
     );
 }

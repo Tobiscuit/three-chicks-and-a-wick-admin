@@ -20,6 +20,7 @@ import {
   Settings,
   Flame,
   Wand2,
+  ShoppingCart,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from 'next/navigation'
@@ -27,9 +28,10 @@ import { useAuth } from "../auth/auth-provider"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/orders", label: "Orders", icon: ShoppingCart },
   { href: "/products", label: "Products", icon: Package },
-  { href: "/", label: "Image Studio", icon: Camera },
   { href: "/magic-request", label: "Magic Request", icon: Wand2 },
+  { href: "/", label: "Image Studio", icon: Camera },
   { href: "/strategy", label: "Strategy", icon: BrainCircuit },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
