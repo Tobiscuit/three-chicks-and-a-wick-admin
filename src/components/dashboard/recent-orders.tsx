@@ -67,9 +67,14 @@ export function RecentOrders() {
       .graphql<GraphQLSubscription<OnNewOrderData>>({ query: onNewOrder })
       .subscribe({
         next: ({ data }) => {
+          if (!data?.onNewOrder) {
+            console.warn('Received subscription data but onNewOrder is missing:', data);
+            return;
+          }
+          
           console.log('New order received:', data.onNewOrder);
           const newOrder: Order = {
-            orderId: data.onNewOrder.orderId.split('/').pop().replace('gid://shopify/Order/', '#'),
+            orderId: data.onNewOrder.orderId.split('/').pop()?.replace('gid://shopify/Order/', '#') || 'Unknown ID',
             customer: 'New Customer', // Placeholder
             type: data.onNewOrder.type,
             total: 'N/A' // Placeholder
