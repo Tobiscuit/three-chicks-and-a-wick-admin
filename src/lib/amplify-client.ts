@@ -7,10 +7,14 @@ const configureAmplify = () => {
     process.env.NEXT_PUBLIC_APPSYNC_API_KEY
   ) {
     Amplify.configure({
-      aws_appsync_graphqlEndpoint: process.env.NEXT_PUBLIC_APPSYNC_GRAPHQL_URL,
-      aws_appsync_region: 'us-east-1', // Assuming us-east-1, update if different
-      aws_appsync_authenticationType: 'API_KEY',
-      aws_appsync_apiKey: process.env.NEXT_PUBLIC_APPSYNC_API_KEY,
+      API: {
+        GraphQL: {
+          endpoint: process.env.NEXT_PUBLIC_APPSYNC_GRAPHQL_URL,
+          region: 'us-east-1', // Assuming us-east-1, update if different
+          apiKey: process.env.NEXT_PUBLIC_APPSYNC_API_KEY,
+          defaultAuthMode: 'apiKey',
+        },
+      },
     });
     console.log('Amplify configured successfully');
   } else {
