@@ -62,38 +62,40 @@ export default function OrdersClient() {
           </Button>
         </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Orders</CardTitle>
-          <CardDescription>
-            Manage and view details for all customer orders.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dummyOrders.map((order) => (
-                <TableRow key={order.orderId}>
-                  <TableCell className="font-medium">{order.orderId}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>{order.type}</TableCell>
-                  <TableCell>{order.status}</TableCell>
-                  <TableCell className="text-right">{order.total}</TableCell>
+      <TabsContent value="all">
+        <Card>
+          <CardHeader>
+            <CardTitle>Orders</CardTitle>
+            <CardDescription>
+              Manage and view details for all customer orders.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {dummyOrders.map((order) => (
+                  <TableRow key={order.orderId}>
+                    <TableCell className="font-medium">{order.orderId}</TableCell>
+                    <TableCell>{order.customer}</TableCell>
+                    <TableCell>{order.type}</TableCell>
+                    <TableCell>{order.status}</TableCell>
+                    <TableCell className="text-right">{order.total}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </TabsContent>
     </Tabs>
   );
 }
