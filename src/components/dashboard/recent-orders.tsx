@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { generateClient } from 'aws-amplify/api';
+import type { GraphQLSubscription } from 'aws-amplify/api';
 import configureAmplify from '@/lib/amplify-client';
 import { useEffect, useState } from "react";
 
@@ -31,6 +32,14 @@ const onNewOrder = /* GraphQL */ `
     }
   }
 `;
+
+// Type definition for the subscription payload
+type OnNewOrderData = {
+  onNewOrder: {
+    orderId: string;
+    type: 'CUSTOM' | 'STANDARD';
+  };
+};
 
 // Dummy data for fallback
 const dummyOrders = [
@@ -54,19 +63,21 @@ export function RecentOrders() {
   useEffect(() => {
     configureAmplify();
 
-    const sub = client.graphql({ query: onNewOrder }).subscribe({
-      next: ({ data }) => {
-        console.log('New order received:', data.onNewOrder);
-        const newOrder: Order = {
-          orderId: data.onNewOrder.orderId.split('/').pop().replace('gid://shopify/Order/', '#'),
-          customer: 'New Customer', // Placeholder
-          type: data.onNewOrder.type,
-          total: 'N/A' // Placeholder
-        };
-        setLiveOrders(prevOrders => [newOrder, ...prevOrders]);
-      },
-      error: (error) => console.error('Subscription error', error),
-    });
+    const sub = client
+      .graphql<GraphQLSubscription<OnNewOrderData>>({ query: onNewOrder })
+      .subscribe({
+        next: ({ data }) => {
+          console.log('New order received:', data.onNewOrder);
+          const newOrder: Order = {
+            orderId: data.onNewOrder.orderId.split('/').pop().replace('gid://shopify/Order/', '#'),
+            customer: 'New Customer', // Placeholder
+            type: data.onNewOrder.type,
+            total: 'N/A' // Placeholder
+          };
+          setLiveOrders(prevOrders => [newOrder, ...prevOrders]);
+        },
+        error: (error) => console.error('Subscription error', error),
+      });
 
     return () => sub.unsubscribe();
   }, []);
