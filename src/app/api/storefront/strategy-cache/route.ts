@@ -17,18 +17,15 @@ export async function GET(request: NextRequest) {
     // GraphQL query to get strategy cache
     const graphqlQuery = {
       query: `
-        query GetStrategyCache($id: ID!) {
-          getStrategyCache(id: $id) {
+        query GetStrategyCache {
+          getStrategyCache {
             id
             strategy
             generatedAt
             expiresAt
           }
         }
-      `,
-      variables: {
-        id: cacheId
-      }
+      `
     };
 
     console.log('[Strategy Cache API] GET - Fetching strategy cache from AppSync');
@@ -88,33 +85,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields: strategy, expiresAt' },
         { status: 400 }
-      );
-    }
-
-    // Use userId for per-user caching, or 'global' for shared cache
-    const cacheId = userId ? `user:${userId}` : 'global';
-
-    // GraphQL mutation to set strategy cache
-    const graphqlQuery = {
-      query: `
-        mutation SetStrategyCache($input: StrategyCacheInput!) {
-          setStrategyCache(input: $input) {
-            id
-            strategy
-            generatedAt
-            expiresAt
-          }
-        }
-      `,
-      variables: {
-        input: {
-          id: cacheId,
-          strategy,
-          expiresAt
-        }
-      }
-    };
-
     console.log('[Strategy Cache API] POST - Setting strategy cache in AppSync');
     
     const response = await fetch(url, {

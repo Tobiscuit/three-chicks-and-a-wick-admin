@@ -55,7 +55,26 @@ export function RecentOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
 
-  // ... (fetchInitialOrders useEffect)
+  // Fetch initial orders
+  useEffect(() => {
+    async function fetchInitialOrders() {
+      try {
+        const shopifyOrders = await getOrders(5); // Fetch last 5 orders
+        const mappedOrders: Order[] = shopifyOrders.map(o => ({
+          orderId: o.name,
+          customer: 'Customer', // Shopify API response in getOrders might need update to include customer
+          type: 'STANDARD', // Default to STANDARD as getOrders doesn't seem to return type yet
+          total: `${o.totalPriceSet.shopMoney.amount} ${o.totalPriceSet.shopMoney.currencyCode}`
+        }));
+        setOrders(mappedOrders);
+      } catch (error) {
+        console.error("Failed to fetch initial orders:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchInitialOrders();
+  }, []);
 
   // Subscribe to new orders
   useEffect(() => {
