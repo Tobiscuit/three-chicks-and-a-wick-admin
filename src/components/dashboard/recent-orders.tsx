@@ -19,65 +19,36 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { generateClient } from 'aws-amplify/api';
 import type { GraphQLSubscription } from 'aws-amplify/api';
+import { Hub } from 'aws-amplify/utils';
 import configureAmplify from '@/lib/amplify-client';
 import { useEffect, useState } from "react";
 import { getOrders } from "@/services/shopify"; // Import server action
 
 const client = generateClient();
 
-const onNewOrder = /* GraphQL */ `
-  subscription OnNewOrder {
-    onNewOrder {
-      orderId
-      type
-    }
-  }
-`;
-
-// Type definition for the subscription payload
-type OnNewOrderData = {
-  onNewOrder: {
-    orderId: string;
-    type: 'CUSTOM' | 'STANDARD';
-  };
-};
-
-type Order = {
-  orderId: string;
-  customer?: string;
-  type: 'CUSTOM' | 'STANDARD';
-  total?: string;
-}
+// ... (rest of imports and types)
 
 export function RecentOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
 
-  // Fetch initial orders
-  useEffect(() => {
-    async function fetchInitialOrders() {
-      try {
-        const shopifyOrders = await getOrders(5); // Fetch last 5 orders
-        const mappedOrders: Order[] = shopifyOrders.map(o => ({
-          orderId: o.name,
-          customer: 'Customer', // Shopify API response in getOrders might need update to include customer
-          type: 'STANDARD', // Default to STANDARD as getOrders doesn't seem to return type yet
-          total: `${o.totalPriceSet.shopMoney.amount} ${o.totalPriceSet.shopMoney.currencyCode}`
-        }));
-        setOrders(mappedOrders);
-      } catch (error) {
-        console.error("Failed to fetch initial orders:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchInitialOrders();
-  }, []);
+  // ... (fetchInitialOrders useEffect)
 
   // Subscribe to new orders
   useEffect(() => {
     console.log('[RecentOrders] Configuring Amplify...');
     configureAmplify();
+
+    // Listen for connection state changes
+    const hubListener = Hub.listen('api', (data: any) => {
+      const { payload } = data;
+      if (payload.event === 'ConnectionStateChange') {
+        const connectionState = payload.data.connectionState;
+        console.log('[RecentOrders] 🔌 Connection state changed:', connectionState);
+        setConnectionStatus(connectionState);
+      }
+    });
 
     console.log('[RecentOrders] Starting subscription...');
     const sub = client
@@ -92,8 +63,6 @@ export function RecentOrders() {
           
           console.log('[RecentOrders] ✅ New Order Details:', data.onNewOrder);
           
-          // Ideally we would fetch the full order details here using the ID
-          // For now, we'll add it with placeholder data to show immediate feedback
           const newOrder: Order = {
             orderId: data.onNewOrder.orderId.split('/').pop()?.replace('gid://shopify/Order/', '#') || 'Unknown ID',
             customer: 'New Customer (Processing...)',
@@ -101,7 +70,7 @@ export function RecentOrders() {
             total: 'Calculating...'
           };
           
-          setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]); // Keep only 5 most recent
+          setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]); 
         },
         error: (error) => {
           console.error('[RecentOrders] ❌ Subscription Error:', error);
@@ -114,6 +83,7 @@ export function RecentOrders() {
     return () => {
       console.log('[RecentOrders] Unsubscribing...');
       sub.unsubscribe();
+      hubListener(); // Stop listening to Hub events
     };
   }, []);
 
