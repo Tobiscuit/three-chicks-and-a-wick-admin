@@ -21,6 +21,7 @@ import { generateClient } from 'aws-amplify/api';
 import type { GraphQLSubscription } from 'aws-amplify/api';
 import configureAmplify from '@/lib/amplify-client';
 import { useEffect, useState } from "react";
+import { getOrders } from "@/services/shopify"; // Import server action
 
 const client = generateClient();
 
@@ -41,53 +42,80 @@ type OnNewOrderData = {
   };
 };
 
-// Dummy data for fallback
-const dummyOrders = [
-  { orderId: "#3210", customer: "Olivia Martin", type: "CUSTOM", total: "$42.50" },
-  { orderId: "#3209", customer: "Ava Johnson", type: "STANDARD", total: "$74.99" },
-  { orderId: "#3208", customer: "Liam Smith", type: "CUSTOM", total: "$55.00" },
-  { orderId: "#3207", customer: "Emma Brown", type: "STANDARD", total: "$128.00" },
-  { orderId: "#3206", customer: "Noah Williams", type: "STANDARD", total: "$24.95" },
-];
-
 type Order = {
   orderId: string;
-  customer?: string; // Customer and total are not in the subscription payload
+  customer?: string;
   type: 'CUSTOM' | 'STANDARD';
   total?: string;
 }
 
 export function RecentOrders() {
-  const [liveOrders, setLiveOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch initial orders
   useEffect(() => {
+    async function fetchInitialOrders() {
+      try {
+        const shopifyOrders = await getOrders(5); // Fetch last 5 orders
+        const mappedOrders: Order[] = shopifyOrders.map(o => ({
+          orderId: o.name,
+          customer: 'Customer', // Shopify API response in getOrders might need update to include customer
+          type: 'STANDARD', // Default to STANDARD as getOrders doesn't seem to return type yet
+          total: `${o.totalPriceSet.shopMoney.amount} ${o.totalPriceSet.shopMoney.currencyCode}`
+        }));
+        setOrders(mappedOrders);
+      } catch (error) {
+        console.error("Failed to fetch initial orders:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchInitialOrders();
+  }, []);
+
+  // Subscribe to new orders
+  useEffect(() => {
+    console.log('[RecentOrders] Configuring Amplify...');
     configureAmplify();
 
+    console.log('[RecentOrders] Starting subscription...');
     const sub = client
       .graphql<GraphQLSubscription<OnNewOrderData>>({ query: onNewOrder })
       .subscribe({
         next: ({ data }) => {
+          console.log('[RecentOrders] 📩 Received event:', data);
           if (!data?.onNewOrder) {
-            console.warn('Received subscription data but onNewOrder is missing:', data);
+            console.warn('[RecentOrders] ⚠️ Received data but onNewOrder is missing:', data);
             return;
           }
           
-          console.log('New order received:', data.onNewOrder);
+          console.log('[RecentOrders] ✅ New Order Details:', data.onNewOrder);
+          
+          // Ideally we would fetch the full order details here using the ID
+          // For now, we'll add it with placeholder data to show immediate feedback
           const newOrder: Order = {
             orderId: data.onNewOrder.orderId.split('/').pop()?.replace('gid://shopify/Order/', '#') || 'Unknown ID',
-            customer: 'New Customer', // Placeholder
+            customer: 'New Customer (Processing...)',
             type: data.onNewOrder.type,
-            total: 'N/A' // Placeholder
+            total: 'Calculating...'
           };
-          setLiveOrders(prevOrders => [newOrder, ...prevOrders]);
+          
+          setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]); // Keep only 5 most recent
         },
-        error: (error) => console.error('Subscription error', error),
+        error: (error) => {
+          console.error('[RecentOrders] ❌ Subscription Error:', error);
+          if (error.errors) {
+            error.errors.forEach((e: any) => console.error('[RecentOrders] GraphQLError:', e.message));
+          }
+        },
       });
 
-    return () => sub.unsubscribe();
+    return () => {
+      console.log('[RecentOrders] Unsubscribing...');
+      sub.unsubscribe();
+    };
   }, []);
-
-  const ordersToDisplay = liveOrders.length > 0 ? liveOrders : dummyOrders;
 
   return (
     <Card>
@@ -111,14 +139,24 @@ export function RecentOrders() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ordersToDisplay.map((order) => (
-              <TableRow key={order.orderId}>
-                <TableCell className="font-medium">{order.orderId}</TableCell>
-                <TableCell>{order.customer || 'N/A'}</TableCell>
-                <TableCell>{order.type}</TableCell>
-                <TableCell className="text-right">{order.total || 'N/A'}</TableCell>
+            {isLoading ? (
+               <TableRow>
+                 <TableCell colSpan={4} className="text-center">Loading orders...</TableCell>
+               </TableRow>
+            ) : orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center">No recent orders found.</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              orders.map((order, index) => (
+                <TableRow key={`${order.orderId}-${index}`}>
+                  <TableCell className="font-medium">{order.orderId}</TableCell>
+                  <TableCell>{order.customer || 'N/A'}</TableCell>
+                  <TableCell>{order.type}</TableCell>
+                  <TableCell className="text-right">{order.total || 'N/A'}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </CardContent>
