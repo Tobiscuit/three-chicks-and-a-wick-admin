@@ -26,7 +26,29 @@ import { getOrders } from "@/services/shopify"; // Import server action
 
 const client = generateClient();
 
-// ... (rest of imports and types)
+const onNewOrder = /* GraphQL */ `
+  subscription OnNewOrder {
+    onNewOrder {
+      orderId
+      type
+    }
+  }
+`;
+
+// Type definition for the subscription payload
+type OnNewOrderData = {
+  onNewOrder: {
+    orderId: string;
+    type: 'CUSTOM' | 'STANDARD';
+  };
+};
+
+type Order = {
+  orderId: string;
+  customer?: string;
+  type: 'CUSTOM' | 'STANDARD';
+  total?: string;
+}
 
 export function RecentOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
