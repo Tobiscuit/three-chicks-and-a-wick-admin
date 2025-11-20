@@ -801,6 +801,19 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
     return result;
 }
 
+export async function deleteProduct(productId: string) {
+  const mutation = `
+  mutation productDelete($input: ProductDeleteInput!) {
+    productDelete(input: $input) {
+      deletedProductId
+      userErrors { field message }
+    }
+  }
+`;
+  const result = await fetchShopify<any>(mutation, { input: { id: productId } });
+  return result.productDelete;
+}
+
 
 
 export async function addTagsToOrder(orderId: string, tags: string[]) {
