@@ -59,33 +59,45 @@ export async function getCachedStrategy(userId?: string): Promise<StrategyCache 
  * Check if strategy cache is fresh (less than 16 hours old)
  */
 export async function isStrategyCacheFresh(userId?: string): Promise<boolean> {
-    console.log('🔍 [Strategy Debug] Checking AppSync cache...');
+    console.log('🔍 [Strategy Debug] Checking cache freshness...');
     
-    // Try AppSync first
-    const cached = await getCachedStrategy(userId);
-    if (cached) {
-        console.log('✅ [Strategy Debug] AppSync cache found and fresh');
-        return true;
-    }
-    
-    console.log('⚠️ [Strategy Debug] AppSync cache failed, checking localStorage...');
-    
-    // Fallback to localStorage if AppSync fails
+    // 1. Check localStorage FIRST (Fastest, saves network calls)
     const localCached = localStorage.getItem('ai-strategy-cache');
     if (localCached) {
         try {
             const { generatedAt } = JSON.parse(localCached);
             const cacheAge = Date.now() - generatedAt;
             const isFresh = cacheAge < CACHE_DURATION;
-            console.log('🔍 [Strategy Debug] localStorage cache age:', Math.round(cacheAge / 1000 / 60), 'minutes, fresh?', isFresh);
-            return isFresh;
+            
+            if (isFresh) {
+                console.log('✅ [Strategy Debug] Local cache is fresh (' + Math.round(cacheAge / 1000 / 60) + ' mins old). Skipping AppSync check.');
+                return true;
+            } else {
+                console.log('⚠️ [Strategy Debug] Local cache is stale (' + Math.round(cacheAge / 1000 / 60) + ' mins old). Checking AppSync...');
+            }
         } catch (error) {
             console.log('❌ [Strategy Debug] localStorage cache parse error:', error);
-            return false;
         }
+    } else {
+        console.log('ℹ️ [Strategy Debug] No local cache found. Checking AppSync...');
+    }
+
+    // 2. Check AppSync (Fallback / Cross-device sync)
+    // Only reach here if local cache is missing or stale
+    const cached = await getCachedStrategy(userId);
+    if (cached) {
+        console.log('✅ [Strategy Debug] AppSync cache found and fresh');
+        // Update local cache with the fresh AppSync data
+        localStorage.setItem('ai-strategy-cache', JSON.stringify({
+            strategy: cached.strategy,
+            lastUpdated: cached.lastUpdated,
+            generatedAt: cached.generatedAt,
+            expiresAt: cached.expiresAt
+        }));
+        return true;
     }
     
-    console.log('❌ [Strategy Debug] No cache found anywhere');
+    console.log('❌ [Strategy Debug] No fresh cache found anywhere');
     return false;
 }
 
