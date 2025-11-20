@@ -916,3 +916,57 @@ export async function getBusinessSnapshot() {
         throw new Error('Failed to retrieve business data');
     }
 }
+
+export async function getOrder(id: string) {
+  const query = `
+    query getOrder($id: ID!) {
+      order(id: $id) {
+        id
+        name
+        createdAt
+        processedAt
+        displayFulfillmentStatus
+        note
+        customer {
+          firstName
+          lastName
+          email
+        }
+        shippingAddress {
+          address1
+          address2
+          city
+          province
+          zip
+          country
+        }
+        lineItems(first: 50) {
+          edges {
+            node {
+              id
+              title
+              quantity
+              variant {
+                title
+                sku
+              }
+              product {
+                id
+                title
+                descriptionHtml
+                tags
+              }
+              customAttributes {
+                key
+                value
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const result = await fetchShopify<any>(query, { id });
+  return result.order;
+}
