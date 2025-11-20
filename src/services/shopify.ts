@@ -970,3 +970,64 @@ export async function getOrder(id: string) {
   const result = await fetchShopify<any>(query, { id });
   return result.order;
 }
+
+export async function getOrderByNumber(orderNumber: string) {
+  // Ensure order number has # prefix for the query
+  const queryTerm = orderNumber.startsWith('#') ? orderNumber : `#${orderNumber}`;
+  
+  const query = `
+    query getOrderByNumber($query: String!) {
+      orders(first: 1, query: $query) {
+        edges {
+          node {
+            id
+            name
+            createdAt
+            processedAt
+            displayFulfillmentStatus
+            note
+            customer {
+              firstName
+              lastName
+              email
+            }
+            shippingAddress {
+              address1
+              address2
+              city
+              province
+              zip
+              country
+            }
+            lineItems(first: 50) {
+              edges {
+                node {
+                  id
+                  title
+                  quantity
+                  variant {
+                    title
+                    sku
+                  }
+                  product {
+                    id
+                    title
+                    descriptionHtml
+                    tags
+                  }
+                  customAttributes {
+                    key
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const result = await fetchShopify<any>(query, { query: `name:${queryTerm}` });
+  return result.orders.edges[0]?.node || null;
+}
