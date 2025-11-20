@@ -78,24 +78,26 @@ export function TicketTemplate({ order }: { order: any }) {
                   </div>
                 )}
 
-                {/* Production Checklist */}
-                <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center">
-                   <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Production Steps</span>
-                   <div className="flex gap-8">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
-                        <span className="uppercase font-bold text-sm">Poured</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
-                        <span className="uppercase font-bold text-sm">Cured</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
-                        <span className="uppercase font-bold text-sm">Packed</span>
-                    </div>
-                   </div>
-                </div>
+                {/* Production Checklist (Custom Only) */}
+                {isCustom && (
+                  <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center">
+                     <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Production Steps</span>
+                     <div className="flex gap-8">
+                      <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
+                          <span className="uppercase font-bold text-sm">Poured</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
+                          <span className="uppercase font-bold text-sm">Cured</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
+                          <span className="uppercase font-bold text-sm">Packed</span>
+                      </div>
+                     </div>
+                  </div>
+                )}
               </div>
             );
           })}
