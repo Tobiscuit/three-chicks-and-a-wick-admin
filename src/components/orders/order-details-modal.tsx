@@ -90,6 +90,17 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
               <Printer className="w-4 h-4 mr-2" />
               Print Ticket
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const orderNumber = order.name.replace('#', '');
+                window.open(`/orders/${orderNumber}/receipt`, '_blank');
+              }}
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print Receipt
+            </Button>
           </div>
         </DialogHeader>
 
