@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         input: {
           id: cacheId,
           strategy,
-          expiresAt
+          expires_at: expiresAt
         }
       }
     };
