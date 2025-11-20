@@ -906,8 +906,23 @@ export async function getBusinessSnapshot() {
             getProducts(20) // Get last 20 products
         ]);
 
+        // Format data for AI to ensure clarity (Flatten structure, parse numbers)
+        const formattedOrders = orders.map(order => ({
+            id: order.id,
+            name: order.name,
+            created_at: order.createdAt,
+            total_price: parseFloat(order.totalPriceSet?.shopMoney?.amount || "0"),
+            currency: order.totalPriceSet?.shopMoney?.currencyCode,
+            customer_name: order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : "Guest",
+            items: order.lineItems.edges.map(edge => ({
+                title: edge.node.title,
+                quantity: edge.node.quantity,
+                price: "0.00" // Line item price not currently fetched, defaulting to avoid confusion
+            }))
+        }));
+
         return {
-            orders,
+            orders: formattedOrders,
             products,
             timestamp: new Date().toISOString()
         };
