@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
             id
             strategy
             generatedAt
-            expiresAt
+            expires_at
           }
         }
       `
@@ -59,6 +59,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[Strategy Cache API] GET - Success:', result.data?.getStrategyCache ? 'Cache found' : 'No cache');
+    
+    // Map snake_case response to camelCase for frontend/internal use
+    if (result.data?.getStrategyCache) {
+        result.data.getStrategyCache.expiresAt = result.data.getStrategyCache.expires_at;
+    }
+    
     return NextResponse.json(result.data);
 
   } catch (error: any) {
@@ -99,7 +105,7 @@ export async function POST(request: NextRequest) {
             id
             strategy
             generatedAt
-            expiresAt
+            expires_at
           }
         }
       `,

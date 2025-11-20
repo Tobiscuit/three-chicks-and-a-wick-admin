@@ -19,6 +19,28 @@ interface StrategyCache {
  * Get cached strategy from AppSync if available and fresh
  */
 export async function getCachedStrategy(userId?: string): Promise<StrategyCache | null> {
+    // 1. Check localStorage FIRST
+    if (typeof window !== 'undefined') {
+        const localCached = localStorage.getItem('ai-strategy-cache');
+        if (localCached) {
+            try {
+                const parsed = JSON.parse(localCached);
+                const cacheAge = Date.now() - parsed.generatedAt;
+                if (cacheAge < CACHE_DURATION) {
+                    console.log('✅ [Strategy Debug] Returning fresh local cache');
+                    return {
+                        strategy: parsed.strategy,
+                        lastUpdated: parsed.lastUpdated,
+                        generatedAt: parsed.generatedAt,
+                        expiresAt: parsed.expiresAt
+                    };
+                }
+            } catch (e) {
+                console.error('Error parsing local cache:', e);
+            }
+        }
+    }
+
     try {
         const url = userId 
             ? `/api/storefront/strategy-cache?userId=${userId}` 
@@ -40,12 +62,19 @@ export async function getCachedStrategy(userId?: string): Promise<StrategyCache 
         const cacheData = result.getStrategyCache;
 
         if (cacheData && cacheData.expiresAt > Date.now()) {
-            return {
+            const strategy = {
                 strategy: JSON.parse(cacheData.strategy),
                 lastUpdated: new Date(cacheData.generatedAt).toLocaleString(),
                 generatedAt: cacheData.generatedAt,
                 expiresAt: cacheData.expiresAt
             };
+
+            // Sync to localStorage for next time
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('ai-strategy-cache', JSON.stringify(strategy));
+            }
+
+            return strategy;
         }
 
         return null;
