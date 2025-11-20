@@ -176,7 +176,7 @@ export function RecentOrders() {
                 <TableRow key={`${order.orderId}-${index}`}>
                   <TableCell className="font-medium">{order.orderId}</TableCell>
                   <TableCell>{order.customer || 'N/A'}</TableCell>
-                  <TableCell>{order.type}</TableCell>
+                  <TableCell>{order.type === 'CUSTOM' ? 'Custom' : 'Standard'}</TableCell>
                   <TableCell className="text-right">{order.total || 'N/A'}</TableCell>
                 </TableRow>
               ))

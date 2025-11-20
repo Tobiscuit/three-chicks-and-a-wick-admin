@@ -285,6 +285,13 @@ export async function getOrders(first: number = 50, after?: string): Promise<Sho
                     id
                     title
                   }
+                  variant {
+                    title
+                  }
+                  customAttributes {
+                    key
+                    value
+                  }
                 }
               }
             }
@@ -794,17 +801,56 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
     return result;
 }
 
-export async function deleteProduct(productId: string) {
-  const mutation = `
-  mutation productDelete($input: ProductDeleteInput!) {
-    productDelete(input: $input) {
-      deletedProductId
-      userErrors { field message }
-    }
-  }
-`;
   const result = await fetchShopify<any>(mutation, { input: { id: productId } });
   return result.productDelete;
+}
+
+export async function addTagsToOrder(orderId: string, tags: string[]) {
+  const mutation = `
+    mutation tagsAdd($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        node {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  
+  const result = await fetchShopify<any>(mutation, { id: orderId, tags });
+  
+  if (result.tagsAdd.userErrors && result.tagsAdd.userErrors.length > 0) {
+    throw new Error(`Failed to add tags: ${result.tagsAdd.userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+  
+  return result.tagsAdd.node;
+}
+
+export async function removeTagsFromOrder(orderId: string, tags: string[]) {
+  const mutation = `
+    mutation tagsRemove($id: ID!, $tags: [String!]!) {
+      tagsRemove(id: $id, tags: $tags) {
+        node {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  
+  const result = await fetchShopify<any>(mutation, { id: orderId, tags });
+  
+  if (result.tagsRemove.userErrors && result.tagsRemove.userErrors.length > 0) {
+    throw new Error(`Failed to remove tags: ${result.tagsRemove.userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+  
+  return result.tagsRemove.node;
 }
 
 // ADD THIS ENTIRE NEW FUNCTION
