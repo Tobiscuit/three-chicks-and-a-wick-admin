@@ -30,6 +30,12 @@ const onNewOrder = /* GraphQL */ `
   subscription OnNewOrder {
     onNewOrder {
       orderId
+      orderNumber
+      customerName
+      totalAmount
+      currency
+      financialStatus
+      fulfillmentStatus
       type
     }
   }
@@ -39,6 +45,12 @@ const onNewOrder = /* GraphQL */ `
 type OnNewOrderData = {
   onNewOrder: {
     orderId: string;
+    orderNumber: string;
+    customerName: string;
+    totalAmount: string;
+    currency: string;
+    financialStatus: string;
+    fulfillmentStatus: string;
     type: 'CUSTOM' | 'STANDARD';
   };
 };
@@ -48,6 +60,7 @@ type Order = {
   customer?: string;
   type: 'CUSTOM' | 'STANDARD';
   total?: string;
+  status?: string;
 }
 
 export function RecentOrders() {
@@ -62,9 +75,9 @@ export function RecentOrders() {
         const shopifyOrders = await getOrders(5); // Fetch last 5 orders
         const mappedOrders: Order[] = shopifyOrders.map(o => ({
           orderId: o.name,
-          customer: 'Customer', // Shopify API response in getOrders might need update to include customer
+          customer: o.customer ? `${o.customer.firstName} ${o.customer.lastName}` : 'Guest',
           type: 'STANDARD', // Default to STANDARD as getOrders doesn't seem to return type yet
-          total: `${o.totalPriceSet.shopMoney.amount} ${o.totalPriceSet.shopMoney.currencyCode}`
+          total: `${parseFloat(o.totalPriceSet.shopMoney.amount).toFixed(2)} ${o.totalPriceSet.shopMoney.currencyCode}`
         }));
         setOrders(mappedOrders);
       } catch (error) {
@@ -105,10 +118,10 @@ export function RecentOrders() {
           console.log('[RecentOrders] ✅ New Order Details:', data.onNewOrder);
           
           const newOrder: Order = {
-            orderId: data.onNewOrder.orderId.split('/').pop()?.replace('gid://shopify/Order/', '#') || 'Unknown ID',
-            customer: 'New Customer (Processing...)',
+            orderId: data.onNewOrder.orderNumber, // Use orderNumber (e.g. #1001) instead of raw ID
+            customer: data.onNewOrder.customerName || 'Guest',
             type: data.onNewOrder.type,
-            total: 'Calculating...'
+            total: `${parseFloat(data.onNewOrder.totalAmount).toFixed(2)} ${data.onNewOrder.currency}`
           };
           
           setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]); 
