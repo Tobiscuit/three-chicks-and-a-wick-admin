@@ -267,6 +267,10 @@ export async function getOrders(first: number = 50, after?: string): Promise<Sho
                 currencyCode
               }
             }
+            customer {
+              firstName
+              lastName
+            }
             lineItems(first: 10) {
               edges {
                 node {
