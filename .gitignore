@@ -113,3 +113,5 @@ temp
 *.INTERNAL.md
 
 .vercel
+
+src/test-subscription.js

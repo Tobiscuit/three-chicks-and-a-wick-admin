@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CheckCircle2, Circle, Clock, Package, Truck } from "lucide-react"
+import { CheckCircle2, Circle, Clock, Package, Truck, Printer } from "lucide-react"
 import { useState } from "react"
 import { addTagsToOrder } from "@/services/shopify"
 
@@ -66,15 +66,27 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            Order {order.name}
-            <Badge variant={isCustomOrder ? "default" : "secondary"}>
-              {isCustomOrder ? "Custom Order" : "Standard Order"}
-            </Badge>
-          </DialogTitle>
-          <DialogDescription>
-            Customer: {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest'}
-          </DialogDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <DialogTitle className="text-2xl flex items-center gap-2">
+                Order {order.name}
+                <Badge variant={isCustomOrder ? "default" : "secondary"}>
+                  {isCustomOrder ? "Custom Order" : "Standard Order"}
+                </Badge>
+              </DialogTitle>
+              <DialogDescription>
+                Customer: {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest'}
+              </DialogDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/orders/${order.id}/ticket`, '_blank')}
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print Ticket
+            </Button>
+          </div>
         </DialogHeader>
 
         <ScrollArea className="h-full max-h-[60vh] pr-4">
