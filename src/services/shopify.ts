@@ -18,6 +18,10 @@ export type ShopifyOrder = {
       currencyCode: string;
     };
   };
+  customer?: {
+    firstName: string;
+    lastName: string;
+  };
   lineItems: {
     edges: Array<{
       node: {
