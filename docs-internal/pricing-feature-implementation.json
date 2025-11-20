@@ -1,0 +1,106 @@
+{
+  "feature": "Magic Request Pricing Management",
+  "summary": "Admin UI for managing Magic Request product pricing without code changes",
+  "problem": {
+    "requirement": "Admins need to update wax, wick, and container prices which automatically update all affected variants using Cartesian product pricing",
+    "constraints": ["No code changes", "Update all variants with ingredient", "Preview before apply", "Type new price to confirm", "Use bulk operations"]
+  },
+  "architecture": {
+    "source_of_truth": "Shopify metafields (mr.* namespace)",
+    "pricing_formula": "(vesselBaseCostCents + wickCostCents + waxPricePerOzCents × sizeOz) × (1 + marginPct / 100)",
+    "data_flow": ["Fetch from metafields", "Admin edits in UI", "Calculate new prices", "Preview changes", "Confirm by typing price", "Bulk update via productVariantsBulkUpdate", "Update metafields"],
+    "why_metafields": ["Single source of truth", "No parsing needed", "Fast aggregation", "Admin-only access"]
+  },
+  "implementation": {
+    "files": {
+      "src/services/magic-request-pricing.ts": "Core service: getCurrentPricingConfig(), previewPriceChanges(), applyPriceChanges()",
+      "src/app/magic-request/pricing-actions.ts": "Server actions wrapper",
+      "src/components/magic-request/pricing-manager.tsx": "UI: edit forms, preview table, confirmation dialog"
+    },
+    "key_functions": {
+      "getCurrentPricingConfig": "Queries all Magic Request products, extracts unique wax/wick/vessel prices from metafields",
+      "previewPriceChanges": "Calculates price diffs for all variants using updated costs, returns preview array",
+      "applyPriceChanges": "Validates confirmation, bulk updates variant prices (one mutation per product), updates metafields in batches of 25"
+    }
+  },
+  "pricing_formula": {
+    "steps": ["Extract baseCostCents, sizeOz, marginPct from product metafield", "Get waxPricePerOzCents from variant metafield", "Get wickCostCents from variant metafield", "Calculate: baseCostCents + wickCostCents + (waxPricePerOzCents × sizeOz)", "Apply margin: base × (1 + marginPct / 100)", "Round to cents, format to 2 decimals"]
+  },
+  "graphql": {
+    "query": "products(first: 50, query: 'product_type:Magic Request') with metafields: magic_request.sizeOz (fallback: mr.sizeOz), magic_request.vesselBaseCostCents (fallback: mr.vesselBaseCostCents), magic_request.marginPct (fallback: mr.marginPct), magic_request.waxPricePerOzCents (fallback: mr.waxPricePerOzCents), magic_request.wickCostCents (fallback: mr.wickCostCents)",
+    "mutations": {
+      "productVariantsBulkUpdate": "Update variant prices in bulk (one per product, rate-limited to 2 req/sec with exponential backoff)",
+      "metafieldsSet": "Update wax/wick/vessel cost metafields (batches of 25, rate-limited to 2 req/sec)"
+    }
+  },
+  "workflow": {
+    "1": "Admin navigates to Pricing tab → Loads config from metafields",
+    "2": "Admin edits price → Marks field as changed",
+    "3": "Preview Changes → Queries products, calculates new prices, shows table",
+    "4": "Apply Changes → Shows confirmation dialog",
+    "5": "Type new price → Validates matches preview",
+    "6": "System updates → Bulk updates prices and metafields"
+  },
+  "features": {
+    "intelligent_updates": "Change wax price → Updates all variants with that wax across all containers",
+    "preview": "Table shows: Product, Variant, Wax, Wick, Current Price, New Price, Change",
+    "confirmation": "Must type one of new prices to confirm, prevents accidental updates",
+    "bulk_ops": "productVariantsBulkUpdate: one API call per product, not per variant"
+  },
+  "metafields": {
+    "product": {
+      "magic_request.sizeOz": "number_integer - Container size (migrated from mr.*)",
+      "magic_request.vesselBaseCostCents": "number_integer - Base cost (migrated from mr.*)",
+      "magic_request.marginPct": "number_decimal - Margin % (migrated from mr.*)",
+      "magic_request.waxTypes": "list.single_line_text_field - Available waxes",
+      "magic_request.wickTypes": "list.single_line_text_field - Available wicks",
+      "magic_request.containerType": "single_line_text_field - Container name",
+      "mr.supplier": "single_line_text_field - Supplier (legacy, kept as-is)",
+      "mr.deploymentVersion": "single_line_text_field - Deployment version (legacy, kept as-is)"
+    },
+    "variant": {
+      "magic_request.waxPricePerOzCents": "number_integer - Wax price per oz (migrated from mr.*)",
+      "magic_request.wickCostCents": "number_integer - Wick cost (migrated from mr.*)",
+      "mr.enabled": "number_integer - 1=enabled, 0=disabled (legacy, kept as-is)"
+    },
+    "namespace_migration": {
+      "reason": "Shopify requires 3+ character namespaces. mr.* (2 chars) doesn't work for new definitions.",
+      "new_namespace": "magic_request.* (13 chars) - used for all new pricing and ingredient metafields",
+      "legacy_support": "Code checks both namespaces during migration period (backward compatibility)",
+      "migration_script": "docs-internal/setup-magic-request-metafields.mjs migrates existing mr.* pricing metafields to magic_request.*"
+    }
+  },
+  "examples": {
+    "wax_change": "Change Soy from $0.18/oz to $0.20/oz → Updates 6 variants (2 containers × 3 wicks)",
+    "vessel_change": "Change Mason Jar base from $7.99 to $8.99 → Updates 6 variants (1 container × 2 waxes × 3 wicks)",
+    "wick_change": "Change Hemp from $0.55 to $0.65 → Updates 4 variants (2 containers × 2 waxes × 1 wick)"
+  },
+  "shopify_ai_feedback": {
+    "validation": "Architecture is solid! All approaches validated.",
+    "answers": {
+      "metafields": "✅ Yes - perfect for formula-based pricing, single source of truth",
+      "productVariantsBulkUpdate": "✅ Yes - one call per product is optimal",
+      "price_list_api": "❌ No - Price Lists are for multi-market/customer-segment pricing",
+      "rate_limits": "2 requests/second (burst: 40). Our approach is rate-limit friendly.",
+      "formula_in_metafields": "✅ Yes - exactly what metafields are for",
+      "admin_vs_storefront": "✅ Admin API is correct (Storefront API is read-only)",
+      "confirmation": "✅ Type-price confirmation is excellent pattern",
+      "transactions": "⚠️ Shopify doesn't support transactions. Update prices first, then metafields."
+    },
+    "improvements_implemented": {
+      "namespace_migration": "Migrated all pricing metafields from mr.* (2 chars) to magic_request.* (13 chars) for consistency and Shopify's 3+ char requirement",
+      "rate_limiting": "Added exponential backoff with 500ms delay between requests (2 req/sec)",
+      "price_validation": "Added >50% price change warning in preview",
+      "update_order": "Prices updated first (critical), metafields second (source of truth)",
+      "error_handling": "Metafield failures don't rollback prices (no transactions in Shopify)",
+      "legacy_fallback": "Queries check both magic_request.* and mr.* namespaces during migration"
+    },
+    "recommendations_followed": [
+      "Standardized namespace to magic_request.*",
+      "Added rate limiting with retry logic",
+      "Added price validation (>50% warnings)",
+      "Proper update order (prices → metafields)",
+      "Graceful error handling for metafield failures"
+    ]
+  }
+}

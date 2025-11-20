@@ -81,7 +81,11 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`/orders/${order.id}/ticket`, '_blank')}
+              onClick={() => {
+                // Use order number (e.g. 1006) for cleaner URL
+                const orderNumber = order.name.replace('#', '');
+                window.open(`/orders/${orderNumber}/ticket`, '_blank');
+              }}
             >
               <Printer className="w-4 h-4 mr-2" />
               Print Ticket
