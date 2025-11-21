@@ -43,6 +43,7 @@ interface SynchronizedEditorProps {
   productName?: string;
   imageAnalysis?: string;
   placeholder?: string;
+  pivotReason?: string;
 }
 
 export function SynchronizedEditor({ 
@@ -51,7 +52,8 @@ export function SynchronizedEditor({
   productId, 
   productName, 
   imageAnalysis,
-  placeholder = "Start typing your product description..."
+  placeholder = "Start typing your product description...",
+  pivotReason
 }: SynchronizedEditorProps) {
   // Single source of truth for content
   const [content, setContent] = useState(initialContent);
@@ -294,6 +296,15 @@ export function SynchronizedEditor({
           </CardDescription>
         </CardHeader>
         <CardContent className="p-2 sm:p-6 pt-0">
+          {pivotReason && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md flex gap-3 items-start">
+              <Sparkles className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-semibold text-blue-700 mb-1">AI Creative Logic</h4>
+                <p className="text-sm text-blue-600 italic">"{pivotReason}"</p>
+              </div>
+            </div>
+          )}
                    <RichTextEditor
                      content={content}
                      onChange={handleContentChange}

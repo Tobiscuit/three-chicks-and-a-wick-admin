@@ -90,3 +90,13 @@ export function minifyHtml(html: string): string {
     .replace(/>\s+</g, '><')
     .trim();
 }
+
+/**
+ * Unescapes HTML entities to ensure raw HTML is rendered correctly
+ */
+export function unescapeHtml(html: string): string {
+  if (!html || typeof html !== 'string') return html;
+  
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.documentElement.textContent || html;
+}
