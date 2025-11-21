@@ -156,6 +156,36 @@ export function RichTextEditor({
               >
                 <Italic className="h-4 w-4" />
               </Button>
+
+              <div className="w-px h-6 bg-border mx-1" />
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                className={cn(
+                  "h-8 w-8 p-0 font-bold text-xs",
+                  editor.isActive('heading', { level: 2 }) && "bg-accent text-accent-foreground"
+                )}
+                title="Heading 2"
+              >
+                H2
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                className={cn(
+                  "h-8 w-8 p-0 font-bold text-xs",
+                  editor.isActive('heading', { level: 3 }) && "bg-accent text-accent-foreground"
+                )}
+                title="Heading 3"
+              >
+                H3
+              </Button>
               
               <div className="w-px h-6 bg-border mx-1" />
               
