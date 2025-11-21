@@ -81,6 +81,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   
   // --- ADD THIS LOG ---
   console.log("[CLIENT Form] initialData received on page load:", initialData);
+  console.log("[CLIENT Form] Raw description:", initialData?.description);
+  console.log("[CLIENT Form] Unescaped description:", unescapeHtml(initialData?.description || ""));
   console.log("[CLIENT Form] Inventory value from initialData:", initialData?.totalInventory);
 
   const router = useRouter();
@@ -108,7 +110,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   const defaultValues: Partial<ProductFormValues> = {
       title: initialData?.title || "",
-      description: initialData?.description || "",
+      description: unescapeHtml(initialData?.description || ""),
       price: priceString,
       sku: initialData?.variants.edges[0]?.node.sku || "",
       inventory: initialData?.totalInventory || 0,
