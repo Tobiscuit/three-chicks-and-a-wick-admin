@@ -93,10 +93,21 @@ export function minifyHtml(html: string): string {
 
 /**
  * Unescapes HTML entities to ensure raw HTML is rendered correctly
+ * Handles both &lt; style escaping and preserves actual HTML tags
  */
 export function unescapeHtml(html: string): string {
   if (!html || typeof html !== 'string') return html;
   
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.documentElement.textContent || html;
+  // Only unescape if it looks like the whole string is escaped HTML
+  // e.g. starts with &lt;p&gt; or &lt;div&gt; or just &lt;
+  if (html.trim().startsWith('&lt;')) {
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.documentElement.textContent || html;
+    } catch (e) {
+      return html;
+    }
+  }
+  
+  return html;
 }
