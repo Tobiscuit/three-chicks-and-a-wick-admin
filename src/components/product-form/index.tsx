@@ -38,7 +38,7 @@ import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
 import { AIContentDisplay } from "@/components/ai-content-display";
-import { isHtmlContent, getAIContentClassName, formatHtmlForEditing } from "@/lib/ai-content-utils";
+import { isHtmlContent, getAIContentClassName, formatHtmlForEditing, unescapeHtml } from "@/lib/ai-content-utils";
 import { SynchronizedEditor } from "@/components/synchronized-editor";
 import { getUserSettings } from "@/services/user-settings";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -92,6 +92,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasFetchedAiData = useRef(false);
   const [includeSourceImages, setIncludeSourceImages] = useState(false);
+  const [pivotReason, setPivotReason] = useState<string | undefined>(undefined);
 
   const isEditMode = !!initialData;
   
@@ -173,18 +174,26 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
             const res = await resolveAiGeneratedProductAction(token);
 
             if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImageUrls } = res.data;
+                const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImageUrls, pivotReason } = res.data;
                 
                 console.log('🔍 [ProductForm] Raw body_html from AI:', body_html?.substring(0, 200) + '...');
+                console.log('🔍 [ProductForm] pivotReason from AI:', pivotReason);
                 console.log('✅ [ProductForm] body_html contains HTML tags:', body_html?.includes('<p>') || body_html?.includes('<ul>') || body_html?.includes('<strong>'));
                 
                 setValue('title', title, { shouldDirty: true });
-                setValue('description', body_html, { shouldDirty: true });
+                // Unescape HTML to prevent double-escaping issues
+                const cleanHtml = unescapeHtml(body_html);
+                console.log('🧹 [ProductForm] Cleaned HTML:', cleanHtml?.substring(0, 50) + '...');
+                setValue('description', cleanHtml, { shouldDirty: true });
                 setValue('price', String(price), { shouldDirty: true });
                 setValue('sku', sku, { shouldDirty: true });
                 setValue('tags', tags, { shouldDirty: true });
                 setValue('inventory', quantity, { shouldDirty: true });
                 setValue('status', 'ACTIVE', { shouldDirty: true });
+                
+                if (pivotReason) {
+                    setPivotReason(pivotReason);
+                }
 
                 // Upload the composed image
                 const response = await fetch(publicImageUrl);
@@ -421,10 +430,11 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                 });
                                 setValue('description', content, { shouldDirty: true });
                               }}
-                              productId={initialData?.id}
+                                productId={initialData?.id}
                               productName={form.watch('title') || 'Product'}
                               imageAnalysis={undefined}
                               placeholder="Start typing your product description... Use the toolbar above to format your text with bold, italic, and bullet points."
+                              pivotReason={pivotReason}
                             />
                           </FormControl>
                           <FormMessage />
