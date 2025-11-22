@@ -100,13 +100,14 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
 
         // Perform all updates concurrently
         await Promise.all([
-            // Update core details
+            // Update core details including native description
             updateProduct(productId, {
                 title: productData.title,
                 tags: productData.tags,
                 status: productData.status,
+                descriptionHtml: productData.description,
             }),
-            // Update description metafield
+            // Update description metafield (keep in sync)
             productData.description ? updateProductDescription(productId, productData.description) : Promise.resolve(),
             // Update inventory
             (productData.inventoryItemId && typeof productData.inventory === 'number') ? 

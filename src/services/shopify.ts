@@ -657,7 +657,7 @@ export async function createProduct(productData: ProductData) {
   return { product: { id: productId } };
 }
 
-export async function updateProduct(productId: string, productInput: { title?: string, tags?: string, status?: string }) {
+export async function updateProduct(productId: string, productInput: { title?: string, tags?: string, status?: string, descriptionHtml?: string }) {
     const updateProductMutation = `
         mutation productUpdate($input: ProductInput!) {
             productUpdate(input: $input) {
