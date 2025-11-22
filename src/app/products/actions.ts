@@ -109,6 +109,13 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
             }),
             // Update description metafield (keep in sync)
             productData.description ? updateProductDescription(productId, productData.description) : Promise.resolve(),
+            // Update Shadow Description (Authoritative Source)
+            (async () => {
+                if (productData.description) {
+                    const { saveShadowDescription } = await import('@/services/product-shadow');
+                    await saveShadowDescription(productId, productData.description);
+                }
+            })(),
             // Update inventory
             (productData.inventoryItemId && typeof productData.inventory === 'number') ? 
                 (async () => {

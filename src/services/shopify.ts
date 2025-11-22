@@ -367,10 +367,18 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
     const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
     if (!response.product) return null;
 
+    // Load Shadow Description from Firestore (Authoritative Source)
+    const { loadShadowDescription } = await import('@/services/product-shadow');
+    const shadowDescription = await loadShadowDescription(id);
+
     const { description, descriptionHtml, customDescription, ...restOfProduct } = response.product;
+    
+    // Prioritization: Shadow > HTML > Custom Metafield > Plain Text
+    const finalDescription = shadowDescription || descriptionHtml || customDescription?.value || description || "";
+
     let product: ShopifyProduct = {
         ...restOfProduct,
-        description: description || descriptionHtml || customDescription?.value || "",
+        description: finalDescription,
     };
     
     // Step 2: Perform a more precise, real-time inventory check
