@@ -824,104 +824,116 @@ export async function productReorderMedia(productId: string, moves: { id: string
                 job { id }
                 userErrors { field message }
             }
-        }
-    `;
     return await fetchShopify<any>(mutation, { productId, moves });
+}
+
+// Helper: Sleep utility
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export async function updateProductImages(productId: string, newImageUrls: string[]) {
     console.log(`[Shopify Service] Syncing images for product ${productId}`);
     
-    // 1. Get current media
-    const product = await getProductById(productId);
-    if (!product) throw new Error("Product not found");
+    try {
+        // 1. Get current media
+        let product = await getProductById(productId);
+        if (!product) throw new Error("Product not found");
 
-    // Map current images: URL -> ID
-    // Note: We use the transformed URL from getProductById. 
-    // We assume the frontend sends back the same URLs for existing images.
-    const currentImages = product.images.edges.map((e: any) => ({
-        id: e.node.id,
-        url: e.node.url
-    }));
+        // Map current images: URL -> ID
+        // Note: We use the transformed URL from getProductById. 
+        // We assume the frontend sends back the same URLs for existing images.
+        let currentImages = product.images.edges.map((e: any) => ({
+            id: e.node.id,
+            url: e.node.url
+        }));
 
-    // 2. Identify images to delete
-    // Delete any current image whose URL is NOT in the new list
-    const imagesToDelete = currentImages.filter(img => !newImageUrls.includes(img.url));
-    if (imagesToDelete.length > 0) {
-        console.log(`[Shopify Service] Deleting ${imagesToDelete.length} images`);
-        await productDeleteMedia(productId, imagesToDelete.map(img => img.id));
-    }
-
-    // 3. Identify images to add
-    // Add any URL in the new list that is NOT in the current list
-    const imagesToAdd = newImageUrls.filter(url => !currentImages.find(img => img.url === url));
-    let addedMediaMap = new Map<string, string>(); // URL -> New Media ID
-
-    if (imagesToAdd.length > 0) {
-        console.log(`[Shopify Service] Adding ${imagesToAdd.length} new images`);
-        const createMediaMutation = `
-            mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
-                productCreateMedia(productId: $productId, media: $media) {
-                    media { 
-                        ... on MediaImage { 
-                            id 
-                            image { url(transform: {maxWidth: 1024, maxHeight: 1024}) }
-                        } 
-                    }
-                    userErrors { field message }
-                }
-            }
-        `;
-        
-        const result = await fetchShopify<any>(createMediaMutation, {
-            productId,
-            media: imagesToAdd.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
-        });
-
-        if (result.productCreateMedia.userErrors?.length > 0) {
-            throw new Error(`Failed to add images: ${result.productCreateMedia.userErrors.map((e:any) => e.message).join(', ')}`);
+        // 2. Identify images to delete
+        // Delete any current image whose URL is NOT in the new list
+        const imagesToDelete = currentImages.filter(img => !newImageUrls.includes(img.url));
+        if (imagesToDelete.length > 0) {
+            console.log(`[Shopify Service] Deleting ${imagesToDelete.length} images`);
+            await productDeleteMedia(productId, imagesToDelete.map(img => img.id));
         }
 
-        // Map the added URLs to their new IDs
-        // We assume the order of returned media matches the order of input media
-        const newMedia = result.productCreateMedia.media;
-        imagesToAdd.forEach((url, index) => {
-            if (newMedia[index]) {
-                addedMediaMap.set(url, newMedia[index].id);
+        // 3. Identify images to add
+        // Add any URL in the new list that is NOT in the current list
+        const imagesToAdd = newImageUrls.filter(url => !currentImages.find(img => img.url === url));
+        
+        if (imagesToAdd.length > 0) {
+            console.log(`[Shopify Service] Adding ${imagesToAdd.length} new images`);
+            const createMediaMutation = `
+                mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+                    productCreateMedia(productId: $productId, media: $media) {
+                        media { 
+                            ... on MediaImage { 
+                                id 
+                                image { url(transform: {maxWidth: 1024, maxHeight: 1024}) }
+                            } 
+                        }
+                        userErrors { field message }
+                    }
+                }
+            `;
+            
+            const result = await fetchShopify<any>(createMediaMutation, {
+                productId,
+                media: imagesToAdd.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
+            });
+
+            if (result.productCreateMedia.userErrors?.length > 0) {
+                throw new Error(`Failed to add images: ${result.productCreateMedia.userErrors.map((e:any) => e.message).join(', ')}`);
             }
-        });
-    }
+            
+            // Wait for media to be processed
+            console.log(`[Shopify Service] Waiting for media processing...`);
+            await sleep(2000);
+            
+            // Re-fetch product to get new media IDs
+            product = await getProductById(productId);
+            if (!product) throw new Error("Product not found after update");
+            
+            currentImages = product.images.edges.map((e: any) => ({
+                id: e.node.id,
+                url: e.node.url
+            }));
+        }
 
-    // 4. Reorder images
-    // Construct the final list of IDs in the desired order
-    const finalMediaIds = newImageUrls.map(url => {
-        // Is it an existing image?
-        const existing = currentImages.find(img => img.url === url);
-        if (existing) return existing.id;
-        
-        // Is it a newly added image?
-        const newId = addedMediaMap.get(url);
-        if (newId) return newId;
-        
-        return null;
-    }).filter(id => id !== null) as string[];
+        // 4. Reorder images
+        // Construct moves using 1-based indexing
+        const moves = newImageUrls.map((url, index) => {
+            // Find the ID for this URL
+            // We need to match loosely because Shopify might transform the URL slightly?
+            // Actually, let's try exact match first.
+            const media = currentImages.find(img => img.url === url);
+            
+            if (!media) {
+                console.warn(`[Shopify Service] Could not find media ID for URL: ${url}`);
+                return null;
+            }
+            
+            return {
+                id: media.id,
+                newPosition: (index + 1).toString() // 1-indexed!
+            };
+        }).filter(m => m !== null) as { id: string, newPosition: string }[];
 
-    // Calculate moves
-    // productReorderMedia expects moves relative to the current state?
-    // Actually, it's easier to just specify the new position for each item.
-    // "Specifies a media item to move and where to move it."
-    // newPosition: "The new position of the media item." (0-indexed string)
-    
-    if (finalMediaIds.length > 1) {
-        console.log(`[Shopify Service] Reordering ${finalMediaIds.length} images`);
-        const moves = finalMediaIds.map((id, index) => ({
-            id,
-            newPosition: index.toString()
-        }));
+        if (moves.length > 1) {
+            console.log(`[Shopify Service] Reordering ${moves.length} images`);
+            console.log(`[Shopify Service] Moves:`, JSON.stringify(moves, null, 2));
+            
+            const reorderResult = await productReorderMedia(productId, moves);
+            console.log(`[Shopify Service] Reorder result:`, JSON.stringify(reorderResult, null, 2));
+            
+            if (reorderResult.productReorderMedia?.userErrors?.length > 0) {
+                console.error(`[Shopify Service] Reorder errors:`, reorderResult.productReorderMedia.userErrors);
+            }
+        }
         
-        console.log(`[Shopify Service] Reordering images. Moves:`, JSON.stringify(moves, null, 2));
-        const reorderResult = await productReorderMedia(productId, moves);
-        console.log(`[Shopify Service] Reorder result:`, JSON.stringify(reorderResult, null, 2));
+        return { success: true };
+    } catch (error) {
+        console.error(`[Shopify Service] Error syncing images:`, error);
+        throw error;
     }
 }
 
