@@ -43,6 +43,25 @@ import { SynchronizedEditor } from "@/components/synchronized-editor";
 import { getUserSettings } from "@/services/user-settings";
 import { useAuth } from "@/components/auth/auth-provider";
 
+// --- DND KIT IMPORTS ---
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
   description: z.string().optional(),
@@ -75,6 +94,67 @@ function generateSku(title: string): string {
         .join('-');
     const randomPart = Math.random().toString(36).substring(2, 6);
     return `${titlePart}-${randomPart}`.substring(0, 20).toUpperCase();
+}
+
+// --- SORTABLE IMAGE COMPONENT ---
+function SortableImage({ 
+    url, 
+    index, 
+    onRemove 
+}: { 
+    url: string; 
+    index: number; 
+    onRemove: (index: number) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: url });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 1, // Ensure dragged item is on top
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div 
+            ref={setNodeRef} 
+            style={style} 
+            {...attributes} 
+            {...listeners}
+            className="relative aspect-square group cursor-grab active:cursor-grabbing touch-none" // touch-none is important for touch devices
+        >
+            <Image
+                src={url}
+                alt={`Product image ${index + 1}`}
+                fill
+                className="object-cover rounded-md"
+                draggable={false} // Prevent native drag
+            />
+            <div className="absolute top-1 right-1">
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    // Stop propagation to prevent drag start when clicking delete
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(index);
+                    }}
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
 }
 
 export function ProductForm({ collections, initialData = null }: ProductFormProps) {
@@ -138,6 +218,34 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   useEffect(() => {
     setImagePreviews(watchedImages);
   }, [watchedImages]);
+
+  // --- DND SENSORS ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 8, // Require 8px movement before drag starts (prevents accidental drags on click)
+        },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // --- DND HANDLER ---
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = imagePreviews.indexOf(active.id as string);
+      const newIndex = imagePreviews.indexOf(over.id as string);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrder = arrayMove(imagePreviews, oldIndex, newIndex);
+          setImagePreviews(newOrder);
+          setValue('images', newOrder, { shouldDirty: true });
+      }
+    }
+  }
 
   // Prefill form with AI generated data
   useEffect(() => {
@@ -449,56 +557,49 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <CardTitle className="text-lg sm:text-xl">Media</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 sm:p-4 pt-0">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-4">
-                            {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
-                                <div key={index} className="relative aspect-square group">
-                                    <Image
-                                        src={src}
-                                        alt={`Product image ${index + 1}`}
-                                        fill
-                                        className="object-cover rounded-md"
-                                        onError={(e) => {
-                                            console.error(`Failed to load image ${index + 1}:`, src);
-                                            // Remove broken image from previews
-                                            setImagePreviews(prev => prev.filter((_, i) => i !== index));
-                                        }}
-                                    />
-                                    <div className="absolute top-1 right-1">
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => removeImage(index)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                            
-                            {/* Loading skeleton while uploading */}
-                            {isUploadingImage && (
-                                <div className="relative aspect-square">
-                                    <Skeleton className="w-full h-full rounded-md animate-pulse" />
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">Uploading...</p>
-                                    </div>
-                                    </div>
-                                )}
-                            
-                            {/* Always show dropzone */}
-                            <div
-                                className="aspect-square flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
-                                onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+                        <DndContext 
+                            sensors={sensors} 
+                            collisionDetection={closestCenter} 
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext 
+                                items={imagePreviews} 
+                                strategy={rectSortingStrategy}
                             >
-                                <div className="text-center">
-                                    <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
-                                    <p className="text-sm text-muted-foreground mt-1">Add Image</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-4">
+                                    {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
+                                        <SortableImage 
+                                            key={src} 
+                                            url={src} 
+                                            index={index} 
+                                            onRemove={removeImage} 
+                                        />
+                                    ))}
+                                    
+                                    {/* Loading skeleton while uploading */}
+                                    {isUploadingImage && (
+                                        <div className="relative aspect-square">
+                                            <Skeleton className="w-full h-full rounded-md animate-pulse" />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                                <p className="text-xs text-muted-foreground">Uploading...</p>
+                                            </div>
+                                            </div>
+                                        )}
+                                    
+                                    {/* Always show dropzone */}
+                                    <div
+                                        className="aspect-square flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
+                                        onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+                                    >
+                                        <div className="text-center">
+                                            <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
+                                            <p className="text-sm text-muted-foreground mt-1">Add Image</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </SortableContext>
+                        </DndContext>
                         <Input
                             type="file"
                             className="hidden"
