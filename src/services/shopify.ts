@@ -839,7 +839,7 @@ export async function updateProductImages(productId: string, newImageUrls: strin
     // Map current images: URL -> ID
     // Note: We use the transformed URL from getProductById. 
     // We assume the frontend sends back the same URLs for existing images.
-    const currentImages = product.images.edges.map(e => ({
+    const currentImages = product.images.edges.map((e: any) => ({
         id: e.node.id,
         url: e.node.url
     }));
