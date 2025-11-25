@@ -14,6 +14,7 @@ import {
     getProductById,
     collectionAddProducts,
     collectionRemoveProducts,
+    updateProductImages,
 } from '@/services/shopify';
 import { adminDb } from '@/lib/firebase-admin';
 import { encodeShopifyId } from '@/lib/utils';
@@ -132,6 +133,8 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
                     }, { merge: true });
                 })() 
                 : Promise.resolve(),
+                            // Update product images on Shopify (add/remove/reorder)
+            productData.imageUrls ? updateProductImages(productId, productData.imageUrls) : Promise.resolve(),
             // Update product image in Firestore for real-time updates
             (async () => {
                 const productDocId = encodeShopifyId(productId);
