@@ -738,6 +738,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                                         key={c.id} 
                                                         value={c.title}
                                                         onSelect={() => {
+                                                            console.log(`[ProductForm] Selected collection: ${c.title} (${c.id})`);
                                                             const selected = new Set(field.value || []);
                                                             const isCurrentlySelected = selected.has(c.id);
                                                             
