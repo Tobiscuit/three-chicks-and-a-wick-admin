@@ -826,7 +826,7 @@ export async function productReorderMedia(productId: string, moves: { id: string
             }
         }
     `;
-    await fetchShopify<any>(mutation, { productId, moves });
+    return await fetchShopify<any>(mutation, { productId, moves });
 }
 
 export async function updateProductImages(productId: string, newImageUrls: string[]) {
@@ -919,7 +919,9 @@ export async function updateProductImages(productId: string, newImageUrls: strin
             newPosition: index.toString()
         }));
         
-        await productReorderMedia(productId, moves);
+        console.log(`[Shopify Service] Reordering images. Moves:`, JSON.stringify(moves, null, 2));
+        const reorderResult = await productReorderMedia(productId, moves);
+        console.log(`[Shopify Service] Reorder result:`, JSON.stringify(reorderResult, null, 2));
     }
 }
 
