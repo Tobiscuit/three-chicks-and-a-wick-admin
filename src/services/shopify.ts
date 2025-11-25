@@ -922,15 +922,6 @@ export async function updateProductImages(productId: string, newImageUrls: strin
         await productReorderMedia(productId, moves);
     }
 }
-    
-    // Log successful update
-    if (result.inventorySetQuantities.inventoryAdjustmentGroup) {
-        console.log(`[SERVICE] Inventory successfully updated. Adjustment ID: ${result.inventorySetQuantities.inventoryAdjustmentGroup.id}`);
-        console.log(`[SERVICE] New quantity: ${result.inventorySetQuantities.inventoryAdjustmentGroup.changes[0]?.quantityAfterChange}`);
-    }
-    
-    return result;
-}
 
 export async function deleteProduct(productId: string) {
   const mutation = `
