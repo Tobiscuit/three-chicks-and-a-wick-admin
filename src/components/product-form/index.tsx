@@ -175,6 +175,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
   const hasFetchedAiData = useRef(false);
   const [includeSourceImages, setIncludeSourceImages] = useState(false);
   const [pivotReason, setPivotReason] = useState<string | undefined>(undefined);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   const isEditMode = !!initialData;
   
@@ -717,7 +718,7 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <FormField control={form.control} name="collections" render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>Collections</FormLabel>
-                                <Popover>
+                                <Popover open={collectionOpen} onOpenChange={setCollectionOpen}>
                                     <PopoverTrigger asChild>
                                     <FormControl>
                                         <Button variant="outline" role="combobox" className="w-full justify-between text-muted-foreground">
