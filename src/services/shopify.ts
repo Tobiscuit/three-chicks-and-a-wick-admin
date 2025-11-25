@@ -172,7 +172,7 @@ const GET_PRODUCTS_QUERY = `
           featuredImage {
             url(transform: {maxWidth: 1024, maxHeight: 1024})
           }
-          images(first: 20) {
+          images(first: 100) {
             edges {
               node {
                 id
@@ -824,6 +824,7 @@ export async function productReorderMedia(productId: string, moves: { id: string
                 job { id }
                 userErrors { field message }
             }
+    `;
     return await fetchShopify<any>(mutation, { productId, moves });
 }
 
