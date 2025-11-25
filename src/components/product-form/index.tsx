@@ -733,15 +733,27 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                             <CommandEmpty>No collections.</CommandEmpty>
                                             <CommandGroup>
                                                 {collections.map((c) => (
-                                                    <CommandItem key={c.id} onSelect={() => {
-                                                        const selected = new Set(field.value || []);
-                                                        if (selected.has(c.id)) {
-                                                          selected.delete(c.id);
-                                                        } else {
-                                                          selected.add(c.id);
-                                                        }
-                                                        field.onChange(Array.from(selected));
-                                                    }}>
+                                                    <CommandItem 
+                                                        key={c.id} 
+                                                        value={c.title}
+                                                        onSelect={() => {
+                                                            const selected = new Set(field.value || []);
+                                                            const isCurrentlySelected = selected.has(c.id);
+                                                            
+                                                            if (isCurrentlySelected) {
+                                                                selected.delete(c.id);
+                                                            } else {
+                                                                selected.add(c.id);
+                                                            }
+                                                            
+                                                            field.onChange(Array.from(selected));
+                                                            
+                                                            // Special handling for Featured collection
+                                                            if (featuredCollection && c.id === featuredCollection.id) {
+                                                                setValue('featured', !isCurrentlySelected, { shouldDirty: true });
+                                                            }
+                                                        }}
+                                                    >
                                                         <Check className={cn("mr-2 h-4 w-4",(field.value || []).includes(c.id) ? "opacity-100" : "opacity-0")} />
                                                         {c.title}
                                                     </CommandItem>

@@ -105,9 +105,10 @@ const GET_PRODUCT_BY_ID_QUERY = `
       featuredImage {
         url(transform: {maxWidth: 1024, maxHeight: 1024})
       }
-      images(first: 10) {
+      images(first: 20) {
         edges {
           node {
+            id
             url(transform: {maxWidth: 1024, maxHeight: 1024})
             altText
           }
@@ -171,9 +172,10 @@ const GET_PRODUCTS_QUERY = `
           featuredImage {
             url(transform: {maxWidth: 1024, maxHeight: 1024})
           }
-          images(first: 10) {
+          images(first: 20) {
             edges {
               node {
+                id
                 url(transform: {maxWidth: 1024, maxHeight: 1024})
                 altText
               }
@@ -799,6 +801,127 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
         const errors = result.inventorySetQuantities.userErrors.map((e: any) => e.message).join(', ');
         throw new Error(`Inventory update failed: ${errors}`);
     }
+}
+
+export async function productDeleteMedia(productId: string, mediaIds: string[]) {
+    if (mediaIds.length === 0) return;
+    const mutation = `
+        mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
+            productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+                deletedMediaIds
+                userErrors { field message }
+            }
+        }
+    `;
+    await fetchShopify<any>(mutation, { productId, mediaIds });
+}
+
+export async function productReorderMedia(productId: string, moves: { id: string, newPosition: string }[]) {
+    if (moves.length === 0) return;
+    const mutation = `
+        mutation productReorderMedia($productId: ID!, $moves: [MoveInput!]!) {
+            productReorderMedia(id: $productId, moves: $moves) {
+                job { id }
+                userErrors { field message }
+            }
+        }
+    `;
+    await fetchShopify<any>(mutation, { productId, moves });
+}
+
+export async function updateProductImages(productId: string, newImageUrls: string[]) {
+    console.log(`[Shopify Service] Syncing images for product ${productId}`);
+    
+    // 1. Get current media
+    const product = await getProductById(productId);
+    if (!product) throw new Error("Product not found");
+
+    // Map current images: URL -> ID
+    // Note: We use the transformed URL from getProductById. 
+    // We assume the frontend sends back the same URLs for existing images.
+    const currentImages = product.images.edges.map(e => ({
+        id: e.node.id,
+        url: e.node.url
+    }));
+
+    // 2. Identify images to delete
+    // Delete any current image whose URL is NOT in the new list
+    const imagesToDelete = currentImages.filter(img => !newImageUrls.includes(img.url));
+    if (imagesToDelete.length > 0) {
+        console.log(`[Shopify Service] Deleting ${imagesToDelete.length} images`);
+        await productDeleteMedia(productId, imagesToDelete.map(img => img.id));
+    }
+
+    // 3. Identify images to add
+    // Add any URL in the new list that is NOT in the current list
+    const imagesToAdd = newImageUrls.filter(url => !currentImages.find(img => img.url === url));
+    let addedMediaMap = new Map<string, string>(); // URL -> New Media ID
+
+    if (imagesToAdd.length > 0) {
+        console.log(`[Shopify Service] Adding ${imagesToAdd.length} new images`);
+        const createMediaMutation = `
+            mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+                productCreateMedia(productId: $productId, media: $media) {
+                    media { 
+                        ... on MediaImage { 
+                            id 
+                            image { url(transform: {maxWidth: 1024, maxHeight: 1024}) }
+                        } 
+                    }
+                    userErrors { field message }
+                }
+            }
+        `;
+        
+        const result = await fetchShopify<any>(createMediaMutation, {
+            productId,
+            media: imagesToAdd.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
+        });
+
+        if (result.productCreateMedia.userErrors?.length > 0) {
+            throw new Error(`Failed to add images: ${result.productCreateMedia.userErrors.map((e:any) => e.message).join(', ')}`);
+        }
+
+        // Map the added URLs to their new IDs
+        // We assume the order of returned media matches the order of input media
+        const newMedia = result.productCreateMedia.media;
+        imagesToAdd.forEach((url, index) => {
+            if (newMedia[index]) {
+                addedMediaMap.set(url, newMedia[index].id);
+            }
+        });
+    }
+
+    // 4. Reorder images
+    // Construct the final list of IDs in the desired order
+    const finalMediaIds = newImageUrls.map(url => {
+        // Is it an existing image?
+        const existing = currentImages.find(img => img.url === url);
+        if (existing) return existing.id;
+        
+        // Is it a newly added image?
+        const newId = addedMediaMap.get(url);
+        if (newId) return newId;
+        
+        return null;
+    }).filter(id => id !== null) as string[];
+
+    // Calculate moves
+    // productReorderMedia expects moves relative to the current state?
+    // Actually, it's easier to just specify the new position for each item.
+    // "Specifies a media item to move and where to move it."
+    // newPosition: "The new position of the media item." (0-indexed string)
+    
+    if (finalMediaIds.length > 1) {
+        console.log(`[Shopify Service] Reordering ${finalMediaIds.length} images`);
+        const moves = finalMediaIds.map((id, index) => ({
+            id,
+            newPosition: index.toString()
+        }));
+        
+        await productReorderMedia(productId, moves);
+    }
+}
     
     // Log successful update
     if (result.inventorySetQuantities.inventoryAdjustmentGroup) {
