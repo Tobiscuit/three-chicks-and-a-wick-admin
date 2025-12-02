@@ -61,6 +61,7 @@ export default function OrdersClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filter, setFilter] = useState('all');
 
   // Fetch initial orders
   useEffect(() => {
@@ -86,18 +87,15 @@ export default function OrdersClient() {
       .subscribe({
         next: ({ data }) => {
           if (!data?.onNewOrder) return;
-          
-          // We need to fetch the full order details to get line items/recipes
-          // For now, we'll just add the basic info and let the user click to refresh/view details
-          // Or ideally, we trigger a re-fetch of the latest order
+
           getOrders(1).then(newOrders => {
-             if (newOrders.length > 0) {
-                 setOrders(prev => {
-                     const exists = prev.find(o => o.id === newOrders[0].id);
-                     if (exists) return prev;
-                     return [newOrders[0], ...prev];
-                 });
-             }
+            if (newOrders.length > 0) {
+              setOrders(prev => {
+                const exists = prev.find(o => o.id === newOrders[0].id);
+                if (exists) return prev;
+                return [newOrders[0], ...prev];
+              });
+            }
           });
         },
         error: (error) => console.error('Subscription Error:', error),
@@ -115,14 +113,18 @@ export default function OrdersClient() {
     return `${parseFloat(amount).toFixed(2)} ${currency}`;
   };
 
-  const formatType = (type: string) => {
-    return type === 'CUSTOM' ? 'Custom' : 'Standard';
-  };
+  const filteredOrders = orders.filter(order => {
+    if (filter === 'all') return true;
+    const status = (order.displayFulfillmentStatus || 'UNFULFILLED').toUpperCase();
+    if (filter === 'unfulfilled') return status === 'UNFULFILLED' || status === 'ON_HOLD' || status === 'SCHEDULED';
+    if (filter === 'fulfilled') return status === 'FULFILLED';
+    return true;
+  });
 
   return (
     <>
-      <Tabs defaultValue="all">
-        <div className="flex items-center">
+      <Tabs defaultValue="all" value={filter} onValueChange={setFilter}>
+        <div className="flex items-center mb-4">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="unfulfilled">Unfulfilled</TabsTrigger>
@@ -137,67 +139,66 @@ export default function OrdersClient() {
             </Button>
           </div>
         </div>
-        <TabsContent value="all">
-          <Card>
-            <CardHeader>
-              <CardTitle>Orders</CardTitle>
-              <CardDescription>
-                Manage and view details for all customer orders.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center">Loading orders...</TableCell>
-                    </TableRow>
-                  ) : orders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center">No orders found.</TableCell>
-                    </TableRow>
-                  ) : (
-                    orders.map((order) => (
-                      <TableRow 
-                        key={order.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleOrderClick(order)}
-                      >
-                        <TableCell className="font-medium">{order.name}</TableCell>
-                        <TableCell>
-                          {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest'}
-                        </TableCell>
-                        <TableCell>
-                          {/* Simple heuristic for type display in list, modal has full logic */}
-                          {order.lineItems.edges.some((e: any) => e.node.product?.title?.includes('Magic Request')) ? 'Custom' : 'Standard'}
-                        </TableCell>
-                        <TableCell>{order.displayFulfillmentStatus || 'Unfulfilled'}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
-      <OrderDetailsModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        order={selectedOrder} 
+      <Card>
+        <CardHeader>
+          <CardTitle>Orders</CardTitle>
+          <CardDescription>
+            Manage and view details for all customer orders.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">Loading orders...</TableCell>
+                </TableRow>
+              ) : filteredOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">No orders found.</TableCell>
+                </TableRow>
+              ) : (
+                filteredOrders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleOrderClick(order)}
+                  >
+                    <TableCell className="font-medium">{order.name}</TableCell>
+                    <TableCell>
+                      {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest'}
+                    </TableCell>
+                    <TableCell>
+                      {/* Simple heuristic for type display in list, modal has full logic */}
+                      {order.lineItems.edges.some((e: any) => e.node.product?.title?.includes('Magic Request')) ? 'Custom' : 'Standard'}
+                    </TableCell>
+                    <TableCell>{order.displayFulfillmentStatus || 'Unfulfilled'}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <OrderDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        order={selectedOrder}
       />
     </>
   );
