@@ -8,11 +8,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminAuth, getAdminSecret, getAppSyncConfig } from '@/lib/server-auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Verify user is authenticated and authorized
     const authResult = await verifyAdminAuth(request);
-    
+
     if (!authResult.authorized) {
       return NextResponse.json(
         { error: authResult.error || 'Unauthorized' },
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request body
     const { key, value } = await request.json();
-    
+
     if (!key || typeof value !== 'boolean') {
       return NextResponse.json(
         { error: 'Invalid request: key and value (boolean) required' },
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
   try {
     // 1. Verify user is authenticated and authorized
     const authResult = await verifyAdminAuth(request);
-    
+
     if (!authResult.authorized) {
       return NextResponse.json(
         { error: authResult.error || 'Unauthorized' },

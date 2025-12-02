@@ -18,16 +18,16 @@ async function ProductsData() {
 
     try {
         const rawProducts = await getProducts();
-        
+
         products = rawProducts.map(product => {
             const rawPrice = product.priceRange?.minVariantPrice?.amount;
             const priceAsNumber = rawPrice ? parseFloat(rawPrice) : null;
-           
-            const formattedAmount = priceAsNumber !== null 
+
+            const formattedAmount = priceAsNumber !== null
                 ? new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: product.priceRange.minVariantPrice.currencyCode,
-                  }).format(priceAsNumber)
+                }).format(priceAsNumber)
                 : '$NaN';
 
             return {
@@ -41,7 +41,7 @@ async function ProductsData() {
                 }
             }
         });
-        
+
     } catch (e: any) {
         error = e.message;
         console.error("[ProductsPage] Error fetching or transforming products:", e);
@@ -73,7 +73,7 @@ export default function ProductsPage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div className="flex flex-col sm:flex-row gap-2">
                         <DiagnosticButton />
-                        <Button asChild className="w-full sm:w-auto hidden sm:flex">
+                        <Button asChild className="w-full sm:w-auto flex">
                             <Link href="/products/new">
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Add Product

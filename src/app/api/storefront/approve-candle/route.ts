@@ -28,6 +28,10 @@ const APPROVE_SHARED_CANDLE = `
   }
 `;
 
+import { adminDb } from '@/lib/firebase-admin';
+
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/storefront/approve-candle
  * Approve a shared candle for public display
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         query: APPROVE_SHARED_CANDLE,
-        variables: { 
+        variables: {
           jobId,
           adminSecret: ADMIN_SECRET  // Server-side only!
         },

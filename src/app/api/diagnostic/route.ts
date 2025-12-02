@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { FIREBASE_CONFIG, FIREBASE_ADMIN_CONFIG } from '@/lib/env-config';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   // Diagnostic endpoint to check Firebase connection
   try {

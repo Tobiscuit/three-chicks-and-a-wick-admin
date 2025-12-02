@@ -27,6 +27,8 @@ const REJECT_SHARED_CANDLE = `
  * POST /api/storefront/reject-candle
  * Reject a shared candle and hide from public
  */
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         query: REJECT_SHARED_CANDLE,
-        variables: { 
+        variables: {
           jobId,
           reason: reason || 'No reason provided',
           adminSecret: ADMIN_SECRET  // Server-side only!

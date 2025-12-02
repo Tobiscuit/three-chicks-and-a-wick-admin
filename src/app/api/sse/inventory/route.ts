@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { headers } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 // Store active SSE connections
 const clients = new Map<string, WritableStreamDefaultWriter>();
 

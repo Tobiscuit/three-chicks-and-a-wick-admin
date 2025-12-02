@@ -30,6 +30,8 @@ const GET_COMMUNITY_CREATIONS = `
   }
 `;
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/storefront/community-creations
  * Get shared candles for manual review
