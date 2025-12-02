@@ -52,11 +52,25 @@ function getRequiredEnvVar(key: string): string {
   debugLog(`[ENV-CONFIG] getRequiredEnvVar called for: ${key}`);
   debugLog(`[ENV-CONFIG] USE_A_PREFIX: ${USE_A_PREFIX}`);
   debugLog(`[ENV-CONFIG] Looking for: ${USE_A_PREFIX ? 'A_' : ''}${key}`);
-  
+
   const value = getEnvVar(key);
   debugLog(`[ENV-CONFIG] Found value: ${value ? 'SET' : 'NOT SET'}`);
-  
+
   if (!value) {
+    // During build time, return a placeholder to prevent build failure
+    // Next.js build process checks for these variables
+    if (process.env.npm_lifecycle_event === 'build') {
+      console.warn(`[ENV-CONFIG] WARNING: ${key} is missing during build. Using placeholder.`);
+      if (key === 'FIREBASE_SERVICE_ACCOUNT') {
+        return JSON.stringify({
+          project_id: "mock-project-id",
+          client_email: "mock-client-email@mock-project-id.iam.gserviceaccount.com",
+          private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnh0fU3mKK7Yxu\n3zNoCgvtT36zqT4rY6djRX5GRAa0FlzTWtW5FavB7NDlxyXFjep4r7X282PDC8Zr\nqh4BHImCsG57p80vAvMwxj/uShQxVTj5GhHiyyuM7GPyYc+P3y+e5sfFga+Zhn3F\nFmMhTYYBsQO8oZu5X0pB0J02YSDawEG9ccvLtD8/wmYMhINbMYN7mItXTQIUPUyB\nnVatqI/oRcWT8Kzfr/K8l5iOzLZdzoeW2rQUZQkeuKkgIr0m96smgOZBzO5kXxdy\n8eg2w6rNwnI/oIKSoIX31M6vdCekxXBLejMXJjnlUh0QH0R0HTzSCpXFZDDLZjz4\n6t5lfHGfAgMBAAECggEAA0wsY8pE0ks+umf2URPxjChGbC7mpF//yXpys9te7miK\nRzbAgjYk/Vo1+m/jFHJorRt4T3YW/p3at//PO2Jeao4ifpic91Hti4Y7d+tJXnc4\n+d5Df91T7CAzD3BRb5mLDGuqfv7AgBsfmqOIK/2kp5/eXPYpZIq1oXoDvjBHP0cF\nXLfuL7fkpoDtmCY0aBqAcLi56OMjKu5/xApaEiFndMWDy/LCDb3NeoRKSD0yKnoU\nLIyDNzX87zvIauxnWzdgfYV4X5XHTQmeLU8wz8WOEQv6plpDrmw3tLQDsSPZMBVc\n+YJtOUbdTNsnWAv33ncgqfezTk3e32cpsOl2kXYO4QKBgQDTUIdVLwoHBrn1UCdU\nBi+4Rvd8/FLS6EZ3pfPpVYx5V5fBMcTfhIN83nzNSuV7xBRy8h80DZh+hyEBKEPa\nPIDLKfI0HwVb6t+8ojJztO/HT51xPv/QqXagCB/1ad5p8oseupSm6hTYEOhLBmFm\n5kcSfdCiOdsNDCK1hMgibCcrpwKBgQDK9GYdxrhvUCMDX+0mJGewXt2oCDbmIOrJ\nPawu7265p+d0amVaKACPNKyxwjiDTEhwM+B1XXsl7youYH0xk8t5Aupmg/1f6AzO\nhqc4YmZgZYcZJcE75Tb4aGtYDOtn+sBCtSIgrNoZQK1A7n37PEZDg2KUSdBZE2Y9\nN/mPVnrpSQKBgQC5H4VQBSOdwDDNTmkF3V2U7OcIIe1VQ5PoYgRq2D12WFxkLfux\nbV/b1vYyy3h7ku3vPVpEudxsjGlHoETBPdv/IEJFkx+YxQ05LkdQwqSFUaQ2f+CQ\npsV7sWJ+Fz94RbnHM+Hi0JNuLnGyuGZARWDiPEK4vELBDW6i4y6JqYIvZQKBgGKq\nwH5XXtDW377DQvKZHkOzSwVmwPHOLPaa4fuLcYQWqcKB+zYCXotAa3ib2IeUbV8H\nCWdlg/okNJiJVjPlCzWQgk5GesbGdHtvIRqbU/QnR6+lGDU7MSdA9HbBCSzqzc9g\nafACuKEwPUpk56BdZDdsR1+aJw03DixS6yORQn3pAoGAQXDAOAtmlmVbMB+a+C8w\nl+jqAU+EbKJCKe5TYKRwHge/iducjbXxnMPQKMWpvb6+miVCvtWpmeIQSrg+Iis5\n4fYFZwjGRrobdo173T0f25VqPZnbhjus3qS0kJeTg09a9RX4ZhSYnk5yEkJ9KCkz\nKmHQINzv9y/E3iGU59u6kGY=\\n-----END PRIVATE KEY-----\\n"
+        });
+      }
+      return "BUILD_PLACEHOLDER";
+    }
+
     const errorMsg = `Required environment variable ${USE_A_PREFIX ? 'A_' : ''}${key} is not set`;
     console.error(`[ENV-CONFIG] ERROR: ${errorMsg}`);
     throw new Error(errorMsg);

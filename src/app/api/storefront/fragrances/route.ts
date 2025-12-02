@@ -84,6 +84,8 @@ const DELETE_FRAGRANCE = `
   }
 `;
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/storefront/fragrances
  * List all fragrances or get a single fragrance by ID

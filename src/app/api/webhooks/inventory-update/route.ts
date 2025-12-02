@@ -3,6 +3,8 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { adminDb } from '@/lib/firebase-admin';
 import { SHOPIFY_CONFIG, FIREBASE_CONFIG } from '@/lib/env-config';
 
+export const dynamic = 'force-dynamic';
+
 export const runtime = 'nodejs';
 
 async function getRawBody(req: NextRequest): Promise<Buffer> {

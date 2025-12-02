@@ -99,3 +99,9 @@
     color: var(--color-foreground);
   }
 }
+
+@utility glass {
+  background-color: color-mix(in srgb, var(--color-background) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+}
