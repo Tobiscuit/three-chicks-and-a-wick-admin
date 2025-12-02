@@ -61,7 +61,7 @@ export function SalesChart({ data }: SalesChartProps) {
                     indicator="dot"
                   />}
                 />
-                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
