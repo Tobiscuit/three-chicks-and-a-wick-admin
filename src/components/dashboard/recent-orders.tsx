@@ -114,17 +114,17 @@ export function RecentOrders() {
             console.warn('[RecentOrders] ⚠️ Received data but onNewOrder is missing:', data);
             return;
           }
-          
+
           console.log('[RecentOrders] ✅ New Order Details:', data.onNewOrder);
-          
+
           const newOrder: Order = {
             orderId: data.onNewOrder.orderNumber, // Use orderNumber (e.g. #1001) instead of raw ID
             customer: data.onNewOrder.customerName || 'Guest',
             type: data.onNewOrder.type,
             total: `${parseFloat(data.onNewOrder.totalAmount).toFixed(2)} ${data.onNewOrder.currency}`
           };
-          
-          setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]); 
+
+          setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]);
         },
         error: (error) => {
           console.error('[RecentOrders] ❌ Subscription Error:', error);
@@ -152,21 +152,21 @@ export function RecentOrders() {
           <Link href="/orders">View all orders</Link>
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Order ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead className="hidden sm:table-cell">Customer</TableHead>
+              <TableHead className="hidden md:table-cell">Type</TableHead>
               <TableHead className="text-right">Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-               <TableRow>
-                 <TableCell colSpan={4} className="text-center">Loading orders...</TableCell>
-               </TableRow>
+              <TableRow>
+                <TableCell colSpan={4} className="text-center">Loading orders...</TableCell>
+              </TableRow>
             ) : orders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center">No recent orders found.</TableCell>
@@ -175,8 +175,8 @@ export function RecentOrders() {
               orders.map((order, index) => (
                 <TableRow key={`${order.orderId}-${index}`}>
                   <TableCell className="font-medium">{order.orderId}</TableCell>
-                  <TableCell>{order.customer || 'N/A'}</TableCell>
-                  <TableCell>{order.type === 'CUSTOM' ? 'Custom' : 'Standard'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{order.customer || 'N/A'}</TableCell>
+                  <TableCell className="hidden md:table-cell">{order.type === 'CUSTOM' ? 'Custom' : 'Standard'}</TableCell>
                   <TableCell className="text-right">{order.total || 'N/A'}</TableCell>
                 </TableRow>
               ))
