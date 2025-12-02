@@ -10,8 +10,6 @@ import type { ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { DiagnosticButton } from '@/components/diagnostic-button';
 
-export const dynamic = 'force-dynamic';
-
 async function ProductsData() {
     let products: ShopifyProduct[] = [];
     let error: string | null = null;
