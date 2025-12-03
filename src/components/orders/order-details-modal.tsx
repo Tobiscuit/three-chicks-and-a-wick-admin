@@ -327,11 +327,11 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="text-muted-foreground">--</span>
+                    <span>{order.totalShippingPriceSet ? formatCurrency(order.totalShippingPriceSet.shopMoney.amount, order.totalShippingPriceSet.shopMoney.currencyCode) : '--'}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="text-muted-foreground">--</span>
+                    <span>{order.totalTaxSet ? formatCurrency(order.totalTaxSet.shopMoney.amount, order.totalTaxSet.shopMoney.currencyCode) : '--'}</span>
                   </div>
                   <Separator className="bg-border/50" />
                   <div className="flex justify-between items-center pt-1">

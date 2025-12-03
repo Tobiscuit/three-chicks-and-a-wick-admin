@@ -20,6 +20,18 @@ export type ShopifyOrder = {
       currencyCode: string;
     };
   };
+  totalShippingPriceSet: {
+    shopMoney: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  totalTaxSet: {
+    shopMoney: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
   customer?: {
     firstName: string;
     lastName: string;
@@ -287,6 +299,18 @@ export const getOrders = cache(async (first: number = 50, after?: string): Promi
             createdAt
             processedAt
             totalPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            totalShippingPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            totalTaxSet {
               shopMoney {
                 amount
                 currencyCode
