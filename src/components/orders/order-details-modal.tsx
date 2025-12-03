@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   CheckCircle2, Clock, Package, Printer,
-  MapPin, Calendar, User, Mail
+  MapPin, Calendar, User, Mail, Sparkles
 } from "lucide-react"
 import { useState } from "react"
 import { addTagsToOrder, ShopifyOrder } from "@/services/shopify"
@@ -227,18 +227,45 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
                               </div>
 
                               {/* Recipe Card */}
-                              {recipe && (
-                                <div className="mt-3 bg-primary/5 border border-primary/10 rounded-md p-3">
-                                  <p className="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                    Custom Recipe
-                                  </p>
-                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Wax:</span> <span>{recipe.wax}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Wick:</span> <span>{recipe.wick}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Scent:</span> <span>{recipe.fragrance}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Color:</span> <span>{recipe.color}</span></div>
+                              {/* Recipe Card */}
+                              {(recipe || item.customAttributes.length > 0) && (
+                                <div className="mt-4 bg-accent/30 border border-accent rounded-lg p-4">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <Sparkles className="w-4 h-4 text-primary fill-primary/20" />
+                                    <span className="font-semibold text-sm text-primary">Custom Creation Details</span>
                                   </div>
+
+                                  {recipe ? (
+                                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Wax</span>
+                                        <span className="font-medium">{recipe.wax}</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Wick</span>
+                                        <span className="font-medium">{recipe.wick}</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Scent</span>
+                                        <span className="font-medium">{recipe.fragrance}</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Color</span>
+                                        <span className="font-medium">{recipe.color}</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                      {item.customAttributes
+                                        .filter((attr: any) => !attr.key.startsWith('_'))
+                                        .map((attr: any) => (
+                                          <div key={attr.key} className="flex flex-col">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{attr.key}</span>
+                                            <span className="font-medium">{attr.value}</span>
+                                          </div>
+                                        ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
