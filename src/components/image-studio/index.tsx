@@ -41,6 +41,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import CurrencyInput from "../ui/currency-input";
 import { useRouter } from "next/navigation";
+import { ImageDetailsModal } from "./image-details-modal";
 
 const formSchema = z.object({
   primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
@@ -50,32 +51,32 @@ const formSchema = z.object({
   selectedBackgroundUrl: z.string().optional(),
   contextualDetails: z.string().optional(),
 }).refine(data => {
-    if (data.backgroundType === 'generate') {
-        return !!data.backgroundPrompt && data.backgroundPrompt.length > 0;
-    }
-    return true;
+  if (data.backgroundType === 'generate') {
+    return !!data.backgroundPrompt && data.backgroundPrompt.length > 0;
+  }
+  return true;
 }, {
-    message: "A prompt is required to generate a background.",
-    path: ["backgroundPrompt"],
+  message: "A prompt is required to generate a background.",
+  path: ["backgroundPrompt"],
 }).refine(data => {
-    if (data.backgroundType === 'gallery') {
-        return !!data.selectedBackgroundUrl;
-    }
-    return true;
+  if (data.backgroundType === 'gallery') {
+    return !!data.selectedBackgroundUrl;
+  }
+  return true;
 }, {
-    message: "Please select a background from the gallery.",
-    path: ["selectedBackgroundUrl"],
+  message: "Please select a background from the gallery.",
+  path: ["selectedBackgroundUrl"],
 });
 
 
 type FormValues = z.infer<typeof formSchema>;
 
 type GalleryImage = {
-    name: string;
-    url: string;
+  name: string;
+  url: string;
 };
 
-const ImageUploadArea = ({ field, preview, label, isLoading = false, form }: { field: any, preview: string | null, label: string, isLoading?: boolean, form?: any }) => {
+const ImageUploadArea = ({ field, preview, label, isLoading = false, form, onImageClick }: { field: any, preview: string | null, label: string, isLoading?: boolean, form?: any, onImageClick?: (url: string) => void }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <FormItem>
@@ -83,7 +84,13 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false, form }: { f
       <FormControl>
         <div
           className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50 transition-colors"
-          onClick={() => !isLoading && fileInputRef.current?.click()}
+          onClick={() => {
+            if (preview && onImageClick) {
+              onImageClick(preview);
+            } else {
+              !isLoading && fileInputRef.current?.click();
+            }
+          }}
         >
           {isLoading ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
@@ -141,7 +148,21 @@ export function ImageStudio() {
   const [galleryError, setGalleryError] = useState<string | null>(null);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string, field: 'primaryProductImage' | 'secondaryProductImage' } | null>(null);
   const { toast } = useToast();
+
+  const handleReplace = (file: File) => {
+    if (!selectedImage) return;
+    form.setValue(selectedImage.field, file, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const handleRemove = () => {
+    if (!selectedImage) return;
+    form.setValue(selectedImage.field, undefined, { shouldDirty: true, shouldValidate: true });
+    // Reset preview manually if needed, though useEffect should handle it
+    if (selectedImage.field === 'primaryProductImage') setPrimaryPreview(null);
+    if (selectedImage.field === 'secondaryProductImage') setSecondaryPreview(null);
+  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -152,66 +173,66 @@ export function ImageStudio() {
 
   useEffect(() => {
     const fetchGalleryImages = async () => {
-        try {
-            setGalleryLoading(true);
-            setGalleryError(null);
-            
-            const result = await getGalleryImagesAction();
+      try {
+        setGalleryLoading(true);
+        setGalleryError(null);
 
-            if (result.success && result.images) {
-                if (result.images.length === 0) {
-                     setGalleryError("No images found in the 'gallery-backgrounds' folder in Firebase Storage.");
-                } else {
-                    setGalleryImages(result.images);
-                    if (result.images.length > 0) {
-                        form.setValue("selectedBackgroundUrl", result.images[0].url);
-                    }
-                }
-            } else {
-                setGalleryError(result.error || "An unknown error occurred while fetching gallery images.");
+        const result = await getGalleryImagesAction();
+
+        if (result.success && result.images) {
+          if (result.images.length === 0) {
+            setGalleryError("No images found in the 'gallery-backgrounds' folder in Firebase Storage.");
+          } else {
+            setGalleryImages(result.images);
+            if (result.images.length > 0) {
+              form.setValue("selectedBackgroundUrl", result.images[0].url);
             }
-
-        } catch (error: any) {
-            setGalleryError(error.message || "An unexpected error occurred.");
-        } finally {
-            setGalleryLoading(false);
+          }
+        } else {
+          setGalleryError(result.error || "An unknown error occurred while fetching gallery images.");
         }
+
+      } catch (error: any) {
+        setGalleryError(error.message || "An unexpected error occurred.");
+      } finally {
+        setGalleryLoading(false);
+      }
     };
     fetchGalleryImages();
   }, [form]);
 
-   const primaryImageFile = form.watch('primaryProductImage');
-   const secondaryImageFile = form.watch('secondaryProductImage');
+  const primaryImageFile = form.watch('primaryProductImage');
+  const secondaryImageFile = form.watch('secondaryProductImage');
 
-   useEffect(() => {
-        if (primaryImageFile instanceof File) {
-            setImageProcessing(true);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPrimaryPreview(reader.result as string);
-                setImageProcessing(false);
-            };
-            reader.readAsDataURL(primaryImageFile);
-        } else {
-            setPrimaryPreview(null);
-            setImageProcessing(false);
-        }
-   }, [primaryImageFile]);
+  useEffect(() => {
+    if (primaryImageFile instanceof File) {
+      setImageProcessing(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPrimaryPreview(reader.result as string);
+        setImageProcessing(false);
+      };
+      reader.readAsDataURL(primaryImageFile);
+    } else {
+      setPrimaryPreview(null);
+      setImageProcessing(false);
+    }
+  }, [primaryImageFile]);
 
-   useEffect(() => {
-        if (secondaryImageFile instanceof File) {
-            setImageProcessing(true);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setSecondaryPreview(reader.result as string);
-                setImageProcessing(false);
-            };
-            reader.readAsDataURL(secondaryImageFile);
-        } else {
-            setSecondaryPreview(null);
-            setImageProcessing(false);
-        }
-   }, [secondaryImageFile]);
+  useEffect(() => {
+    if (secondaryImageFile instanceof File) {
+      setImageProcessing(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSecondaryPreview(reader.result as string);
+        setImageProcessing(false);
+      };
+      reader.readAsDataURL(secondaryImageFile);
+    } else {
+      setSecondaryPreview(null);
+      setImageProcessing(false);
+    }
+  }, [secondaryImageFile]);
 
   const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -284,25 +305,25 @@ export function ImageStudio() {
           context: values.contextualDetails,
         });
       }
-      
+
       if (result.imageDataUri) {
-          setGeneratedImage(result.imageDataUri);
-          toast({
-              title: "Image Generated",
-              description: "Your new product image is ready.",
-          });
+        setGeneratedImage(result.imageDataUri);
+        toast({
+          title: "Image Generated",
+          description: "Your new product image is ready.",
+        });
       } else {
-          throw new Error(result.error || "An unknown error occurred.");
+        throw new Error(result.error || "An unknown error occurred.");
       }
     } catch (error: any) {
-        console.error("Generation failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Generation Failed",
-            description: error.message || "Could not generate image. Please try again.",
-        });
+      console.error("Generation failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: error.message || "Could not generate image. Please try again.",
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -321,32 +342,34 @@ export function ImageStudio() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-6 pt-0">
-                  <FormField
-                    control={form.control}
-                    name="primaryProductImage"
-                    render={({ field }) => (
-                      <ImageUploadArea
-                        field={field}
-                        preview={primaryPreview}
-                        label="Primary Image (Required)"
-                        isLoading={imageProcessing}
-                        form={form}
-                      />
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="secondaryProductImage"
-                    render={({ field }) => (
-                       <ImageUploadArea
-                        field={field}
-                        preview={secondaryPreview}
-                        label="Additional Angle (Optional)"
-                        isLoading={imageProcessing}
-                        form={form}
-                      />
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="primaryProductImage"
+                  render={({ field }) => (
+                    <ImageUploadArea
+                      field={field}
+                      preview={primaryPreview}
+                      label="Primary Image (Required)"
+                      isLoading={imageProcessing}
+                      form={form}
+                      onImageClick={(url) => setSelectedImage({ url, field: 'primaryProductImage' })}
+                    />
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="secondaryProductImage"
+                  render={({ field }) => (
+                    <ImageUploadArea
+                      field={field}
+                      preview={secondaryPreview}
+                      label="Additional Angle (Optional)"
+                      isLoading={imageProcessing}
+                      form={form}
+                      onImageClick={(url) => setSelectedImage({ url, field: 'secondaryProductImage' })}
+                    />
+                  )}
+                />
               </CardContent>
             </Card>
 
@@ -366,8 +389,8 @@ export function ImageStudio() {
                       className="w-full"
                     >
                       <TabsList className="grid w-full grid-cols-2 h-9 gap-1 p-0">
-                        <TabsTrigger value="gallery" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><ImageIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4"/>Gallery</TabsTrigger>
-                        <TabsTrigger value="generate" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><Wand2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4"/>Create New</TabsTrigger>
+                        <TabsTrigger value="gallery" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><ImageIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />Gallery</TabsTrigger>
+                        <TabsTrigger value="generate" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><Wand2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />Create New</TabsTrigger>
                       </TabsList>
                       <TabsContent value="generate" className="mt-2">
                         <FormField
@@ -390,70 +413,70 @@ export function ImageStudio() {
                         />
                       </TabsContent>
                       <TabsContent value="gallery" className="mt-2">
-                         {galleryLoading ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                                <Skeleton className="w-full aspect-square rounded-md" />
-                                <Skeleton className="w-full aspect-square rounded-md" />
-                                <Skeleton className="w-full aspect-square rounded-md" />
-                                <Skeleton className="w-full aspect-square rounded-md" />
-                            </div>
-                         ) : galleryError ? (
-                            <Alert variant="destructive">
-                                <AlertTriangle className="h-4 w-4" />
-                                <AlertTitle>Could not load gallery</AlertTitle>
-                                <AlertDescription>{galleryError}</AlertDescription>
-                            </Alert>
-                         ) : (
-                            <FormField
+                        {galleryLoading ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                            <Skeleton className="w-full aspect-square rounded-md" />
+                            <Skeleton className="w-full aspect-square rounded-md" />
+                            <Skeleton className="w-full aspect-square rounded-md" />
+                            <Skeleton className="w-full aspect-square rounded-md" />
+                          </div>
+                        ) : galleryError ? (
+                          <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Could not load gallery</AlertTitle>
+                            <AlertDescription>{galleryError}</AlertDescription>
+                          </Alert>
+                        ) : (
+                          <FormField
                             control={form.control}
                             name="selectedBackgroundUrl"
                             render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <ScrollArea className="h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 sm:p-3">
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                                                {galleryLoading ? (
-                                                    // Skeleton loaders while fetching
-                                                    Array.from({ length: 6 }).map((_, index) => (
-                                                        <div key={index} className="aspect-square">
-                                                            <Skeleton className="w-full h-full rounded-md animate-pulse" />
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    galleryImages.map((bg) => {
-                                                    const selected = field.value === bg.url;
-                                                    return (
-                                                        <div
-                                                            key={bg.name}
-                                                            className="relative cursor-pointer group rounded-md p-1 bg-background"
-                                                            onClick={() => field.onChange(bg.url)}
-                                                        >
-                                                            <Image
-                                                                src={bg.url}
-                                                                alt={bg.name}
-                                                                width={200}
-                                                                height={200}
-                                                                unoptimized={true}
-                                                                className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
-                                                            />
-                                                            {selected && (
-                                                                <>
-                                                                    <div className="pointer-events-none absolute inset-1 rounded-md outline outline-2 outline-primary" />
-                                                                    <div className="pointer-events-none absolute inset-1 rounded-md bg-primary/20" />
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })
-                                                )}
+                              <FormItem>
+                                <FormControl>
+                                  <ScrollArea className="h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 sm:p-3">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                                      {galleryLoading ? (
+                                        // Skeleton loaders while fetching
+                                        Array.from({ length: 6 }).map((_, index) => (
+                                          <div key={index} className="aspect-square">
+                                            <Skeleton className="w-full h-full rounded-md animate-pulse" />
+                                          </div>
+                                        ))
+                                      ) : (
+                                        galleryImages.map((bg) => {
+                                          const selected = field.value === bg.url;
+                                          return (
+                                            <div
+                                              key={bg.name}
+                                              className="relative cursor-pointer group rounded-md p-1 bg-background"
+                                              onClick={() => field.onChange(bg.url)}
+                                            >
+                                              <Image
+                                                src={bg.url}
+                                                alt={bg.name}
+                                                width={200}
+                                                height={200}
+                                                unoptimized={true}
+                                                className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
+                                              />
+                                              {selected && (
+                                                <>
+                                                  <div className="pointer-events-none absolute inset-1 rounded-md outline outline-2 outline-primary" />
+                                                  <div className="pointer-events-none absolute inset-1 rounded-md bg-primary/20" />
+                                                </>
+                                              )}
                                             </div>
-                                        </ScrollArea>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+                                  </ScrollArea>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
                             )}
-                            />
-                         )}
+                          />
+                        )}
                       </TabsContent>
                     </Tabs>
                   )}
@@ -484,54 +507,54 @@ export function ImageStudio() {
                 />
 
                 <div className="space-y-2">
-                    <FormLabel className="text-sm">Your Image</FormLabel>
-                    <div className="aspect-[4/3] w-full rounded-lg border bg-card-foreground/5 flex items-center justify-center overflow-hidden">
-                        {isSubmitting ? (
-                            <div className="flex flex-col items-center gap-4 p-4">
-                                <div className="relative w-full h-[250px] sm:h-[400px]">
-                                    <Skeleton className="w-full h-full rounded-lg animate-pulse" />
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                        <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
-                                        <p className="text-xs sm:text-sm">Creating your image...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : generatedImage ? (
-                            <Image
-                                src={generatedImage}
-                                alt="Generated product"
-                                width={800}
-                                height={600}
-                                unoptimized={true}
-                                className="object-contain w-full h-full"
-                            />
-                        ) : (
-                            <div className="text-center text-muted-foreground p-4">
-                                <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 mx-auto"/>
-                                <p className="mt-2 text-xs sm:text-sm">Your image will appear here</p>
-                            </div>
-                        )}
-                    </div>
+                  <FormLabel className="text-sm">Your Image</FormLabel>
+                  <div className="aspect-[4/3] w-full rounded-lg border bg-card-foreground/5 flex items-center justify-center overflow-hidden">
+                    {isSubmitting ? (
+                      <div className="flex flex-col items-center gap-4 p-4">
+                        <div className="relative w-full h-[250px] sm:h-[400px]">
+                          <Skeleton className="w-full h-full rounded-lg animate-pulse" />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
+                            <p className="text-xs sm:text-sm">Creating your image...</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : generatedImage ? (
+                      <Image
+                        src={generatedImage}
+                        alt="Generated product"
+                        width={800}
+                        height={600}
+                        unoptimized={true}
+                        className="object-contain w-full h-full"
+                      />
+                    ) : (
+                      <div className="text-center text-muted-foreground p-4">
+                        <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 mx-auto" />
+                        <p className="mt-2 text-xs sm:text-sm">Your image will appear here</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6">
                 <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:flex-1">
                   {isSubmitting ? (
                     <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        <span className="hidden sm:inline">Generating...</span>
-                        <span className="sm:hidden">Creating...</span>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span className="hidden sm:inline">Generating...</span>
+                      <span className="sm:hidden">Creating...</span>
                     </>
                   ) : (
                     <>
-                        <Wand2 className="mr-2 h-4 w-4"/> 
-                        <span className="hidden sm:inline">Generate Image</span>
-                        <span className="sm:hidden">Create Image</span>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Generate Image</span>
+                      <span className="sm:hidden">Create Image</span>
                     </>
                   )}
                 </Button>
                 <Button variant="secondary" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => {
-                  if(!generatedImage) return;
+                  if (!generatedImage) return;
                   const link = document.createElement('a');
                   link.href = generatedImage;
                   link.download = `three-chicks-and-a-wick-image.webp`;
@@ -539,12 +562,12 @@ export function ImageStudio() {
                   link.click();
                   document.body.removeChild(link);
                 }}>
-                  <Download className="mr-2 h-4 w-4"/> Download
+                  <Download className="mr-2 h-4 w-4" /> Download
                 </Button>
-                 <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => setShowAddProductModal(true)}>
-                    <PackagePlus className="mr-2 h-4 w-4"/> 
-                    <span className="hidden sm:inline">Add as Product</span>
-                    <span className="sm:hidden">Add Product</span>
+                <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => setShowAddProductModal(true)}>
+                  <PackagePlus className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Add as Product</span>
+                  <span className="sm:hidden">Add Product</span>
                 </Button>
               </CardFooter>
             </Card>
@@ -559,167 +582,177 @@ export function ImageStudio() {
           secondaryImageFile={form.watch('secondaryProductImage')}
         />
       )}
+      {selectedImage && (
+        <ImageDetailsModal
+          isOpen={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+          imageUrl={selectedImage.url}
+          onReplace={handleReplace}
+          onRemove={handleRemove}
+          title={selectedImage.field === 'primaryProductImage' ? "Primary Image" : "Secondary Image"}
+        />
+      )}
     </Form>
   );
 }
 
 const addProductModalSchema = z.object({
-    price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-        message: "Price must be a valid positive number.",
-    }),
-    contextualDetails: z.string().min(10, {
-        message: "Please provide some details about the product (at least 10 characters).",
-    }),
-    quantity: z.coerce.number().int().min(0, {
-        message: "Quantity must be a non-negative number.",
-    }),
+  price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+    message: "Price must be a valid positive number.",
+  }),
+  contextualDetails: z.string().min(10, {
+    message: "Please provide some details about the product (at least 10 characters).",
+  }),
+  quantity: z.coerce.number().int().min(0, {
+    message: "Quantity must be a non-negative number.",
+  }),
 });
 
 type AddProductModalValues = z.infer<typeof addProductModalSchema>;
 
-function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryImageFile }: { 
-    generatedImage: string; 
-    onClose: () => void;
-    primaryImageFile?: File;
-    secondaryImageFile?: File;
+function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryImageFile }: {
+  generatedImage: string;
+  onClose: () => void;
+  primaryImageFile?: File;
+  secondaryImageFile?: File;
 }) {
-    const router = useRouter();
-    const { toast } = useToast();
-    const [isGenerating, setIsGenerating] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
-    const form = useForm<AddProductModalValues>({
-        resolver: zodResolver(addProductModalSchema),
+  const form = useForm<AddProductModalValues>({
+    resolver: zodResolver(addProductModalSchema),
+  });
+
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
+  };
 
-    const fileToDataUrl = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
+  const onSubmit = async (values: AddProductModalValues) => {
+    setIsGenerating(true);
+    try {
+      // Upload source images to Firebase Storage first to avoid 413 errors
+      const sourceImageUrls = [];
+
+      if (primaryImageFile instanceof File) {
+        const primaryDataUrl = await fileToDataUrl(primaryImageFile);
+        const primaryUrl = await uploadImageAction(primaryDataUrl);
+        if (primaryUrl) sourceImageUrls.push(primaryUrl);
+      }
+      if (secondaryImageFile instanceof File) {
+        const secondaryDataUrl = await fileToDataUrl(secondaryImageFile);
+        const secondaryUrl = await uploadImageAction(secondaryDataUrl);
+        if (secondaryUrl) sourceImageUrls.push(secondaryUrl);
+      }
+
+      console.log('[Image Studio] Source images uploaded:', sourceImageUrls.length, sourceImageUrls);
+
+      const result = await generateProductFromImageAction({
+        imageDataUrl: generatedImage,
+        price: values.price,
+        creatorNotes: values.contextualDetails,
+        quantity: values.quantity,
+        sourceImageUrls: sourceImageUrls.length > 0 ? sourceImageUrls : undefined,
+      });
+
+      if (result.token) {
+        toast({
+          title: "Content Generated!",
+          description: "Redirecting you to the new product page to finalize...",
         });
-    };
+        router.push(`/products/new?draftToken=${result.token}`);
+      } else {
+        throw new Error(result.error || "Failed to create product.");
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: error.message,
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-    const onSubmit = async (values: AddProductModalValues) => {
-        setIsGenerating(true);
-        try {
-            // Upload source images to Firebase Storage first to avoid 413 errors
-            const sourceImageUrls = [];
-            
-            if (primaryImageFile instanceof File) {
-                const primaryDataUrl = await fileToDataUrl(primaryImageFile);
-                const primaryUrl = await uploadImageAction(primaryDataUrl);
-                if (primaryUrl) sourceImageUrls.push(primaryUrl);
-            }
-            if (secondaryImageFile instanceof File) {
-                const secondaryDataUrl = await fileToDataUrl(secondaryImageFile);
-                const secondaryUrl = await uploadImageAction(secondaryDataUrl);
-                if (secondaryUrl) sourceImageUrls.push(secondaryUrl);
-            }
-            
-            console.log('[Image Studio] Source images uploaded:', sourceImageUrls.length, sourceImageUrls);
-
-            const result = await generateProductFromImageAction({
-                imageDataUrl: generatedImage,
-                price: values.price,
-                creatorNotes: values.contextualDetails,
-                quantity: values.quantity,
-                sourceImageUrls: sourceImageUrls.length > 0 ? sourceImageUrls : undefined,
-            });
-
-            if (result.token) {
-                toast({
-                    title: "Content Generated!",
-                    description: "Redirecting you to the new product page to finalize...",
-                });
-                router.push(`/products/new?draftToken=${result.token}`);
-            } else {
-                throw new Error(result.error || "Failed to create product.");
-            }
-        } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Generation Failed",
-                description: error.message,
-            });
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-    
-    return (
-        <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-[95vw] sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
-                        <DialogHeader>
-                            <DialogTitle className="text-lg sm:text-xl">Add as Product</DialogTitle>
-                            <DialogDescription className="text-sm">
-                                Tell us a few details and we'll create your product listing.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-3 sm:space-y-4">
-                            <Image src={generatedImage} alt="Generated product" width={525} height={400} unoptimized={true} className="rounded-lg object-contain w-full h-auto aspect-[4/3] border bg-muted" />
-                            <FormField
-                                control={form.control}
-                                name="price"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-sm">Price</FormLabel>
-                                        <FormControl>
-                                            <CurrencyInput
-                                                placeholder="25.00"
-                                                value={field.value}
-                                                onChange={(val) => field.onChange(val)}
-                                                className="text-sm"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="quantity"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-sm">Quantity</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="100" className="text-sm" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="contextualDetails"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-sm">Product Details</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                placeholder="e.g., smells like a cozy autumn evening, with notes of spiced pear and cinnamon. Has a crackling wood wick..."
-                                                className="min-h-20 sm:min-h-24 text-sm"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <DialogFooter className="flex-col sm:flex-row gap-2">
-                            <Button variant="outline" onClick={onClose} type="button" disabled={isGenerating} className="w-full sm:w-auto">Cancel</Button>
-                            <Button type="submit" disabled={isGenerating} className="w-full sm:w-auto">
-                                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                <span className="hidden sm:inline">Generate and Pre-fill</span>
-                                <span className="sm:hidden">Create Product</span>
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl">Add as Product</DialogTitle>
+              <DialogDescription className="text-sm">
+                Tell us a few details and we'll create your product listing.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-3 sm:space-y-4">
+              <Image src={generatedImage} alt="Generated product" width={525} height={400} unoptimized={true} className="rounded-lg object-contain w-full h-auto aspect-[4/3] border bg-muted" />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Price</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                        placeholder="25.00"
+                        value={field.value}
+                        onChange={(val) => field.onChange(val)}
+                        className="text-sm"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Quantity</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="100" className="text-sm" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contextualDetails"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Product Details</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g., smells like a cozy autumn evening, with notes of spiced pear and cinnamon. Has a crackling wood wick..."
+                        className="min-h-20 sm:min-h-24 text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={onClose} type="button" disabled={isGenerating} className="w-full sm:w-auto">Cancel</Button>
+              <Button type="submit" disabled={isGenerating} className="w-full sm:w-auto">
+                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <span className="hidden sm:inline">Generate and Pre-fill</span>
+                <span className="sm:hidden">Create Product</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }
