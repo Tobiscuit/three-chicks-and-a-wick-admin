@@ -51,107 +51,105 @@ export function TicketTemplate({ order }: { order: any }) {
                 </div>
 
                 {isCustom ? (
-                  {
-                    isCustom?(
-                  <div className = "bg-gray-50 p-4 rounded border border-gray-200" >
-                        {(() => {
-                          // Try to parse _recipe_ attribute
-                          const recipeAttr = item.customAttributes.find((attr: any) => attr.key === '_recipe_');
-                          let recipe = null;
-                          try {
-                            if (recipeAttr) recipe = JSON.parse(recipeAttr.value);
-                          } catch (e) { }
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                    {(() => {
+                      // Try to parse _recipe_ attribute
+                      const recipeAttr = item.customAttributes.find((attr: any) => attr.key === '_recipe_');
+                      let recipe = null;
+                      try {
+                        if (recipeAttr) recipe = JSON.parse(recipeAttr.value);
+                      } catch (e) { }
 
-                          // Filter out _recipe_ and other internal attributes for display
-                          const displayAttributes = item.customAttributes.filter((attr: any) => !attr.key.startsWith('_'));
+                      // Filter out _recipe_ and other internal attributes for display
+                      const displayAttributes = item.customAttributes.filter((attr: any) => !attr.key.startsWith('_'));
 
-                          return (
-                            <>
-                              {/* Recipe Grid */}
-                              {recipe && (
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-6">
-                                  <div className="border-b-2 border-black pb-2">
-                                    <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wax</span>
-                                    <span className="text-xl font-bold">{recipe.wax}</span>
-                                  </div>
-                                  <div className="border-b-2 border-black pb-2">
-                                    <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wick</span>
-                                    <span className="text-xl font-bold">{recipe.wick}</span>
-                                  </div>
-                                  <div className="border-b-2 border-black pb-2">
-                                    <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Fragrance</span>
-                                    <span className="text-xl font-bold">{recipe.fragrance}</span>
-                                  </div>
-                                  <div className="border-b-2 border-black pb-2">
-                                    <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Color</span>
-                                    <span className="text-xl font-bold">{recipe.color}</span>
-                                  </div>
+                      return (
+                        <>
+                          {/* Recipe Grid */}
+                          {recipe && (
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-6">
+                              <div className="border-b-2 border-black pb-2">
+                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wax</span>
+                                <span className="text-xl font-bold">{recipe.wax}</span>
+                              </div>
+                              <div className="border-b-2 border-black pb-2">
+                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wick</span>
+                                <span className="text-xl font-bold">{recipe.wick}</span>
+                              </div>
+                              <div className="border-b-2 border-black pb-2">
+                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Fragrance</span>
+                                <span className="text-xl font-bold">{recipe.fragrance}</span>
+                              </div>
+                              <div className="border-b-2 border-black pb-2">
+                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Color</span>
+                                <span className="text-xl font-bold">{recipe.color}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Other Attributes */}
+                          {displayAttributes.length > 0 && (
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                              {displayAttributes.map((attr: any) => (
+                                <div key={attr.key} className="border-b border-gray-300 pb-1">
+                                  <span className="font-bold uppercase text-xs text-gray-500 block mb-1">{attr.key}</span>
+                                  <span className="text-md">{attr.value}</span>
                                 </div>
-                              )}
-
-                              {/* Other Attributes */}
-                              {displayAttributes.length > 0 && (
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                  {displayAttributes.map((attr: any) => (
-                                    <div key={attr.key} className="border-b border-gray-300 pb-1">
-                                      <span className="font-bold uppercase text-xs text-gray-500 block mb-1">{attr.key}</span>
-                                      <span className="text-md">{attr.value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
-            ) : (
-          <div className="bg-gray-50 p-4 rounded border border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div>
-                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Scent</span>
-                <span className="text-md font-medium">{productInfo?.scent || 'N/A'}</span>
-              </div>
-              <div>
-                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Vibe</span>
-                <span className="text-md font-medium">{productInfo?.vibe || 'N/A'}</span>
-              </div>
-              <div>
-                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Vessel</span>
-                <span className="text-md font-medium">{productInfo?.vessel || 'N/A'}</span>
-              </div>
-            </div>
-          </div>
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div>
+                        <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Scent</span>
+                        <span className="text-md font-medium">{productInfo?.scent || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Vibe</span>
+                        <span className="text-md font-medium">{productInfo?.vibe || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Vessel</span>
+                        <span className="text-md font-medium">{productInfo?.vessel || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
-          {/* Production Checklist (Custom Only) */}
-          {isCustom && (
-            <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center">
-              <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Production Steps</span>
-              <div className="flex gap-8">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
-                  <span className="uppercase font-bold text-sm">Poured</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
-                  <span className="uppercase font-bold text-sm">Cured</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
-                  <span className="uppercase font-bold text-sm">Packed</span>
-                </div>
+                {/* Production Checklist (Custom Only) */}
+                {isCustom && (
+                  <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center">
+                    <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Production Steps</span>
+                    <div className="flex gap-8">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
+                        <span className="uppercase font-bold text-sm">Poured</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
+                        <span className="uppercase font-bold text-sm">Cured</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-black rounded-sm"></div>
+                        <span className="uppercase font-bold text-sm">Packed</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-        );
+            );
           })}
-      </div>
+        </div>
 
-      <div className="mt-12 pt-6 border-t-2 border-black text-center text-sm text-gray-500">
-        <p>Three Chicks and a Wick Production Ticket • Generated {new Date().toLocaleString()}</p>
+        <div className="mt-12 pt-6 border-t-2 border-black text-center text-sm text-gray-500">
+          <p>Three Chicks and a Wick Production Ticket • Generated {new Date().toLocaleString()}</p>
+        </div>
       </div>
-    </div>
     </div >
   );
 }
