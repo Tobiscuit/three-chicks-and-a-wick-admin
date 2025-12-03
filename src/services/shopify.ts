@@ -295,6 +295,7 @@ export const getOrders = cache(async (first: number = 50, after?: string): Promi
                   }
                   variant {
                     title
+                    sku
                   }
                   customAttributes {
                     key
