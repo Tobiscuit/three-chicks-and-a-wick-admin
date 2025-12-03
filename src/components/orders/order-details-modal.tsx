@@ -81,7 +81,7 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-sm">
 
         {/* Header Section */}
-        <div className="p-6 border-b bg-muted/30">
+        <div className="p-6 pr-12 border-b bg-muted/30">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <DialogTitle className="text-2xl font-bold flex items-center gap-3">
