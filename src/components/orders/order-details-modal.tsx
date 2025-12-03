@@ -76,6 +76,28 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
   const customerName = order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest';
   const customerInitials = order.customer ? `${order.customer.firstName[0]}${order.customer.lastName[0]}` : 'G';
 
+  const handlePrint = (url: string) => {
+    const iframeId = 'print-iframe';
+    let iframe = document.getElementById(iframeId) as HTMLIFrameElement;
+
+    if (iframe) {
+      document.body.removeChild(iframe);
+    }
+
+    iframe = document.createElement('iframe');
+    iframe.id = iframeId;
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0px';
+    iframe.style.height = '0px';
+    iframe.style.border = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      iframe.contentWindow?.print();
+    };
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-sm">
@@ -98,14 +120,14 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => {
                 const orderNumber = order.name.replace('#', '');
-                window.open(`/orders/${orderNumber}/ticket`, '_blank');
+                handlePrint(`/orders/${orderNumber}/ticket`);
               }}>
                 <Printer className="w-4 h-4 mr-2" />
                 Ticket
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
                 const orderNumber = order.name.replace('#', '');
-                window.open(`/orders/${orderNumber}/receipt`, '_blank');
+                handlePrint(`/orders/${orderNumber}/receipt`);
               }}>
                 <Printer className="w-4 h-4 mr-2" />
                 Receipt
