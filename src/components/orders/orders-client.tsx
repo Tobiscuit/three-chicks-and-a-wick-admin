@@ -27,6 +27,7 @@ import configureAmplify from '@/lib/amplify-client';
 import { OrderDetailsModal } from './order-details-modal';
 import { FeatureHighlight } from '@/components/ui/feature-highlight';
 import { generateProductionCSV, generateFinancialCSV, downloadCSV } from '@/lib/export-utils';
+import { useFeatureDiscovery } from '@/context/feature-discovery-context';
 
 const client = generateClient();
 
@@ -125,9 +126,11 @@ export default function OrdersClient() {
 
 
 
+  const { markSeen } = useFeatureDiscovery();
+
   const handleExport = () => {
     // Mark tutorial as seen when used
-    localStorage.setItem('feature-seen-smart-export-v1', 'true');
+    markSeen('smart-export-v1');
 
     if (filter === 'unfulfilled') {
       const csv = generateProductionCSV(filteredOrders);
