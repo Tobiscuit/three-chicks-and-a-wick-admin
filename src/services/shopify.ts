@@ -44,6 +44,10 @@ export type ShopifyOrder = {
         product?: {
           id: string;
           title: string;
+          featuredImage?: {
+            url: string;
+            altText: string | null;
+          };
         };
       };
     }>;
@@ -312,6 +316,10 @@ export const getOrders = cache(async (first: number = 50, after?: string): Promi
                   product {
                     id
                     title
+                    featuredImage {
+                      url
+                      altText
+                    }
                   }
                   variant {
                     title

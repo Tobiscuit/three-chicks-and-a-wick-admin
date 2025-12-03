@@ -199,8 +199,16 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
                       return (
                         <div key={item.id} className="p-4 hover:bg-muted/5 transition-colors">
                           <div className="flex gap-4 items-start">
-                            <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center flex-shrink-0 border">
-                              <Package className="w-8 h-8 text-muted-foreground/50" />
+                            <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center flex-shrink-0 border overflow-hidden relative">
+                              {item.product?.featuredImage ? (
+                                <img
+                                  src={item.product.featuredImage.url}
+                                  alt={item.product.featuredImage.altText || item.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package className="w-8 h-8 text-muted-foreground/50" />
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-start gap-2">
