@@ -25,6 +25,8 @@ import type { GraphQLSubscription } from 'aws-amplify/api';
 import { Hub } from 'aws-amplify/utils';
 import configureAmplify from '@/lib/amplify-client';
 import { OrderDetailsModal } from './order-details-modal';
+import { FeatureHighlight } from '@/components/ui/feature-highlight';
+import { generateProductionCSV, generateFinancialCSV, downloadCSV } from '@/lib/export-utils';
 
 const client = generateClient();
 
@@ -121,6 +123,21 @@ export default function OrdersClient() {
     return true;
   });
 
+
+
+  const handleExport = () => {
+    // Mark tutorial as seen when used
+    localStorage.setItem('feature-seen-smart-export-v1', 'true');
+
+    if (filter === 'unfulfilled') {
+      const csv = generateProductionCSV(filteredOrders);
+      downloadCSV(csv, `production-manifest-${new Date().toISOString().split('T')[0]}.csv`);
+    } else {
+      const csv = generateFinancialCSV(filteredOrders);
+      downloadCSV(csv, `orders-export-${new Date().toISOString().split('T')[0]}.csv`);
+    }
+  };
+
   return (
     <>
       <Tabs defaultValue="all" value={filter} onValueChange={setFilter}>
@@ -131,12 +148,18 @@ export default function OrdersClient() {
             <TabsTrigger value="fulfilled">Fulfilled</TabsTrigger>
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-8 gap-1">
-              <File className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Export
-              </span>
-            </Button>
+            <FeatureHighlight
+              featureId="smart-export-v1"
+              title="Smart Export"
+              description="This button adapts to your view! Filter to 'Unfulfilled' to get a Production Manifest for the workshop, or 'All' for a financial CSV."
+            >
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
+                <File className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Export
+                </span>
+              </Button>
+            </FeatureHighlight>
           </div>
         </div>
       </Tabs>
