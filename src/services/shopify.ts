@@ -24,6 +24,7 @@ export type ShopifyOrder = {
     firstName: string;
     lastName: string;
   };
+  displayFinancialStatus: string;
   displayFulfillmentStatus: string;
   lineItems: {
     edges: Array<{
@@ -282,6 +283,7 @@ export const getOrders = cache(async (first: number = 50, after?: string): Promi
               firstName
               lastName
             }
+            displayFinancialStatus
             displayFulfillmentStatus
             lineItems(first: 10) {
               edges {

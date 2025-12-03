@@ -56,7 +56,7 @@ export function generateProductionData(orders: any[]) {
 }
 
 export function generateFinancialData(orders: any[]) {
-    const headers = ['Order #', 'Date', 'Customer', 'Status', 'Fulfillment', 'Total', 'Currency'];
+    const headers = ['Order #', 'Date', 'Customer', 'Payment Status', 'Fulfillment Status', 'Total', 'Currency'];
     const rows = orders.map(order => {
         const date = new Date(order.createdAt).toLocaleDateString();
         const customer = order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest';
@@ -65,6 +65,7 @@ export function generateFinancialData(orders: any[]) {
             order.name,
             date,
             customer,
+            order.displayFinancialStatus || 'PENDING',
             order.displayFulfillmentStatus || 'UNFULFILLED',
             order.totalPriceSet.shopMoney.amount,
             order.totalPriceSet.shopMoney.currencyCode
