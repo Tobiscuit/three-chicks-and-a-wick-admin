@@ -26,8 +26,9 @@ import { Hub } from 'aws-amplify/utils';
 import configureAmplify from '@/lib/amplify-client';
 import { OrderDetailsModal } from './order-details-modal';
 import { FeatureHighlight } from '@/components/ui/feature-highlight';
-import { generateProductionCSV, generateFinancialCSV, downloadCSV } from '@/lib/export-utils';
+import { generateProductionData, generateFinancialData, toCSV, downloadCSV } from '@/lib/export-utils';
 import { useFeatureDiscovery } from '@/context/feature-discovery-context';
+import { ExportPreviewDialog } from './export-preview-dialog';
 
 const client = generateClient();
 
@@ -128,17 +129,32 @@ export default function OrdersClient() {
 
   const { markSeen } = useFeatureDiscovery();
 
-  const handleExport = () => {
+  const [exportData, setExportData] = useState<{ headers: string[], rows: string[][] } | null>(null);
+  const [exportType, setExportType] = useState<'production' | 'financial'>('financial');
+
+  const handleExportClick = () => {
     // Mark tutorial as seen when used
     markSeen('smart-export-v1');
 
     if (filter === 'unfulfilled') {
-      const csv = generateProductionCSV(filteredOrders);
-      downloadCSV(csv, `production-manifest-${new Date().toISOString().split('T')[0]}.csv`);
+      setExportType('production');
+      setExportData(generateProductionData(filteredOrders));
     } else {
-      const csv = generateFinancialCSV(filteredOrders);
-      downloadCSV(csv, `orders-export-${new Date().toISOString().split('T')[0]}.csv`);
+      setExportType('financial');
+      setExportData(generateFinancialData(filteredOrders));
     }
+  };
+
+  const handleConfirmExport = () => {
+    if (!exportData) return;
+
+    const csv = toCSV(exportData.headers, exportData.rows);
+    const filename = exportType === 'production'
+      ? `production-manifest-${new Date().toISOString().split('T')[0]}.csv`
+      : `orders-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    downloadCSV(csv, filename);
+    setExportData(null);
   };
 
   return (
@@ -156,7 +172,7 @@ export default function OrdersClient() {
               title="Smart Export"
               description="This button adapts to your view! Filter to 'Unfulfilled' to get a Production Manifest for the workshop, or 'All' for a financial CSV."
             >
-              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExportClick}>
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   Export
@@ -226,6 +242,16 @@ export default function OrdersClient() {
         onClose={() => setIsModalOpen(false)}
         order={selectedOrder}
       />
+
+      {exportData && (
+        <ExportPreviewDialog
+          isOpen={!!exportData}
+          onClose={() => setExportData(null)}
+          data={exportData}
+          type={exportType}
+          onConfirm={handleConfirmExport}
+        />
+      )}
     </>
   );
 }

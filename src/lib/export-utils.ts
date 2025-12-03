@@ -1,5 +1,3 @@
-import { ShopifyOrder } from "@/services/shopify";
-
 export function downloadCSV(content: string, filename: string) {
     // Add BOM for Excel compatibility
     const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
@@ -13,18 +11,23 @@ export function downloadCSV(content: string, filename: string) {
     document.body.removeChild(link);
 }
 
-const escapeCSV = (field: any) => {
-    if (field === null || field === undefined) return '';
-    const stringField = String(field);
-    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
-        return `"${stringField.replace(/"/g, '""')}"`;
-    }
-    return stringField;
-};
+export function toCSV(headers: string[], rows: string[][]): string {
+    const escapeCSV = (field: any) => {
+        if (field === null || field === undefined) return '';
+        const stringField = String(field);
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+            return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+    };
 
-export function generateProductionCSV(orders: any[]) {
+    const csvRows = rows.map(row => row.map(escapeCSV).join(','));
+    return [headers.map(escapeCSV).join(','), ...csvRows].join('\n');
+}
+
+export function generateProductionData(orders: any[]) {
     const headers = ['Order #', 'Date', 'Customer', 'Qty', 'Product', 'Variant', 'SKU', 'Custom Details'];
-    const rows = [];
+    const rows: string[][] = [];
 
     for (const order of orders) {
         const date = new Date(order.createdAt).toLocaleDateString();
@@ -37,36 +40,36 @@ export function generateProductionCSV(orders: any[]) {
                 .join(' | ') || '';
 
             rows.push([
-                escapeCSV(order.name),
-                escapeCSV(date),
-                escapeCSV(customer),
-                escapeCSV(item.quantity),
-                escapeCSV(item.title),
-                escapeCSV(item.variant?.title !== 'Default Title' ? item.variant?.title : ''),
-                escapeCSV(item.variant?.sku || ''),
-                escapeCSV(customDetails)
-            ].join(','));
+                order.name,
+                date,
+                customer,
+                String(item.quantity),
+                item.title,
+                item.variant?.title !== 'Default Title' ? item.variant?.title : '',
+                item.variant?.sku || '',
+                customDetails
+            ]);
         }
     }
 
-    return [headers.join(','), ...rows].join('\n');
+    return { headers, rows };
 }
 
-export function generateFinancialCSV(orders: any[]) {
+export function generateFinancialData(orders: any[]) {
     const headers = ['Order #', 'Date', 'Customer', 'Status', 'Fulfillment', 'Total', 'Currency'];
     const rows = orders.map(order => {
         const date = new Date(order.createdAt).toLocaleDateString();
         const customer = order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest';
 
         return [
-            escapeCSV(order.name),
-            escapeCSV(date),
-            escapeCSV(customer),
-            escapeCSV(order.displayFulfillmentStatus || 'UNFULFILLED'),
-            escapeCSV(order.totalPriceSet.shopMoney.amount),
-            escapeCSV(order.totalPriceSet.shopMoney.currencyCode)
-        ].join(',');
+            order.name,
+            date,
+            customer,
+            order.displayFulfillmentStatus || 'UNFULFILLED',
+            order.totalPriceSet.shopMoney.amount,
+            order.totalPriceSet.shopMoney.currencyCode
+        ];
     });
 
-    return [headers.join(','), ...rows].join('\n');
+    return { headers, rows };
 }
