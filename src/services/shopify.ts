@@ -23,6 +23,15 @@ export type ShopifyOrder = {
   customer?: {
     firstName: string;
     lastName: string;
+    email?: string;
+  };
+  shippingAddress?: {
+    address1: string;
+    address2?: string;
+    city: string;
+    province: string;
+    zip: string;
+    country: string;
   };
   displayFinancialStatus: string;
   displayFulfillmentStatus: string;
@@ -282,6 +291,15 @@ export const getOrders = cache(async (first: number = 50, after?: string): Promi
             customer {
               firstName
               lastName
+              email
+            }
+            shippingAddress {
+              address1
+              address2
+              city
+              province
+              zip
+              country
             }
             displayFinancialStatus
             displayFulfillmentStatus
