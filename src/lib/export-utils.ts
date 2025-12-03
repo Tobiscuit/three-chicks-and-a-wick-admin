@@ -1,7 +1,8 @@
 import { ShopifyOrder } from "@/services/shopify";
 
 export function downloadCSV(content: string, filename: string) {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    // Add BOM for Excel compatibility
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -11,6 +12,15 @@ export function downloadCSV(content: string, filename: string) {
     link.click();
     document.body.removeChild(link);
 }
+
+const escapeCSV = (field: any) => {
+    if (field === null || field === undefined) return '';
+    const stringField = String(field);
+    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+        return `"${stringField.replace(/"/g, '""')}"`;
+    }
+    return stringField;
+};
 
 export function generateProductionCSV(orders: any[]) {
     const headers = ['Order #', 'Date', 'Customer', 'Qty', 'Product', 'Variant', 'SKU', 'Custom Details'];
@@ -27,14 +37,14 @@ export function generateProductionCSV(orders: any[]) {
                 .join(' | ') || '';
 
             rows.push([
-                order.name,
-                date,
-                customer,
-                item.quantity,
-                `"${item.title.replace(/"/g, '""')}"`, // Escape quotes
-                item.variant?.title !== 'Default Title' ? item.variant?.title : '',
-                item.variant?.sku || '',
-                `"${customDetails.replace(/"/g, '""')}"`
+                escapeCSV(order.name),
+                escapeCSV(date),
+                escapeCSV(customer),
+                escapeCSV(item.quantity),
+                escapeCSV(item.title),
+                escapeCSV(item.variant?.title !== 'Default Title' ? item.variant?.title : ''),
+                escapeCSV(item.variant?.sku || ''),
+                escapeCSV(customDetails)
             ].join(','));
         }
     }
@@ -49,12 +59,12 @@ export function generateFinancialCSV(orders: any[]) {
         const customer = order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest';
 
         return [
-            order.name,
-            date,
-            customer,
-            order.displayFulfillmentStatus || 'UNFULFILLED',
-            order.totalPriceSet.shopMoney.amount,
-            order.totalPriceSet.shopMoney.currencyCode
+            escapeCSV(order.name),
+            escapeCSV(date),
+            escapeCSV(customer),
+            escapeCSV(order.displayFulfillmentStatus || 'UNFULFILLED'),
+            escapeCSV(order.totalPriceSet.shopMoney.amount),
+            escapeCSV(order.totalPriceSet.shopMoney.currencyCode)
         ].join(',');
     });
 

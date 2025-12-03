@@ -1,8 +1,9 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/components/auth/auth-provider';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import { FeatureDiscoveryProvider } from '@/context/feature-discovery-context';
 
 export const metadata: Metadata = {
   title: 'Three Chicks and a Wick',
@@ -23,15 +24,17 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
         >
-            <AuthProvider>
-                {children}
-            </AuthProvider>
-            <Toaster />
+          <AuthProvider>
+            <FeatureDiscoveryProvider>
+              {children}
+            </FeatureDiscoveryProvider>
+          </AuthProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

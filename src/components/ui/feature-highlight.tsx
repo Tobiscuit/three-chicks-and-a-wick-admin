@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import { useFeatureDiscovery } from "@/context/feature-discovery-context"
 
 interface FeatureHighlightProps {
     featureId: string
@@ -24,34 +25,40 @@ export function FeatureHighlight({
     children,
     forceShow = false,
 }: FeatureHighlightProps) {
+    const { isSeen, markSeen, areTutorialsEnabled } = useFeatureDiscovery()
     const [isOpen, setIsOpen] = useState(false)
-    const [hasChecked, setHasChecked] = useState(false)
+
+    // Determine if we should show
+    // We check isSeen immediately, but the effect handles the delay
+    const shouldShow = forceShow || (areTutorialsEnabled && !isSeen(featureId));
 
     useEffect(() => {
-        // Check local storage on mount
-        const seen = localStorage.getItem(`feature-seen-${featureId}`)
-        if (!seen || forceShow) {
+        if (shouldShow && !isOpen) {
             // Small delay to ensure UI is ready and to draw attention
             const timer = setTimeout(() => setIsOpen(true), 1000)
             return () => clearTimeout(timer)
         }
-        setHasChecked(true)
-    }, [featureId, forceShow])
+    }, [shouldShow, isOpen])
 
     const handleDismiss = () => {
         setIsOpen(false)
-        localStorage.setItem(`feature-seen-${featureId}`, "true")
+        markSeen(featureId)
     }
 
-    // If we've already checked and it's seen, just render children to avoid Popover overhead
-    if (hasChecked && !isOpen && !forceShow) {
+    // If not showing and not open, render children directly to avoid Popover overhead
+    // We keep it if isOpen is true (e.g. during the closing animation or if manually opened)
+    if (!shouldShow && !isOpen) {
         return <>{children}</>
     }
 
     return (
         <Popover open={isOpen} onOpenChange={(open) => {
-            // Only allow closing via our controls or if the user interacts with the trigger (which handles the action)
-            // We want to persist the tip until explicitly dismissed or used
+            // We control the open state. 
+            // If the user interacts with the trigger, it might try to toggle.
+            // We want to keep it open until dismissed via our buttons or the feature is used.
+            // However, if the user clicks the trigger, the trigger's onClick (handleExport) will fire,
+            // which calls markSeen, which updates shouldShow, which unmounts the Popover.
+            // So we just sync state here but rely on context for the "truth".
             setIsOpen(open)
         }}>
             <PopoverTrigger asChild>
@@ -63,8 +70,9 @@ export function FeatureHighlight({
                 align="end"
                 sideOffset={10}
                 onInteractOutside={(e) => {
-                    // Optional: prevent closing when clicking outside to force interaction?
-                    // No, that's annoying. Let it close but don't mark as seen.
+                    // Prevent closing when clicking outside. 
+                    // The user must acknowledge the tip or use the feature.
+                    e.preventDefault();
                 }}
             >
                 <div className="bg-primary/5 p-4 border-b border-primary/10 flex justify-between items-start">
