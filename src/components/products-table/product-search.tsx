@@ -8,16 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import type { ShopifyProduct } from "@/services/shopify"
 
@@ -157,32 +151,37 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
 
   return (
     <div className="w-full space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder={filters.length > 0 ? `${filters.length} filter${filters.length > 1 ? 's' : ''} active - type to add more...` : "Search products, tags, or status..."}
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value)
-                if (!open) setOpen(true)
-              }}
-              onFocus={() => setOpen(true)}
-              onKeyDown={handleKeyDown}
-              className="pl-10 h-10"
-            />
-          </div>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0" 
-          align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <Command shouldFilter={false}>
-            <CommandList>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+        <Input
+          ref={inputRef}
+          type="text"
+          placeholder={filters.length > 0 ? `${filters.length} filter${filters.length > 1 ? 's' : ''} active - type to add more...` : "Search products, tags, or status..."}
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value)
+            if (!open) setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={(e) => {
+            // Only close if clicking outside the popover
+            const relatedTarget = e.relatedTarget as HTMLElement
+            if (!relatedTarget?.closest('[data-radix-popper-content-wrapper]')) {
+              // Delay to allow click events on popover items
+              setTimeout(() => {
+                if (!inputRef.current?.contains(document.activeElement)) {
+                  setOpen(false)
+                }
+              }, 150)
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          className="pl-10 h-10"
+        />
+        {open && (
+          <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover shadow-md">
+            <Command shouldFilter={false}>
+              <CommandList>
               {!hasSuggestions && !inputValue && (
                 <div className="py-6 text-center text-sm text-muted-foreground">
                   Start typing to search products, tags, or status...
@@ -260,8 +259,9 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
               )}
             </CommandList>
           </Command>
-        </PopoverContent>
-      </Popover>
+          </div>
+        )}
+      </div>
 
       {/* Active filters */}
       {filters.length > 0 && (
