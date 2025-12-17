@@ -1,10 +1,9 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import Link from "next/link";
 // Removed env-config import for client-side component
 import {
   Table,
@@ -17,11 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { ShopifyProduct } from "@/services/shopify"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
 import {
-  Search,
-  PlusCircle,
   Trash,
   LayoutGrid,
   List,
@@ -32,6 +28,7 @@ import {
   Pencil,
   Loader2
 } from "lucide-react";
+import { ProductSearch } from "./product-search";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useProductImage } from "@/hooks/use-product-image";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
@@ -171,11 +168,17 @@ function SecureDeleteDialog({
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
   const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
+  const [filteredProducts, setFilteredProducts] = useState<ShopifyProduct[]>(products);
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
+
+  // Handle filter changes from ProductSearch
+  const handleFilterChange = useCallback((filtered: ShopifyProduct[]) => {
+    // Apply deleted products filter on top
+    setFilteredProducts(filtered.filter(p => !deletedProductIds.has(p.id)));
+  }, [deletedProductIds]);
 
   // Collect all inventory item IDs for SSE connection
   const inventoryItemIds = products
@@ -234,32 +237,16 @@ export function ProductsTable({ products }: ProductsTableProps) {
     }
   };
 
-  const filteredProducts = products.filter((product) => {
-    // First filter out deleted products
-    if (deletedProductIds.has(product.id)) {
-      return false;
-    }
-    
-    // Then apply search filter
-    const term = searchTerm.toLowerCase();
-    const titleMatch = product.title.toLowerCase().includes(term);
-    const tagMatch = product.tags.some(tag => tag.toLowerCase().includes(term));
-    return titleMatch || tagMatch;
-  });
+  // Products filtered by ProductSearch component + deleted IDs
+  const displayProducts = filteredProducts;
 
   return (
     <>
       <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <div className="flex items-center gap-1">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or tag"
-                className="w-full pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <CardHeader className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex-1">
+              <ProductSearch products={products} onFilterChange={handleFilterChange} />
             </div>
             <div className="flex items-center bg-muted rounded-full p-1">
                 <Button 
@@ -304,10 +291,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   </TableRow>
                 </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => (
+                {displayProducts.map((product, index) => (
                   <TableRow 
                     key={product.id} 
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="group cursor-pointer table-row-interactive table-zebra transition-colors"
                     onClick={() => handleRowClick(product.id)}
                   >
                     <TableCell className="hidden sm:table-cell text-center">
@@ -416,21 +403,24 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </Table>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
-              {filteredProducts.map(product => (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {displayProducts.map((product, index) => (
                 <ProductGridItem 
                   key={product.id}
                   product={product}
                   onRowClick={handleRowClick}
                   onDelete={handleDelete}
                   onQuickEdit={() => setQuickEditProduct(product)}
+                  index={index}
                 />
               ))}
             </div>
           )}
-          {filteredProducts.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                  <p>No products found matching your search.</p>
+          {displayProducts.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground">
+                  <p className="text-4xl mb-4">📦</p>
+                  <p className="font-medium">No products found</p>
+                  <p className="text-sm">Try adjusting your search or filters</p>
               </div>
           )}
         </CardContent>
@@ -441,10 +431,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
           onClose={() => setQuickEditProduct(null)}
         />
       )}
-      <Link href="/products/new" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-primary text-primary-foreground rounded-full p-3 sm:p-4 shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-50">
-          <PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />
-          <span className="sr-only">Add Product</span>
-      </Link>
+      {/* FAB removed - Add Product is now in header via AddProductModal */}
     </>
   )
 }
@@ -479,16 +466,21 @@ export function ProductsTableSkeleton() {
   )
 }
 
-function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: { 
+function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0 }: { 
   product: ShopifyProduct; 
   onRowClick: (id: string) => void; 
   onDelete: (e: React.MouseEvent, id: string, title: string) => void; 
   onQuickEdit: () => void;
+  index?: number;
 }) {
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
   return (
     <SecureDeleteDialog product={product} onDelete={onDelete}>
-      <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
+      <Card 
+        className="overflow-hidden cursor-pointer group motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 hover:shadow-lg transition-shadow" 
+        style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
+        onClick={() => onRowClick(product.id)}
+      >
         <div className="relative aspect-square">
           <ProductImageCell 
             productId={product.id}
