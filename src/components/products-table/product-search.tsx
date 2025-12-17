@@ -2,15 +2,13 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Search, X, Hash, Check } from "lucide-react"
+import { Search, X, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
@@ -137,6 +135,11 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     setOpen(false)
   }
 
+  const hasSuggestions = 
+    suggestions.productMatches.length > 0 || 
+    suggestions.tagMatches.length > 0 || 
+    suggestions.statusMatches.length > 0
+
   return (
     <div className="w-full space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -159,32 +162,40 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
           className="w-[--radix-popover-trigger-width] p-0 bg-popover/90 backdrop-blur-md shadow-xl" 
           align="start"
         >
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder="Type to search..." 
-              value={inputValue}
-              onValueChange={setInputValue}
-            />
+          <Command>
+            <div className="flex items-center border-b px-3">
+              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <input
+                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                placeholder="Type to search..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+              />
+            </div>
             <CommandList>
-              <CommandEmpty>
-                {inputValue ? (
-                  <CommandItem
-                    onSelect={() => addFilter("search", inputValue.trim(), inputValue.trim())}
-                    className="justify-center cursor-pointer"
+              {!hasSuggestions && !inputValue && (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  Start typing to search products, tags, or status...
+                </div>
+              )}
+
+              {!hasSuggestions && inputValue && (
+                <div className="py-2 px-2">
+                  <button
+                    onClick={() => addFilter("search", inputValue.trim(), inputValue.trim())}
+                    className="w-full rounded-sm px-2 py-1.5 text-sm text-center hover:bg-accent hover:text-accent-foreground cursor-pointer"
                   >
                     Search for "{inputValue}"
-                  </CommandItem>
-                ) : (
-                  <span className="text-muted-foreground">Start typing to search...</span>
-                )}
-              </CommandEmpty>
+                  </button>
+                </div>
+              )}
 
               {suggestions.productMatches.length > 0 && (
-                <CommandGroup heading="Products">
+                <CommandGroup heading="Products" forceMount>
                   {suggestions.productMatches.map((suggestion) => (
                     <CommandItem
                       key={suggestion.value}
-                      value={suggestion.label}
+                      value={suggestion.value}
                       onSelect={() => handleProductSelect(suggestion.value)}
                       className="cursor-pointer"
                     >
@@ -204,11 +215,11 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
               )}
 
               {suggestions.tagMatches.length > 0 && (
-                <CommandGroup heading="Tags">
+                <CommandGroup heading="Tags" forceMount>
                   {suggestions.tagMatches.map((suggestion) => (
                     <CommandItem
                       key={suggestion.value}
-                      value={suggestion.label}
+                      value={suggestion.value}
                       onSelect={() => addFilter("tag", suggestion.value, suggestion.label)}
                       className="cursor-pointer"
                     >
@@ -223,11 +234,11 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
               )}
 
               {suggestions.statusMatches.length > 0 && (
-                <CommandGroup heading="Status">
+                <CommandGroup heading="Status" forceMount>
                   {suggestions.statusMatches.map((suggestion) => (
                     <CommandItem
                       key={suggestion.value}
-                      value={suggestion.label}
+                      value={suggestion.value}
                       onSelect={() => addFilter("status", suggestion.value, suggestion.label)}
                       className="cursor-pointer"
                     >
