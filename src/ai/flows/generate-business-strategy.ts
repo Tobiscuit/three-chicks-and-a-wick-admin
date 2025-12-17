@@ -17,19 +17,64 @@ export const generateBusinessStrategyFlow = ai.defineFlow(
     inputSchema: z.any(),
     outputSchema: z.string(),
   },
-  async (productInfo) => {
-    const prompt = `You are a branding and marketing expert for e-commerce.
-    When writing the description, use the "body_html" field.`;
+  async (businessSnapshot) => {
+    const prompt = `You are a business strategy consultant analyzing an e-commerce store's performance.
 
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'googleai/gemini-2.5-pro',
-      config: {
-        temperature: 0.7,
-        maxOutputTokens: 1000,
-      },
-    });
+Business Data:
+- Total Revenue: $${businessSnapshot.total_revenue?.toFixed(2) || '0.00'}
+- Total Orders: ${businessSnapshot.orders?.length || 0}
+- Average Order Value: $${businessSnapshot.average_order_value?.toFixed(2) || '0.00'}
+- Total Products: ${businessSnapshot.products?.length || 0}
+- Low Stock Products: ${businessSnapshot.low_stock_products?.length || 0}
 
-    return llmResponse.text();
+Recent Sales Trends:
+${businessSnapshot.sales_by_day ? JSON.stringify(businessSnapshot.sales_by_day, null, 2) : 'No recent sales data'}
+
+Top Selling Products:
+${businessSnapshot.top_products?.map((p: any, i: number) => `${i + 1}. ${p.title} (${p.sales} sales)`).join('\n') || 'No product data'}
+
+IMPORTANT: You must respond with ONLY valid JSON. No markdown, no code blocks, no explanations.
+
+Generate actionable business recommendations in this exact JSON structure:
+{
+  "pricing_recommendations": [list of 3-5 specific pricing strategy recommendations],
+  "marketing_suggestions": [list of 3-5 actionable marketing ideas to increase sales],
+  "inventory_alerts": [list of inventory concerns or optimizations, or empty array if none]
+}
+
+Focus on specific, actionable advice based on the data. Be concise and practical. Return ONLY the JSON object.`;
+
+        // Try Pro model first, fallback to Flash if overloaded
+        let llmResponse;
+        try {
+          llmResponse = await ai.generate({
+            prompt: prompt,
+            model: 'googleai/gemini-2.5-pro',
+            config: {
+              temperature: 0.7,
+              maxOutputTokens: 2000,
+            },
+          });
+        } catch (error: any) {
+          // If Pro model is overloaded (503), try Flash model
+          if (error.message?.includes('503') || error.message?.includes('overloaded')) {
+            console.log('Gemini Pro overloaded, falling back to Flash model');
+            llmResponse = await ai.generate({
+              prompt: prompt,
+              model: 'googleai/gemini-2.5-flash',
+              config: {
+                temperature: 0.7,
+                maxOutputTokens: 2000,
+              },
+            });
+          } else {
+            throw error; // Re-throw if it's not a 503 error
+          }
+        }
+
+    return llmResponse.text;
   }
 );
+
+// Export alias for compatibility
+export const generateBusinessStrategy = generateBusinessStrategyFlow;

@@ -22,12 +22,61 @@ threechicksandawick-admin-panel
 │   │   └── package.json
 │   └── hosting
 │   │   ├── 404.html
+│   │   ├── _next
+│   │   │   └── static
+│   │   │   │   ├── KsBEmxjVRtbPohf8atoCt
+│   │   │   │   │   ├── _buildManifest.js
+│   │   │   │   │   └── _ssgManifest.js
+│   │   │   │   ├── chunks
+│   │   │   │   │   ├── 122-ebf3315f0c88bdb4.js
+│   │   │   │   │   ├── 299-b2c9655e9aaa6fa6.js
+│   │   │   │   │   ├── 328-e64a18db00636e0c.js
+│   │   │   │   │   ├── 345-57e0a61641995d45.js
+│   │   │   │   │   ├── 4bd1b696-ac887deb17bb0587.js
+│   │   │   │   │   ├── 621-69ae4381e8f5be93.js
+│   │   │   │   │   ├── 684-b815804f4035c2de.js
+│   │   │   │   │   ├── 69806262-07c50f2ce9029725.js
+│   │   │   │   │   ├── 736-fba7309cd365abd3.js
+│   │   │   │   │   ├── 766-2a81dda4f304dc54.js
+│   │   │   │   │   ├── 794-34a77c2134c9f6c1.js
+│   │   │   │   │   ├── 812-51f76edf9506a0ff.js
+│   │   │   │   │   ├── 868-fe980341adde7de6.js
+│   │   │   │   │   ├── 996-ab7a7c3e13b15719.js
+│   │   │   │   │   ├── app
+│   │   │   │   │   │   ├── _not-found
+│   │   │   │   │   │   │   └── page-fb89532aa53a2bf9.js
+│   │   │   │   │   │   ├── dashboard
+│   │   │   │   │   │   │   ├── layout-fba2b664f5dfdbb3.js
+│   │   │   │   │   │   │   └── page-6c0f79731b290ec9.js
+│   │   │   │   │   │   ├── layout-b622b03b90490387.js
+│   │   │   │   │   │   ├── page-d44ca7a950917456.js
+│   │   │   │   │   │   ├── products
+│   │   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   │   └── page-fb5b0912cee337d2.js
+│   │   │   │   │   │   │   ├── new
+│   │   │   │   │   │   │   │   └── page-2b5e89a539334e5d.js
+│   │   │   │   │   │   │   └── page-3d93b5a9fa7cc8bc.js
+│   │   │   │   │   │   ├── settings
+│   │   │   │   │   │   │   └── page-48b17b48ce103f96.js
+│   │   │   │   │   │   └── strategy
+│   │   │   │   │   │   │   └── page-9070052276ed06fb.js
+│   │   │   │   │   ├── framework-75d8b6119e7601c4.js
+│   │   │   │   │   ├── main-61fc9f8ed38948b8.js
+│   │   │   │   │   ├── main-app-cac34e67899c4b2e.js
+│   │   │   │   │   ├── pages
+│   │   │   │   │   │   ├── _app-8e94039938385921.js
+│   │   │   │   │   │   └── _error-7b2d139042a6a5ab.js
+│   │   │   │   │   ├── polyfills-42372ed130431b0a.js
+│   │   │   │   │   └── webpack-ffdea594c4225f25.js
+│   │   │   │   └── css
+│   │   │   │   │   └── 38310fdaea982efa.css
 │   │   └── favicon.ico
 ├── components.json
 ├── cors.json
 ├── docs
 │   └── blueprint.md
 ├── download.zip
+├── e broken background images
 ├── firebase-debug.log
 ├── firebase.json
 ├── firestore.rules
@@ -38,12 +87,68 @@ threechicksandawick-admin-panel
 │   └── package.json
 ├── hosting
 │   ├── 404.html
+│   ├── _next
+│   │   └── static
+│   │   │   ├── KsBEmxjVRtbPohf8atoCt
+│   │   │   │   ├── _buildManifest.js
+│   │   │   │   └── _ssgManifest.js
+│   │   │   ├── chunks
+│   │   │   │   ├── 122-ebf3315f0c88bdb4.js
+│   │   │   │   ├── 299-b2c9655e9aaa6fa6.js
+│   │   │   │   ├── 328-e64a18db00636e0c.js
+│   │   │   │   ├── 345-57e0a61641995d45.js
+│   │   │   │   ├── 4bd1b696-ac887deb17bb0587.js
+│   │   │   │   ├── 621-69ae4381e8f5be93.js
+│   │   │   │   ├── 684-b815804f4035c2de.js
+│   │   │   │   ├── 69806262-07c50f2ce9029725.js
+│   │   │   │   ├── 736-fba7309cd365abd3.js
+│   │   │   │   ├── 766-2a81dda4f304dc54.js
+│   │   │   │   ├── 794-34a77c2134c9f6c1.js
+│   │   │   │   ├── 812-51f76edf9506a0ff.js
+│   │   │   │   ├── 868-fe980341adde7de6.js
+│   │   │   │   ├── 996-ab7a7c3e13b15719.js
+│   │   │   │   ├── app
+│   │   │   │   │   ├── _not-found
+│   │   │   │   │   │   └── page-fb89532aa53a2bf9.js
+│   │   │   │   │   ├── dashboard
+│   │   │   │   │   │   ├── layout-fba2b664f5dfdbb3.js
+│   │   │   │   │   │   └── page-6c0f79731b290ec9.js
+│   │   │   │   │   ├── layout-b622b03b90490387.js
+│   │   │   │   │   ├── page-d44ca7a950917456.js
+│   │   │   │   │   ├── products
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── page-fb5b0912cee337d2.js
+│   │   │   │   │   │   ├── new
+│   │   │   │   │   │   │   └── page-2b5e89a539334e5d.js
+│   │   │   │   │   │   └── page-3d93b5a9fa7cc8bc.js
+│   │   │   │   │   ├── settings
+│   │   │   │   │   │   └── page-48b17b48ce103f96.js
+│   │   │   │   │   └── strategy
+│   │   │   │   │   │   └── page-9070052276ed06fb.js
+│   │   │   │   ├── framework-75d8b6119e7601c4.js
+│   │   │   │   ├── main-61fc9f8ed38948b8.js
+│   │   │   │   ├── main-app-cac34e67899c4b2e.js
+│   │   │   │   ├── pages
+│   │   │   │   │   ├── _app-8e94039938385921.js
+│   │   │   │   │   └── _error-7b2d139042a6a5ab.js
+│   │   │   │   ├── polyfills-42372ed130431b0a.js
+│   │   │   │   └── webpack-ffdea594c4225f25.js
+│   │   │   └── css
+│   │   │   │   └── 38310fdaea982efa.css
 │   └── favicon.ico
+├── how --name-only 602c578
 ├── next-env.d.ts
 ├── next.config.ts
 ├── package-lock.json
 ├── package.json
 ├── postcss.config.mjs
+├── public
+│   ├── storefront-ai-content.css
+│   ├── storefront-ai-content.js
+│   └── storefront-integration-guide.md
+├── scripts
+│   ├── expose-metafield-simple.mjs
+│   └── expose-metafield-to-storefront.js
 ├── src
 │   ├── .env
 │   ├── ai
@@ -86,6 +191,8 @@ threechicksandawick-admin-panel
 │   │   │   ├── [id]
 │   │   │   │   └── page.tsx
 │   │   │   ├── actions.ts
+│   │   │   ├── diagnostic-actions.ts
+│   │   │   ├── expose-metafield-action.ts
 │   │   │   ├── new
 │   │   │   │   └── page.tsx
 │   │   │   └── page.tsx
@@ -94,6 +201,7 @@ threechicksandawick-admin-panel
 │   │   └── strategy
 │   │   │   └── page.tsx
 │   ├── components
+│   │   ├── ai-content-display.tsx
 │   │   ├── auth
 │   │   │   ├── auth-provider.tsx
 │   │   │   ├── auth-wrapper.tsx
@@ -104,6 +212,7 @@ threechicksandawick-admin-panel
 │   │   │   ├── sales-chart.tsx
 │   │   │   ├── stats-card.tsx
 │   │   │   └── top-products.tsx
+│   │   ├── diagnostic-button.tsx
 │   │   ├── image-studio
 │   │   │   └── index.tsx
 │   │   ├── layout
@@ -116,6 +225,7 @@ threechicksandawick-admin-panel
 │   │   │   └── product-gallery.tsx
 │   │   ├── products-table
 │   │   │   └── index.tsx
+│   │   ├── smart-tag-generator.tsx
 │   │   ├── theme
 │   │   │   ├── theme-provider.tsx
 │   │   │   └── theme-toggle.tsx
@@ -162,21 +272,27 @@ threechicksandawick-admin-panel
 │   ├── hooks
 │   │   ├── use-inventory-status.tsx
 │   │   ├── use-mobile.tsx
+│   │   ├── use-product-image.tsx
 │   │   ├── use-server-sent-events.tsx
 │   │   └── use-toast.ts
 │   ├── lib
 │   │   ├── __tests__
 │   │   │   └── money.test.ts
+│   │   ├── ai-content-utils.ts
 │   │   ├── firebase-admin.ts
 │   │   ├── firebase.ts
 │   │   ├── image.ts
 │   │   ├── money.ts
 │   │   └── utils.ts
 │   ├── services
+│   │   ├── ai-tag-generator.ts
 │   │   ├── shopify
 │   │   │   └── mutations
 │   │   │   │   └── create-product-with-image.ts
-│   │   └── shopify.ts
+│   │   ├── shopify.ts
+│   │   └── tag-learning.ts
+│   ├── styles
+│   │   └── ai-content.css
 │   └── types
 │   │   └── shopify.ts
 ├── storage.rules

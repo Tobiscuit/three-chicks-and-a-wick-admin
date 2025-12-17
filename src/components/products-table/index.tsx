@@ -5,6 +5,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link";
+// Removed env-config import for client-side component
 import {
   Table,
   TableBody,
@@ -28,9 +29,11 @@ import {
   Edit,
   ExternalLink,
   ClipboardCopy,
-  Pencil
+  Pencil,
+  Loader2
 } from "lucide-react";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
+import { useProductImage } from "@/hooks/use-product-image";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
 import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -85,11 +88,93 @@ type ProductsTableProps = {
   products: ShopifyProduct[];
 };
 
+// Secure Delete Dialog Component
+function SecureDeleteDialog({ 
+  product, 
+  onDelete, 
+  children 
+}: { 
+  product: ShopifyProduct; 
+  onDelete: (e: React.MouseEvent, productId: string, title: string) => void;
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Get first two words of product title
+  const firstTwoWords = product.title.split(' ').slice(0, 2).join(' ').toLowerCase();
+  const isConfirmationValid = confirmationText.toLowerCase() === firstTwoWords;
+  
+  const handleDelete = async (e: React.MouseEvent) => {
+    if (!isConfirmationValid) return;
+    
+    setIsDeleting(true);
+    await onDelete(e, product.id, product.title);
+    setIsDeleting(false);
+    setIsOpen(false);
+    setConfirmationText("");
+  };
+  
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setConfirmationText("");
+    }
+    setIsOpen(open);
+  };
+  
+  return (
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+      {children}
+      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Product</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the product "{product.title}".
+            <br /><br />
+            <strong>Security Check:</strong> Type the first two words of the product name to confirm deletion.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4">
+          <Input
+            placeholder={`Type: "${firstTwoWords}"`}
+            value={confirmationText}
+            onChange={(e) => setConfirmationText(e.target.value)}
+            className="w-full"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleDelete}
+            disabled={!isConfirmationValid || isDeleting}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete Product"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
+  const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
 
   // Collect all inventory item IDs for SSE connection
@@ -107,17 +192,55 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
   const handleDelete = async (e: React.MouseEvent, productId: string, title: string) => {
     e.stopPropagation();
-    const confirmDelete = confirm(`Delete "${title}"? This cannot be undone.`);
-    if (!confirmDelete) return;
-    const res = await deleteProductAction(productId);
-    if (res.success) {
-      router.refresh();
-    } else {
-      alert(res.error || "Failed to delete product.");
+    
+    // Optimistic UI: Immediately remove from list
+    setDeletedProductIds(prev => new Set([...prev, productId]));
+    
+    try {
+      const res = await deleteProductAction(productId);
+      if (res.success) {
+        // Success: Keep the product removed, server will revalidate
+        toast({
+          title: "Product Deleted",
+          description: "Product has been successfully deleted.",
+        });
+      } else {
+        // Failure: Restore the product in the list
+        setDeletedProductIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+        
+        toast({
+          title: "Delete Failed",
+          description: res.error || "Failed to delete product.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      // Error: Restore the product in the list
+      setDeletedProductIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+      
+      toast({
+        title: "Delete Failed",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      });
     }
   };
 
   const filteredProducts = products.filter((product) => {
+    // First filter out deleted products
+    if (deletedProductIds.has(product.id)) {
+      return false;
+    }
+    
+    // Then apply search filter
     const term = searchTerm.toLowerCase();
     const titleMatch = product.title.toLowerCase().includes(term);
     const tagMatch = product.tags.some(tag => tag.toLowerCase().includes(term));
@@ -127,63 +250,107 @@ export function ProductsTable({ products }: ProductsTableProps) {
   return (
     <>
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
+        <CardHeader className="p-2 sm:p-3">
+          <div className="flex items-center gap-1">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products by name or tag..."
+                placeholder="Search by name or tag"
                 className="w-full pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2">
-                <Button variant={view === 'list' ? 'secondary' : 'outline'} size="icon" onClick={() => setView('list')}>
+            <div className="flex items-center bg-muted rounded-full p-1">
+                <Button 
+                  variant={view === 'list' ? 'default' : 'ghost'} 
+                  size="sm" 
+                  className="h-7 px-3 rounded-full"
+                  onClick={() => setView('list')}
+                >
                     <List className="h-4 w-4" />
                     <span className="sr-only">List View</span>
                 </Button>
-                <Button variant={view === 'grid' ? 'secondary' : 'outline'} size="icon" onClick={() => setView('grid')}>
+                <Button 
+                  variant={view === 'grid' ? 'default' : 'ghost'} 
+                  size="sm" 
+                  className="h-7 px-3 rounded-full"
+                  onClick={() => setView('grid')}
+                >
                     <LayoutGrid className="h-4 w-4" />
                     <span className="sr-only">Grid View</span>
                 </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-2">
           {view === 'list' ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden w-[100px] sm:table-cell">
-                    Image
-                  </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Price</TableHead>
-                  <TableHead>
-                    #
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <Table className="w-full min-w-[320px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="hidden w-[100px] sm:table-cell text-center">
+                      Image
+                    </TableHead>
+                    <TableHead className="min-w-[100px] sm:min-w-[200px]">Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Price</TableHead>
+                    <TableHead className="w-[35px] hidden sm:table-cell">
+                      #
+                    </TableHead>
+                    <TableHead className="text-right w-[35px]">
+                      <MoreVertical className="h-4 w-4 mx-auto" />
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
                   <TableRow 
                     key={product.id} 
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleRowClick(product.id)}
                   >
-                    <TableCell className="hidden sm:table-cell">
-                      <Image
-                        alt={product.title}
-                        className="aspect-square rounded-md object-cover"
-                        height="64"
-                        src={product.featuredImage?.url || 'https://placehold.co/64x64'}
-                        width="64"
-                      />
+                    <TableCell className="hidden sm:table-cell text-center">
+                      <div className="flex justify-center">
+                        <ProductImageCell 
+                          productId={product.id}
+                          fallbackImageUrl={product.featuredImage?.url}
+                        />
+                      </div>
                     </TableCell>
-                    <TableCell className="font-medium max-w-[150px] truncate">{product.title}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className="relative sm:hidden">
+                          <ProductImageCell 
+                            productId={product.id}
+                            fallbackImageUrl={product.featuredImage?.url}
+                          />
+                          <div className="absolute -top-1 -right-1">
+                            <Badge variant="secondary" className="text-xs h-5 px-1">
+                              <InventoryCell
+                                inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
+                                fallback={product.totalInventory}
+                              />
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate max-w-[200px] sm:max-w-none">{product.title}</div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden">
+                            <span>
+                              {new Intl.NumberFormat('en-US', { 
+                                style: 'currency', 
+                                currency: product.priceRange.minVariantPrice.currencyCode 
+                              }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
+                            </span>
+                            <StatusCell
+                              product={product}
+                              inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <StatusCell
                         product={product}
@@ -196,18 +363,18 @@ export function ProductsTable({ products }: ProductsTableProps) {
                             currency: product.priceRange.minVariantPrice.currencyCode 
                         }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <InventoryCell
                         inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
                         fallback={product.totalInventory}
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <AlertDialog>
+                      <SecureDeleteDialog product={product} onDelete={handleDelete}>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                                  <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
+                                  <MoreVertical className="h-3 w-3" />
                                   <span className="sr-only">More options</span>
                               </Button>
                           </DropdownMenuTrigger>
@@ -241,28 +408,15 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               </AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
-                      <AlertDialogContent>
-                          <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the product "{product.title}".
-                              </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={(e) => handleDelete(e, product.id, product.title)}>
-                                  Continue
-                              </AlertDialogAction>
-                          </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
+                      </SecureDeleteDialog>
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
+              </TableBody>
+            </Table>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
               {filteredProducts.map(product => (
                 <ProductGridItem 
                   key={product.id}
@@ -287,8 +441,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
           onClose={() => setQuickEditProduct(null)}
         />
       )}
-      <Link href="/products/new" className="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-50">
-          <PlusCircle className="h-6 w-6" />
+      <Link href="/products/new" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-primary text-primary-foreground rounded-full p-3 sm:p-4 shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-50">
+          <PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="sr-only">Add Product</span>
       </Link>
     </>
@@ -333,15 +487,13 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
 }) {
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
   return (
-    <AlertDialog>
+    <SecureDeleteDialog product={product} onDelete={onDelete}>
       <Card className="overflow-hidden cursor-pointer group" onClick={() => onRowClick(product.id)}>
-        <div className="relative">
-          <Image
-            alt={product.title}
-            className="aspect-square object-cover w-full transition-transform group-hover:scale-105"
-            height="300"
-            src={product.featuredImage?.url || 'https://placehold.co/300x300'}
-            width="300"
+        <div className="relative aspect-square">
+          <ProductImageCell 
+            productId={product.id}
+            fallbackImageUrl={product.featuredImage?.url}
+            isCardView={true}
           />
           <div className="absolute top-2 right-2">
               <DropdownMenu>
@@ -383,9 +535,9 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
               </DropdownMenu>
           </div>
         </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-lg truncate">{product.title}</h3>
-          <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+        <CardContent className="p-3">
+          <h3 className="font-semibold text-sm leading-tight">{product.title}</h3>
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
               <span>
                   {new Intl.NumberFormat('en-US', {
                       style: 'currency',
@@ -399,21 +551,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit }: {
           </div>
         </CardContent>
       </Card>
-      <AlertDialogContent>
-          <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the product "{product.title}".
-              </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={(e) => onDelete(e, product.id, product.title)}>
-                  Continue
-              </AlertDialogAction>
-          </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    </SecureDeleteDialog>
   )
 }
 
@@ -430,7 +568,7 @@ function QuickEditModal({ product, onClose }: { product: ShopifyProduct; onClose
     }
     setIsSaving(true);
     try {
-      const result = await quickUpdateInventoryAction(inventoryItemId, quantity);
+      const result = await quickUpdateInventoryAction({ inventoryItemId, quantity });
       if (result.success) {
         toast({ title: "Success", description: `Inventory for "${product.title}" updated.` });
         onClose();
@@ -482,13 +620,24 @@ function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string
   console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'firestore_quantity:', quantity, 'shopify_fallback:', fallback, 'displayValue:', displayValue);
 
   return (
-    <span className="inline-flex items-center gap-1">
-      <span>
-        {displayValue}
-      </span>
-      {status === 'error' && (
-        <span className="text-xs text-red-600">⚠️</span>
-      )}
+    <span>
+      {displayValue}
     </span>
+  );
+}
+
+function ProductImageCell({ productId, fallbackImageUrl, isCardView = false }: { productId: string; fallbackImageUrl?: string; isCardView?: boolean }) {
+  const { imageUrl, status } = useProductImage(productId);
+  
+  const displayImageUrl = imageUrl || fallbackImageUrl || (isCardView ? 'https://placehold.co/300x300' : 'https://placehold.co/64x64');
+  
+  return (
+    <Image
+      alt="Product"
+      className={isCardView ? "aspect-square object-cover w-full transition-transform group-hover:scale-105" : "aspect-square rounded-md object-cover"}
+      height={isCardView ? 300 : 64}
+      src={displayImageUrl}
+      width={isCardView ? 300 : 64}
+    />
   );
 }

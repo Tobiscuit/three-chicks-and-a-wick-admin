@@ -6,77 +6,137 @@
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { Part } from 'genkit';
+
+// Helper to convert a Data URL string into a Genkit Part object
+function dataUrlToPart(dataUrl: string): Part {
+    if (!dataUrl || typeof dataUrl !== 'string') {
+        throw new Error('Invalid data URL: dataUrl is undefined or not a string');
+    }
+    
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        console.error('Invalid data URL format:', dataUrl.substring(0, 100) + '...');
+        throw new Error('Invalid data URL format for generative part.');
+    }
+    return {
+        media: {
+            url: dataUrl
+        }
+    };
+}
 
 const ComposeWithGallerySchema = z.object({
   candleImage1: z.string().describe('The primary user-uploaded candle image as a data URI'),
   candleImage2: z.string().optional().describe('The optional secondary candle image as a data URI'),
   galleryImage: z.string().describe('The pre-existing gallery background image as a data URI'),
+  contextualDetails: z.string().optional().describe('Optional contextual details to add around the candle (e.g., "vanilla stems around", "cinnamon sticks scattered")'),
 });
 
 export const composeWithGalleryBackgroundFlow = ai.defineFlow(
   {
     name: 'composeWithGalleryBackgroundFlow',
     inputSchema: ComposeWithGallerySchema,
-    outputSchema: z.string(),
+    outputSchema: z.object({
+      url: z.string(),
+      contentType: z.string().optional()
+    }),
   },
-  async ({ candleImage1, candleImage2, galleryImage }) => {
+  async ({ candleImage1, candleImage2, galleryImage, contextualDetails }) => {
     
-    const redactData = (uri: string) => {
-      if (uri.length > 100) {
-        return `${uri.substring(0, 50)}...[REDACTED_LENGTH=${uri.length}]`;
+    const redactData = (part: Part) => {
+      if (part.media?.url && part.media.url.length > 100) {
+        return `${part.media.url.substring(0, 50)}...[REDACTED_LENGTH=${part.media.url.length}]`;
       }
-      return uri;
+      return part;
     };
 
     try {
-      const useGemini = process.env.USE_GEMINI_FOR_IMAGES === 'true';
-      const modelName = useGemini ? 'gemini-2.5-flash-image-preview' : 'imagen-3';
+      const modelName = 'googleai/gemini-2.5-flash-image-preview';
       console.log(`[Compose Flow] Using image model: ${modelName}`);
 
       console.log('[Compose Flow] Starting composition with gallery background...');
       
-      let composePrompt = `
-        Your task is to perform a photorealistic composition.
-        You will be given two images: a background image and a product image.
-        Isolate the primary product from the product image, discarding its original background.
-        Realistically place that isolated product onto a surface within the new background image.
-        Ensure the lighting, shadows, and perspective are seamless and consistent.
+      // Build contextual details section
+      const contextualSection = contextualDetails ? `
+        **CONTEXTUAL DETAILS:** "${contextualDetails}" - Add these specific elements around the candle to enhance the scene. These should be subtle, professional, and complement the product without overwhelming it.
+      ` : '';
 
+      let composePrompt = `
+        Create a professional product photography composition with these requirements:
+        
+        **PRIMARY SUBJECT:** The candle must be the MAIN FOCUS and CENTER STAGE of the image
+        **POSITIONING:** Place the candle prominently in the center, taking up 40-60% of the image
+        **COMPOSITION:** Rule of thirds, with the candle as the dominant element
+        **LIGHTING:** Professional product lighting with soft, even illumination on the candle
+        **QUALITY:** High-end e-commerce product photo quality
+        ${contextualSection}
+        
+        Isolate the candle from its original background and place it onto the new background.
+        Ensure the lighting, shadows, and perspective are seamless and consistent.
+        The candle should be the clear hero of the image, not a small element.
+        Make it look like a premium product that customers would want to buy.
+        
         **Output only the final, composed image.**
         **Do not include any text, commentary, markdown, or any other content besides the image itself.**
       `;
 
-      const promptParts = [];
-      promptParts.push({ text: composePrompt });
-      promptParts.push({ media: { url: galleryImage } });
-      promptParts.push({ media: { url: candleImage1 } });
-
       if (candleImage2) {
         composePrompt = `
-          Your task is to perform a photorealistic composition.
-          You will be given three images: a background, a primary product image, and a secondary product image for reference.
-          Isolate the product from the primary product image, discarding its original background.
-          Use the secondary product image as a crucial reference for the product's true lighting, shadows, and depth.
-          Realistically place the isolated product (from the primary image) onto a surface within the background image.
+          Create a professional product photography composition with these requirements:
           
-          **Output only the final, composed image containing the primary product.**
+          **PRIMARY SUBJECT:** The first candle must be the MAIN FOCUS and CENTER STAGE
+          **POSITIONING:** Place the first candle prominently in the center, taking up 40-60% of the image
+          **REFERENCE:** Use the second candle image as a crucial reference for accurate lighting, shadows, and depth
+          **COMPOSITION:** Rule of thirds, with the candle as the dominant element
+          **LIGHTING:** Professional product lighting with soft, even illumination on the candle
+          **QUALITY:** High-end e-commerce product photo quality
+          ${contextualSection}
+          
+          Isolate the first candle from its original background and place it onto the new background.
+          Use the second candle image as a reference for the product's true appearance.
+          The first candle should be the clear hero of the image, not a small element.
+          Make it look like a premium product that customers would want to buy.
+          
+          **Output only the final, composed image containing the first candle.**
           **Do not include any text, commentary, markdown, or any other content besides the image itself.**
         `;
-        // Overwrite the prompt and add the third image
-        promptParts[0] = { text: composePrompt };
-        promptParts.push({ media: { url: candleImage2 } });
       }
 
-      console.log('[Compose Flow] Input Parts for composition:', JSON.stringify(promptParts.map(p => p.text ? p : { media: { url: redactData(p.media.url) } }), null, 2));
+      // Build the prompt array with the new URL-based syntax
+      const prompt = [
+        { text: composePrompt },
+        { media: { url: galleryImage } }, // Pass the full data URL string
+        { media: { url: candleImage1 } }, // Pass the full data URL string
+      ];
 
-      const finalImageResponse = await ai.generate({
-        prompt: promptParts,
-        model: googleAI.model(modelName),
-        output: { format: 'media' },
+      if (candleImage2) {
+        prompt.push({ media: { url: candleImage2 } }); // Add the optional image
+      }
+
+      console.log('[Compose Flow] Calling ai.generate with URL-based media parts.');
+      console.log('[Compose Flow] Prompt structure:', {
+        textPrompt: !!prompt[0].text,
+        mediaCount: prompt.filter(p => p.media).length,
+        galleryImage: galleryImage.substring(0, 50) + '...',
+        candleImage1: candleImage1.substring(0, 50) + '...',
+        candleImage2: candleImage2 ? candleImage2.substring(0, 50) + '...' : 'none'
       });
       
-      const finalImagePart = finalImageResponse.media;
+      const finalImageResponse = await ai.generate({
+        model: modelName,
+        prompt: prompt,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
+
+      console.log('[Compose Flow] Raw final image response:', JSON.stringify(finalImageResponse, null, 2));
+      
+      // Extract media from the nested response structure
+      // The media might be at content[0] or content[1], so we need to find it
+      const content = finalImageResponse.message?.content || [];
+      const finalImagePart = content.find((item: any) => item.media)?.media;
       
       if (!finalImagePart?.url) {
         console.error('[Compose Flow] Failed to extract media from final image response.');
@@ -87,7 +147,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
 
       console.log('[Compose Flow] SUCCESS: Final image composed.');
 
-      return finalImagePart.url;
+      return finalImagePart;
     } catch (error: any) {
       console.error("[Compose Flow Error]", error);
       throw new Error(`AI Composition Flow Failed: ${error.message}`);

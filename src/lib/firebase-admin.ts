@@ -3,6 +3,7 @@ import { initializeApp, getApps, App, cert, applicationDefault } from 'firebase-
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { getFirestore } from 'firebase-admin/firestore';
+import { FIREBASE_ADMIN_CONFIG, FIREBASE_CONFIG } from './env-config';
 
 let app: App;
 
@@ -10,24 +11,31 @@ let app: App;
 if (getApps().length === 0) {
   console.log("[Firebase Admin] Initializing Firebase Admin SDK...");
 
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
-  const publicBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-  const adminBucketEnv = process.env.FIREBASE_STORAGE_BUCKET_ADMIN;
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const projectId = FIREBASE_ADMIN_CONFIG.PROJECT_ID;
+  const publicBucket = FIREBASE_CONFIG.STORAGE_BUCKET;
+  const adminBucketEnv = FIREBASE_ADMIN_CONFIG.STORAGE_BUCKET_ADMIN;
+  const serviceAccountJson = FIREBASE_ADMIN_CONFIG.SERVICE_ACCOUNT;
+  
+  console.log('[Firebase Admin] Raw values:');
+  console.log('  projectId:', projectId);
+  console.log('  publicBucket:', publicBucket);
+  console.log('  adminBucketEnv:', adminBucketEnv);
 
   try {
-    // Determine admin bucket: prefer explicit admin bucket (appspot.com),
-    // else derive from projectId, else fall back to public bucket if provided.
-    const derivedAdminBucket = projectId ? `${projectId}.appspot.com` : undefined;
-    const storageBucket = adminBucketEnv || derivedAdminBucket || publicBucket;
+    // Use the public bucket directly for Firebase Storage (firebasestorage.app)
+    // This ensures we use the correct bucket name that matches the client-side
+    const storageBucket = publicBucket || adminBucketEnv;
 
     console.log('[Firebase Admin] Bucket selection diagnostics:', {
       projectIdCandidate: projectId || 'unset',
       adminBucketEnv: adminBucketEnv || 'unset',
       publicBucket,
-      derivedAdminBucket: derivedAdminBucket || 'unset',
       chosenBucket: storageBucket || 'unset',
     });
+    
+    console.log('[Firebase Admin] CRITICAL: Using bucket:', storageBucket);
+    console.log('[Firebase Admin] Expected bucket: threechicksandawick-admin.firebasestorage.app');
+    console.log('[Firebase Admin] Bucket match:', storageBucket === 'threechicksandawick-admin.firebasestorage.app');
 
     const options: any = { projectId, storageBucket };
 

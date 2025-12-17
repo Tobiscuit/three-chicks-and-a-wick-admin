@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle } from "lucide-react";
-import { generateImageAction } from "@/app/actions";
+import { generateImageAction, composeWithGalleryAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { ref, listAll, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
@@ -36,7 +36,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const formSchema = z.object({
-  productImage: z.any().refine(file => file instanceof File, "A product image is required."),
+  primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
+  secondaryProductImage: z.any().optional(),
   backgroundType: z.enum(["gallery", "generate"]).default("gallery"),
   backgroundPrompt: z.string().optional(),
   selectedBackgroundUrl: z.string().optional(),
@@ -69,7 +70,7 @@ type GalleryImage = {
 
 export function ImageStudio() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
+  const [primaryProductImagePreview, setPrimaryProductImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
@@ -135,29 +136,83 @@ export function ImageStudio() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("productImage", file);
+      form.setValue("primaryProductImage", file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProductImagePreview(reader.result as string);
+        setPrimaryProductImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const resizeAndToDataUrl = (file: File, maxSize = 1024, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const image = new window.Image();
+        image.onload = () => {
+          let { width, height } = image;
+          if (width > height) {
+            if (width > maxSize) {
+              height = Math.round(height * (maxSize / width));
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = Math.round(width * (maxSize / height));
+              height = maxSize;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return reject(new Error('Could not get canvas context'));
+          }
+          ctx.drawImage(image, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        image.onerror = reject;
+        image.src = readerEvent.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     setGeneratedImage(null);
     
-    const formData = new FormData();
-    formData.append('productImage', values.productImage);
-    formData.append('backgroundType', values.backgroundType);
-    if(values.backgroundPrompt) formData.append('backgroundPrompt', values.backgroundPrompt);
-    if(values.selectedBackgroundUrl) formData.append('selectedBackgroundUrl', values.selectedBackgroundUrl);
-    if(values.contextualDetails) formData.append('contextualDetails', values.contextualDetails);
-
     try {
-        const result = await generateImageAction(formData);
-        if (result.success && result.imageDataUri) {
+      // Convert images to data URLs
+      const angle1 = values.primaryProductImage ? await resizeAndToDataUrl(values.primaryProductImage) : undefined;
+      const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
+
+      let result;
+      if (values.backgroundType === 'generate') {
+        if (!angle1) {
+          throw new Error('Primary product image is required for image generation');
+        }
+        result = await generateImageAction({
+          background: values.backgroundPrompt!,
+          angle1,
+          angle2,
+        });
+      } else { // Gallery
+        if (!angle1) {
+          throw new Error('Primary product image is required for gallery composition');
+        }
+        result = await composeWithGalleryAction({
+          galleryBackgroundUrl: values.selectedBackgroundUrl!,
+          angle1,
+          angle2,
+        });
+      }
+        if (result.imageDataUri) {
             setGeneratedImage(result.imageDataUri);
             toast({
                 title: "Image Generated",
@@ -195,7 +250,7 @@ export function ImageStudio() {
               <CardContent>
                 <FormField
                   control={form.control}
-                  name="productImage"
+                  name="primaryProductImage"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
@@ -203,9 +258,9 @@ export function ImageStudio() {
                           className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50 transition-colors"
                           onClick={() => fileInputRef.current?.click()}
                         >
-                          {productImagePreview ? (
+                          {primaryProductImagePreview ? (
                             <Image
-                              src={productImagePreview}
+                              src={primaryProductImagePreview}
                               alt="Product preview"
                               width={400}
                               height={400}

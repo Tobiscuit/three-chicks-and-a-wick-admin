@@ -5,6 +5,9 @@ import { AlertCircle } from 'lucide-react';
 import type { ShopifyOrder, ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
+import { Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 // Helper function to process order data
 function processOrderData(orders: ShopifyOrder[]) {
@@ -55,21 +58,72 @@ function getTopSellingProducts(orders: ShopifyOrder[], products: ShopifyProduct[
         .slice(0, 5);
 }
 
+// Skeleton component for loading state
+function DashboardSkeleton() {
+    return (
+        <div className="flex-1 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                    <Card key={i}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <Skeleton className="h-4 w-[100px]" />
+                            <Skeleton className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-[120px] mb-2" />
+                            <Skeleton className="h-3 w-[80px]" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="col-span-4">
+                    <CardHeader>
+                        <Skeleton className="h-6 w-[120px]" />
+                    </CardHeader>
+                    <CardContent className="pl-2">
+                        <Skeleton className="h-[300px] w-full" />
+                    </CardContent>
+                </Card>
+                <Card className="col-span-3">
+                    <CardHeader>
+                        <Skeleton className="h-6 w-[140px]" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="flex items-center">
+                                    <Skeleton className="h-9 w-9 rounded-md" />
+                                    <div className="ml-4 space-y-1">
+                                        <Skeleton className="h-4 w-[150px]" />
+                                        <Skeleton className="h-3 w-[100px]" />
+                                    </div>
+                                    <Skeleton className="ml-auto h-4 w-[60px]" />
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+}
 
-export default async function DashboardPage() {
+// Data-fetching component wrapped in Suspense
+async function DashboardStats() {
     let orders: ShopifyOrder[] = [];
     let products: ShopifyProduct[] = [];
     let error: string | null = null;
-    let stats = { totalRevenue: 0, totalOrders: 0, averageOrderValue: 0, chartData: [] as {date: string, total: number}[] };
+    let stats = { totalRevenue: 0, totalOrders: 0, averageOrderValue: 0, chartData: [] as { date: string, total: number }[] };
     let topProducts: (ShopifyProduct & { sales: number })[] = [];
 
     try {
         // Fetch last 50 orders and all products
         [orders, products] = await Promise.all([
             getOrders(50),
-            getProducts(100) 
+            getProducts(100)
         ]);
-        
+
         stats = processOrderData(orders);
         topProducts = getTopSellingProducts(orders, products);
 
@@ -77,22 +131,30 @@ export default async function DashboardPage() {
         error = e.message;
     }
 
+    if (error) {
+        return (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error Fetching Dashboard Data</AlertTitle>
+                <AlertDescription>
+                    {error}
+                    <br />
+                    Please ensure your Shopify app has 'read_orders' and 'read_products' permissions.
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    return <DashboardClient stats={stats} topProducts={topProducts} />;
+}
+
+export default async function DashboardPage() {
     return (
         <AuthWrapper>
             <div className="flex-1 space-y-4">
-                {error ? (
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error Fetching Dashboard Data</AlertTitle>
-                        <AlertDescription>
-                            {error}
-                            <br />
-                            Please ensure your Shopify app has 'read_orders' and 'read_products' permissions.
-                        </AlertDescription>
-                    </Alert>
-                ) : (
-                    <DashboardClient stats={stats} topProducts={topProducts} />
-                )}
+                <Suspense fallback={<DashboardSkeleton />}>
+                    <DashboardStats />
+                </Suspense>
             </div>
         </AuthWrapper>
     );

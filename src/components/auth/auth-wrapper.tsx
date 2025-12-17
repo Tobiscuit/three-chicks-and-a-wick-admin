@@ -13,6 +13,7 @@ import { ShieldAlert } from 'lucide-react';
 import { AppSidebar } from '../layout/app-sidebar';
 import { SidebarProvider, SidebarInset } from '../ui/sidebar';
 import { Header } from '../layout/header';
+import { startBackgroundStrategyGeneration } from '@/lib/background-strategy';
 
 const AccessDeniedPage = () => {
     const { user } = useAuth();
@@ -56,6 +57,11 @@ export const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
           const result = await checkAuthorization(idToken);
           if (!result.isAuthorized) {
             console.warn("[Client] Authorization denied:", result.error);
+          } else {
+            // User is authorized - start background strategy generation with user ID for per-user caching
+            startBackgroundStrategyGeneration(user.uid).catch(error => {
+              console.error('Background strategy generation failed:', error);
+            });
           }
           setIsAuthorized(result.isAuthorized);
         } catch (error: any) {
@@ -91,7 +97,7 @@ export const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
       <SidebarInset>
         <div className="flex flex-col min-h-dvh">
             <Header />
-            <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8">
+            <main className="flex-1 flex flex-col p-2 md:p-6 lg:p-8">
                 {children}
             </main>
         </div>
