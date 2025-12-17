@@ -3,9 +3,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -184,12 +181,6 @@ export default function OrdersClient() {
       </Tabs>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Orders</CardTitle>
-          <CardDescription>
-            Manage and view details for all customer orders.
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
