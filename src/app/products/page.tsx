@@ -6,7 +6,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import type { ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
-import { AddProductModal } from '@/components/products/add-product-modal';
 
 
 async function ProductsData() {
@@ -66,14 +65,9 @@ async function ProductsData() {
 export default function ProductsPage() {
     return (
         <AuthWrapper>
-            <div className="space-y-4">
-                <div className="flex justify-end">
-                    <AddProductModal />
-                </div>
-                <Suspense fallback={<ProductsTableSkeleton />}>
-                    <ProductsData />
-                </Suspense>
-            </div>
+            <Suspense fallback={<ProductsTableSkeleton />}>
+                <ProductsData />
+            </Suspense>
         </AuthWrapper>
     );
 }
