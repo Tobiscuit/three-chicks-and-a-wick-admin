@@ -7,6 +7,9 @@ description: Research and apply bleeding-edge CSS/Tailwind/UX patterns to any co
 Holistic modernization with the latest patterns from Tailwind, Shadcn, and UX best practices.
 **Bias towards highest effort / maximum polish** — this is about bleeding edge, not shipping fast.
 
+> **📁 Project Context:** Reference `.agent/project-context.json` for stack info.
+> Run `/detect-stack` if missing or outdated.
+
 ---
 
 ## 0. Understand Context First (CRITICAL)
