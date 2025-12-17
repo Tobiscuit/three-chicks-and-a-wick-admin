@@ -14,6 +14,14 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Camera,
   LayoutDashboard,
   BrainCircuit,
@@ -22,12 +30,18 @@ import {
   Flame,
   Wand2,
   ShoppingCart,
+  LogOut,
+  Moon,
+  Sun,
+  ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from "../auth/auth-provider"
 import { useEffect, useState } from "react"
 import { getOrders } from "@/services/shopify"
+import { auth } from "@/lib/firebase"
+import { useTheme } from "next-themes"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,7 +55,9 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { user } = useAuth()
+  const { theme, setTheme } = useTheme()
   const [unfulfilledCount, setUnfulfilledCount] = useState<number | null>(null)
 
   // Fetch unfulfilled order count for badge
@@ -69,6 +85,10 @@ export function AppSidebar() {
 
   // Determine the first letter for the Avatar fallback
   const fallbackLetter = user?.displayName ? user.displayName.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : "A");
+
+  const handleLogout = async () => {
+    await auth.signOut()
+  }
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" side="left">
@@ -124,21 +144,78 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="items-center">
         <Separator className="my-2" />
-        <div className="flex w-full items-center justify-between p-2">
-            <div className="flex items-center gap-3">
+        {/* User Dropdown Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center justify-between p-2 rounded-md transition-colors hover:bg-sidebar-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring cursor-pointer">
+              <div className="flex items-center gap-3">
                 {/* Avatar with subtle ring glow */}
-                <Avatar className="h-9 w-9 ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-all duration-300 hover:ring-primary/40 motion-reduce:transition-none">
-                    <AvatarImage src={user?.photoURL || "https://picsum.photos/id/42/100/100"} alt={user?.displayName || "Admin"} data-ai-hint="woman face" />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground">{fallbackLetter}</AvatarFallback>
+                <Avatar className="h-9 w-9 ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-all duration-300 group-hover:ring-primary/40 motion-reduce:transition-none">
+                  <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || "Admin"} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground">{fallbackLetter}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col truncate" data-sidebar="user-info">
-                    <span className="text-sm font-medium text-foreground">{userRole}</span>
-                    <span className="text-xs text-muted-foreground truncate">{user?.displayName || user?.email}</span>
+                <div className="flex flex-col truncate text-left" data-sidebar="user-info">
+                  <span className="text-sm font-medium text-foreground">{userRole}</span>
+                  <span className="text-xs text-muted-foreground truncate">{user?.displayName || user?.email}</span>
                 </div>
-            </div>
-        </div>
+              </div>
+              <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="start"
+            className="w-56 animate-in fade-in slide-in-from-bottom-2 duration-200"
+          >
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.displayName || userRole}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            {/* Theme Toggle */}
+            <DropdownMenuItem 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="cursor-pointer"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </DropdownMenuItem>
+            
+            {/* Settings Link */}
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href="/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            {/* Logout */}
+            <DropdownMenuItem 
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive focus:text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log Out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
   )
 }
+
 
