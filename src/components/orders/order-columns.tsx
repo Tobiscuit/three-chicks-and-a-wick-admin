@@ -2,8 +2,16 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowUpDown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ArrowUpDown, Sparkles, MoreHorizontal, Copy, Printer, CheckCircle2 } from "lucide-react"
 import type { ShopifyOrder } from "@/services/shopify"
 
 // Helper to format currency
@@ -58,7 +66,7 @@ export const orderColumns: ColumnDef<ShopifyOrder>[] = [
       )
     },
     cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("name")}</span>
+      <span className="data-id font-medium">{row.getValue("name")}</span>
     ),
   },
   {
@@ -66,9 +74,11 @@ export const orderColumns: ColumnDef<ShopifyOrder>[] = [
     header: "Customer",
     cell: ({ row }) => {
       const customer = row.original.customer
-      return customer
-        ? `${customer.firstName} ${customer.lastName}`
-        : "Guest"
+      return (
+        <span className="data-secondary">
+          {customer ? `${customer.firstName} ${customer.lastName}` : "Guest"}
+        </span>
+      )
     },
   },
   {
@@ -81,7 +91,7 @@ export const orderColumns: ColumnDef<ShopifyOrder>[] = [
           {type === "Custom" && (
             <Sparkles className="h-3.5 w-3.5 text-amber-500" />
           )}
-          <span>{type}</span>
+          <span className={type === "Custom" ? "font-medium text-amber-600 dark:text-amber-400" : ""}>{type}</span>
         </div>
       )
     },
@@ -115,10 +125,65 @@ export const orderColumns: ColumnDef<ShopifyOrder>[] = [
     cell: ({ row }) => {
       const { amount, currencyCode } = row.original.totalPriceSet.shopMoney
       return (
-        <div className="text-right font-medium">
+        <div className="data-money">
           {formatCurrency(amount, currencyCode)}
         </div>
       )
     },
   },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Actions</span>,
+    cell: ({ row }) => {
+      const order = row.original
+      
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                navigator.clipboard.writeText(order.name)
+              }}
+              className="cursor-pointer"
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Order #
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                window.print()
+              }}
+              className="cursor-pointer"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Print Order
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => e.stopPropagation()}
+              className="cursor-pointer text-green-600 dark:text-green-400"
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Mark Fulfilled
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
+  },
 ]
+

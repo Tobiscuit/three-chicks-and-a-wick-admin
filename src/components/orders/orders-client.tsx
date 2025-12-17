@@ -162,7 +162,23 @@ export default function OrdersClient() {
             </FeatureHighlight>
           </div>
         </div>
+
       </Tabs>
+
+      {/* Order count summary */}
+      {!isLoading && (
+        <div className="flex items-center justify-between py-2 text-sm text-muted-foreground">
+          <span>
+            Showing <span className="font-medium text-foreground tabular-nums">{filteredOrders.length}</span> of{' '}
+            <span className="font-medium text-foreground tabular-nums">{orders.length}</span> orders
+          </span>
+          {filter !== 'all' && (
+            <span className="capitalize">
+              Filter: <span className="font-medium text-foreground">{filter}</span>
+            </span>
+          )}
+        </div>
+      )}
 
       <DataTable
         columns={orderColumns}

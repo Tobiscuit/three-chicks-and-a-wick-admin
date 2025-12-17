@@ -111,59 +111,69 @@ export function DataTable<TData, TValue>({
 
   // Desktop table view
   const DesktopView = () => (
-    <div className="rounded-lg border bg-card">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <TableRow key={`skeleton-${index}`}>
-                {columns.map((_, colIndex) => (
-                  <TableCell key={`skeleton-cell-${colIndex}`}>
-                    <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                  </TableCell>
+    <div className="rounded-lg border bg-card overflow-hidden motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
+      <div className="overflow-auto max-h-[70vh]">
+        <Table>
+          <TableHeader className="table-header-sticky">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          ) : table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-                className={onRowClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
-                onClick={() => onRowClick?.(row.original)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  {columns.map((_, colIndex) => (
+                    <TableCell key={`skeleton-cell-${colIndex}`}>
+                      <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className={`
+                    group
+                    table-zebra
+                    ${onRowClick ? "table-row-interactive" : ""}
+                  `}
+                  onClick={() => onRowClick?.(row.original)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <span className="text-4xl">📦</span>
+                    <p className="font-medium">No orders found</p>
+                    <p className="text-sm">Try adjusting your filters</p>
+                  </div>
+                </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 
