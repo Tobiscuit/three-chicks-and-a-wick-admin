@@ -160,3 +160,13 @@
 .animate-fade-out {
   animation: fadeOut 0.15s ease-in forwards;
 }
+
+/* Shimmer effect for premium cards */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
