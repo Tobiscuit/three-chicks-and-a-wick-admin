@@ -28,8 +28,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   onRowClick?: (row: TData) => void
   isLoading?: boolean
-  // Mobile card renderer - required for responsive behavior
-  mobileCardRenderer?: (row: TData, onClick?: () => void) => React.ReactNode
+  // Mobile card renderer - required for responsive behavior (index for staggered animations)
+  mobileCardRenderer?: (row: TData, onClick?: () => void, index?: number) => React.ReactNode
 }
 
 export function DataTable<TData, TValue>({
@@ -100,9 +100,9 @@ export function DataTable<TData, TValue>({
 
     return (
       <div className="space-y-3">
-        {paginatedRows.map((row) => (
+        {paginatedRows.map((row, index) => (
           <div key={row.id}>
-            {mobileCardRenderer?.(row.original, () => onRowClick?.(row.original))}
+            {mobileCardRenderer?.(row.original, () => onRowClick?.(row.original), index)}
           </div>
         ))}
       </div>

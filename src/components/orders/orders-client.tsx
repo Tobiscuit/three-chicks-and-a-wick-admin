@@ -169,8 +169,8 @@ export default function OrdersClient() {
         data={filteredOrders}
         onRowClick={handleOrderClick}
         isLoading={isLoading}
-        mobileCardRenderer={(order, onClick) => (
-          <OrderCard order={order} onClick={onClick} />
+        mobileCardRenderer={(order, onClick, index) => (
+          <OrderCard order={order} onClick={onClick} index={index} />
         )}
       />
 
