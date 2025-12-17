@@ -3,12 +3,12 @@ import { Suspense } from 'react';
 import { ProductsTable, ProductsTableSkeleton } from '@/components/products-table';
 import { getProducts } from '@/services/shopify';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, PlusCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { AlertCircle } from 'lucide-react';
 import type { ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { DiagnosticButton } from '@/components/diagnostic-button';
+import { AddProductModal } from '@/components/products/add-product-modal';
+
 
 async function ProductsData() {
     let products: ShopifyProduct[] = [];
@@ -71,12 +71,7 @@ export default function ProductsPage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div className="flex flex-col sm:flex-row gap-2">
                         <DiagnosticButton />
-                        <Button asChild className="w-full sm:w-auto flex">
-                            <Link href="/products/new">
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Add Product
-                            </Link>
-                        </Button>
+                        <AddProductModal />
                     </div>
                 </div>
                 <Suspense fallback={<ProductsTableSkeleton />}>
