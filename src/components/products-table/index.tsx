@@ -400,7 +400,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                             fallbackImageUrl={product.featuredImage?.url}
                           />
                           <div className="absolute -top-1 -right-1">
-                            <Badge variant="secondary" className="text-xs h-5 px-1">
+                            <Badge variant="secondary" className="text-xs h-5 px-1 tabular-nums">
                               <InventoryCell
                                 inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
                                 fallback={product.totalInventory}
@@ -413,7 +413,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                             {product.title}
                             <DraftIndicator product={product} />
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden tabular-nums">
                             <span>
                               {new Intl.NumberFormat('en-US', { 
                                 style: 'currency', 
@@ -425,13 +425,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       </div>
                     </TableCell>
 
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden md:table-cell tabular-nums">
                        {new Intl.NumberFormat('en-US', { 
                             style: 'currency', 
                             currency: product.priceRange.minVariantPrice.currencyCode 
                         }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
+                    <TableCell className="hidden sm:table-cell tabular-nums">
                       <InventoryCell
                         inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
                         fallback={product.totalInventory}
@@ -655,7 +655,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
         </div>
         <CardContent className="p-3">
           <h3 className="font-semibold text-sm leading-tight">{product.title}</h3>
-          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 tabular-nums">
               <span>
                   {new Intl.NumberFormat('en-US', {
                       style: 'currency',
