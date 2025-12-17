@@ -6,7 +6,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import type { ShopifyProduct } from '@/services/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
-import { DiagnosticButton } from '@/components/diagnostic-button';
 import { AddProductModal } from '@/components/products/add-product-modal';
 
 
@@ -68,11 +67,8 @@ export default function ProductsPage() {
     return (
         <AuthWrapper>
             <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <DiagnosticButton />
-                        <AddProductModal />
-                    </div>
+                <div className="flex justify-end">
+                    <AddProductModal />
                 </div>
                 <Suspense fallback={<ProductsTableSkeleton />}>
                     <ProductsData />

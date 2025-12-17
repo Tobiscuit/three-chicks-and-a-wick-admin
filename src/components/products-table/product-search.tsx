@@ -4,7 +4,6 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Search, Filter, X, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,7 +36,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   const [filters, setFilters] = React.useState<FilterChip[]>([])
-  const inputRef = React.useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   // Extract unique tags from products
   const allTags = React.useMemo(() => {
@@ -135,149 +134,137 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     setInputValue("")
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && inputValue.trim()) {
-      addFilter("search", inputValue.trim(), inputValue.trim())
-    }
-    if (e.key === "Backspace" && !inputValue && filters.length > 0) {
-      removeFilter(filters.length - 1)
-    }
-  }
-
-  const router = useRouter()
   const handleProductSelect = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`)
     setOpen(false)
   }
 
+  // Determine placeholder based on filters
+  const getPlaceholder = () => {
+    if (filters.length === 0) return "Search products, tags, or status..."
+    return `${filters.length} filter${filters.length > 1 ? 's' : ''} active`
+  }
+
   return (
     <div className="w-full space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div 
-            className="relative cursor-text"
-            onClick={() => {
-              setOpen(true)
-              inputRef.current?.focus()
-            }}
-          >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={inputRef}
-              placeholder="Search products, tags, or status..."
-              className="w-full pl-10 pr-10"
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value)
-                if (!open) setOpen(true)
-              }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setOpen(true)}
-            />
-            {(inputValue || filters.length > 0) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  clearAllFilters()
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0" 
-          align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <Command shouldFilter={false}>
-            <CommandList>
-              <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                {inputValue ? (
-                  <>
-                    Press <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">Enter</kbd> to search for "{inputValue}"
-                  </>
-                ) : (
-                  "Start typing to search..."
+      <div className="flex gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-start text-muted-foreground font-normal"
+            >
+              <Search className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">{getPlaceholder()}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+            <Command shouldFilter={false}>
+              <CommandInput 
+                placeholder="Type to search..." 
+                value={inputValue}
+                onValueChange={setInputValue}
+              />
+              <CommandList>
+                <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                  {inputValue ? (
+                    <CommandItem
+                      onSelect={() => addFilter("search", inputValue.trim(), inputValue.trim())}
+                      className="justify-center cursor-pointer"
+                    >
+                      Search for "{inputValue}"
+                    </CommandItem>
+                  ) : (
+                    "Start typing to search..."
+                  )}
+                </CommandEmpty>
+                
+                {suggestions.productMatches.length > 0 && (
+                  <CommandGroup heading="Products">
+                    {suggestions.productMatches.map((item) => (
+                      <CommandItem
+                        key={item.value}
+                        value={item.label}
+                        onSelect={() => handleProductSelect(item.value)}
+                        className="cursor-pointer"
+                      >
+                        <span className="truncate">{item.label}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
                 )}
-              </CommandEmpty>
-              
-              {suggestions.productMatches.length > 0 && (
-                <CommandGroup heading="Products">
-                  {suggestions.productMatches.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      onSelect={() => handleProductSelect(item.value)}
-                      className="cursor-pointer"
-                    >
-                      <span className="truncate">{item.label}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
 
-              {suggestions.tagMatches.length > 0 && (
-                <CommandGroup heading="Tags">
-                  {suggestions.tagMatches.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      onSelect={() => addFilter("tag", item.value, item.label)}
-                      className="cursor-pointer"
-                    >
-                      <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>{item.label}</span>
-                      <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                        {item.count} products
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
+                {suggestions.tagMatches.length > 0 && (
+                  <CommandGroup heading="Tags">
+                    {suggestions.tagMatches.map((item) => (
+                      <CommandItem
+                        key={item.value}
+                        value={item.label}
+                        onSelect={() => addFilter("tag", item.value, item.label)}
+                        className="cursor-pointer"
+                      >
+                        <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>{item.label}</span>
+                        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                          {item.count} products
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
 
-              {suggestions.statusMatches.length > 0 && (
-                <CommandGroup heading="Status">
-                  {suggestions.statusMatches.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      onSelect={() => addFilter("status", item.value, item.label)}
-                      className="cursor-pointer"
-                    >
-                      <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>status: {item.label}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
+                {suggestions.statusMatches.length > 0 && (
+                  <CommandGroup heading="Status">
+                    {suggestions.statusMatches.map((item) => (
+                      <CommandItem
+                        key={item.value}
+                        value={item.label}
+                        onSelect={() => addFilter("status", item.value, item.label)}
+                        className="cursor-pointer"
+                      >
+                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>status: {item.label}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
 
-              {!inputValue && allTags.length > 0 && (
-                <CommandGroup heading="Popular Tags">
-                  {allTags.slice(0, 5).map((item) => (
-                    <CommandItem
-                      key={item.tag}
-                      value={item.tag}
-                      onSelect={() => addFilter("tag", item.tag, item.tag)}
-                      className="cursor-pointer"
-                    >
-                      <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>{item.tag}</span>
-                      <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                        {item.count}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                {!inputValue && allTags.length > 0 && (
+                  <CommandGroup heading="Popular Tags">
+                    {allTags.slice(0, 5).map((item) => (
+                      <CommandItem
+                        key={item.tag}
+                        value={item.tag}
+                        onSelect={() => addFilter("tag", item.tag, item.tag)}
+                        className="cursor-pointer"
+                      >
+                        <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>{item.tag}</span>
+                        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                          {item.count}
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        {filters.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={clearAllFilters}
+            className="shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
 
       {/* Filter chips */}
       {filters.length > 0 && (
@@ -301,14 +288,6 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
               <X className="h-3 w-3 ml-1" />
             </Badge>
           ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs text-muted-foreground"
-            onClick={clearAllFilters}
-          >
-            Clear all
-          </Button>
         </div>
       )}
     </div>
