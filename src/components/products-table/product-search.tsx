@@ -164,22 +164,25 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
           }}
           onFocus={() => setOpen(true)}
           onBlur={(e) => {
-            // Only close if clicking outside the popover
+            // Check if clicking inside the dropdown
             const relatedTarget = e.relatedTarget as HTMLElement
-            if (!relatedTarget?.closest('[data-radix-popper-content-wrapper]')) {
-              // Delay to allow click events on popover items
-              setTimeout(() => {
-                if (!inputRef.current?.contains(document.activeElement)) {
-                  setOpen(false)
-                }
-              }, 150)
+            if (relatedTarget?.closest('[data-search-dropdown]')) {
+              return // Don't close if clicking dropdown items
             }
+            // Delay to allow click events
+            setTimeout(() => {
+              setOpen(false)
+            }, 150)
           }}
           onKeyDown={handleKeyDown}
           className="pl-10 h-10"
         />
         {open && (
-          <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover shadow-md">
+          <div 
+            data-search-dropdown
+            className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover/95 backdrop-blur-sm shadow-lg animate-in fade-in-0 zoom-in-95 duration-100"
+            onMouseDown={(e) => e.preventDefault()} // Prevent blur when clicking dropdown
+          >
             <Command shouldFilter={false}>
               <CommandList>
               {!hasSuggestions && !inputValue && (
