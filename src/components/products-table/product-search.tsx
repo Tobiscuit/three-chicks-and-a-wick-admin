@@ -31,7 +31,22 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
   const [inputValue, setInputValue] = React.useState("")
   const [filters, setFilters] = React.useState<FilterChip[]>([])
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const containerRef = React.useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  // Click outside to close dropdown
+  React.useEffect(() => {
+    if (!open) return
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
 
   // Extract unique tags from products
   const allTags = React.useMemo(() => {
@@ -151,7 +166,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
 
   return (
     <div className="w-full space-y-2">
-      <div className="relative">
+      <div ref={containerRef} className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
         <Input
           ref={inputRef}
@@ -163,25 +178,12 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
             if (!open) setOpen(true)
           }}
           onFocus={() => setOpen(true)}
-          onBlur={(e) => {
-            // Check if clicking inside the dropdown
-            const relatedTarget = e.relatedTarget as HTMLElement
-            if (relatedTarget?.closest('[data-search-dropdown]')) {
-              return // Don't close if clicking dropdown items
-            }
-            // Delay to allow click events
-            setTimeout(() => {
-              setOpen(false)
-            }, 150)
-          }}
           onKeyDown={handleKeyDown}
           className="pl-10 h-10"
         />
         {open && (
           <div 
-            data-search-dropdown
-            className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover/95 backdrop-blur-sm shadow-lg animate-in fade-in-0 zoom-in-95 duration-100"
-            onMouseDown={(e) => e.preventDefault()} // Prevent blur when clicking dropdown
+            className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover/85 backdrop-blur-md shadow-xl animate-in fade-in-0 zoom-in-95 duration-100"
           >
             <Command shouldFilter={false}>
               <CommandList>
