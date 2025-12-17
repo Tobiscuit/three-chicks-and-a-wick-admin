@@ -29,8 +29,11 @@ import {
   ClipboardCopy,
   Pencil,
   Loader2,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ProductSearch } from "./product-search";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useProductImage } from "@/hooks/use-product-image";
@@ -53,36 +56,20 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton";
 
-function StatusCell({ product, inventoryItemId }: { product: ShopifyProduct; inventoryItemId?: string }) {
-  const { status: inventoryStatus } = useInventoryStatus(inventoryItemId);
-
-  // Show syncing status if inventory is syncing
-  if (inventoryStatus === 'syncing') {
-    return (
-      <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30 animate-pulse">
-        Syncing
-      </Badge>
-    );
-  }
-
-  // For non-active statuses, always show the badge
-  if (product.status !== "ACTIVE") {
-    return (
-      <Badge variant="secondary">
-        {product.status.charAt(0) + product.status.slice(1).toLowerCase()}
-      </Badge>
-    );
-  }
-
-  // For "ACTIVE" status, show it only on medium screens and up
+// Subtle draft indicator - returns inline text instead of badge
+function DraftIndicator({ product }: { product: ShopifyProduct }) {
+  if (product.status === "ACTIVE") return null;
+  
   return (
-    <Badge
-      variant="default"
-      className="hidden md:inline-flex bg-green-700/20 text-green-500 border-green-700/30"
-    >
-      Active
-    </Badge>
+    <span className="text-xs text-muted-foreground ml-1">
+      ({product.status.charAt(0) + product.status.slice(1).toLowerCase()})
+    </span>
   );
+}
+
+// Check if product is a draft (for row opacity)
+function isDraft(product: ShopifyProduct): boolean {
+  return product.status !== "ACTIVE";
 }
 
 type ProductsTableProps = {
@@ -178,6 +165,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
   const [filteredProducts, setFilteredProducts] = useState<ShopifyProduct[]>(products);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
 
   // Handle filter changes from ProductSearch
@@ -197,8 +186,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
   // const { isConnected: sseConnected } = useServerSentEvents(inventoryItemIds);
   const sseConnected = true; // Fake it for now
 
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / pageSize);
+  const paginatedProducts = filteredProducts.slice(page * pageSize, (page + 1) * pageSize);
+  
   // Bulk selection handlers
-  const displayProducts = filteredProducts;
+  const displayProducts = paginatedProducts;
   const allSelected = displayProducts.length > 0 && displayProducts.every(p => selectedIds.has(p.id));
   const someSelected = displayProducts.some(p => selectedIds.has(p.id));
   
@@ -223,6 +216,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
   };
   
   const clearSelection = () => setSelectedIds(new Set());
+  
+  // Reset page when filters change
+  const handleFilterChangeWithReset = useCallback((filtered: ShopifyProduct[]) => {
+    setFilteredProducts(filtered.filter(p => !deletedProductIds.has(p.id)));
+    setSelectedIds(new Set());
+    setPage(0); // Reset to first page
+  }, [deletedProductIds]);
 
   const handleRowClick = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`);
@@ -280,28 +280,16 @@ export function ProductsTable({ products }: ProductsTableProps) {
         <CardHeader className="p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="flex-1">
-              <ProductSearch products={products} onFilterChange={handleFilterChange} />
+              <ProductSearch products={products} onFilterChange={handleFilterChangeWithReset} />
             </div>
-            <div className="flex items-center bg-muted rounded-full p-1">
-                <Button 
-                  variant={view === 'list' ? 'default' : 'ghost'} 
-                  size="sm" 
-                  className="h-7 px-3 rounded-full"
-                  onClick={() => setView('list')}
-                >
-                    <List className="h-4 w-4" />
-                    <span className="sr-only">List View</span>
-                </Button>
-                <Button 
-                  variant={view === 'grid' ? 'default' : 'ghost'} 
-                  size="sm" 
-                  className="h-7 px-3 rounded-full"
-                  onClick={() => setView('grid')}
-                >
-                    <LayoutGrid className="h-4 w-4" />
-                    <span className="sr-only">Grid View</span>
-                </Button>
-            </div>
+            <SegmentedControl
+              value={view}
+              onValueChange={setView}
+              options={[
+                { value: 'list', label: 'List', icon: <List className="h-4 w-4" /> },
+                { value: 'grid', label: 'Grid', icon: <LayoutGrid className="h-4 w-4" /> },
+              ]}
+            />
           </div>
         </CardHeader>
         
@@ -338,9 +326,14 @@ export function ProductsTable({ products }: ProductsTableProps) {
           </div>
         )}
         
-        {/* Product Counter */}
-        <div className="px-4 py-2 text-xs text-muted-foreground border-b">
-          Showing {displayProducts.length} of {products.length} products
+        {/* Product Counter with Pagination Info */}
+        <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground border-b">
+          <span>
+            Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, filteredProducts.length)} of {filteredProducts.length} products
+          </span>
+          {totalPages > 1 && (
+            <span>{page + 1} of {totalPages} pages</span>
+          )}
         </div>
         
         <CardContent className="p-2 sm:p-2">
@@ -362,7 +355,6 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       Image
                     </TableHead>
                     <TableHead className="min-w-[100px] sm:min-w-[200px]">Name</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Price</TableHead>
                     <TableHead className="w-[35px] hidden sm:table-cell">
                       #
@@ -376,7 +368,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 {displayProducts.map((product, index) => (
                   <TableRow 
                     key={product.id} 
-                    className={`group cursor-pointer table-row-interactive table-zebra transition-colors ${selectedIds.has(product.id) ? 'bg-primary/5' : ''}`}
+                    className={`group cursor-pointer table-row-interactive table-zebra transition-colors ${selectedIds.has(product.id) ? 'bg-primary/5' : ''} ${isDraft(product) ? 'opacity-60' : ''}`}
                     onClick={() => enableBulkSelection ? toggleSelect(product.id) : handleRowClick(product.id)}
                   >
                     {enableBulkSelection && (
@@ -413,7 +405,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="truncate max-w-[200px] sm:max-w-none">{product.title}</div>
+                          <div className="truncate max-w-[200px] sm:max-w-none">
+                            {product.title}
+                            <DraftIndicator product={product} />
+                          </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden">
                             <span>
                               {new Intl.NumberFormat('en-US', { 
@@ -421,20 +416,11 @@ export function ProductsTable({ products }: ProductsTableProps) {
                                 currency: product.priceRange.minVariantPrice.currencyCode 
                               }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                             </span>
-                            <StatusCell
-                              product={product}
-                              inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
-                            />
                           </div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <StatusCell
-                        product={product}
-                        inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id}
-                      />
-                    </TableCell>
+
                     <TableCell className="hidden md:table-cell">
                        {new Intl.NumberFormat('en-US', { 
                             style: 'currency', 
@@ -515,6 +501,51 @@ export function ProductsTable({ products }: ProductsTableProps) {
               </div>
           )}
         </CardContent>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(0);
+                }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1">Previous</span>
+              </Button>
+              <span className="text-sm tabular-nums">
+                {page + 1} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                <span className="hidden sm:inline mr-1">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
       {quickEditProduct && (
         <QuickEditModal
