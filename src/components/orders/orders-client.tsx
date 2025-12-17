@@ -141,23 +141,59 @@ export default function OrdersClient() {
   return (
     <>
       <Tabs defaultValue="all" value={filter} onValueChange={setFilter}>
-        <div className="flex items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="unfulfilled">Unfulfilled</TabsTrigger>
-            <TabsTrigger value="fulfilled">Fulfilled</TabsTrigger>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+          {/* Pill-style tabs with counts */}
+          <TabsList className="bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger 
+              value="all" 
+              className="rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              All
+              <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums">
+                {orders.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="unfulfilled"
+              className="rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              Unfulfilled
+              <span className="ml-2 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-xs tabular-nums">
+                {orders.filter(o => {
+                  const s = (o.displayFulfillmentStatus || 'UNFULFILLED').toUpperCase();
+                  return s === 'UNFULFILLED' || s === 'ON_HOLD' || s === 'SCHEDULED';
+                }).length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="fulfilled"
+              className="rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              Fulfilled
+              <span className="ml-2 rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-2 py-0.5 text-xs tabular-nums">
+                {orders.filter(o => (o.displayFulfillmentStatus || '').toUpperCase() === 'FULFILLED').length}
+              </span>
+            </TabsTrigger>
           </TabsList>
-          <div className="ml-auto flex items-center gap-2">
+
+          {/* Export button with icon and hover effect */}
+          <div className="sm:ml-auto flex items-center gap-2">
             <FeatureHighlight
               featureId="smart-export-v1"
               title="Smart Export"
               description="This button adapts to your view! Filter to 'Unfulfilled' to get a Production Manifest for the workshop, or 'All' for a financial CSV."
             >
-              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExportClick}>
-                <File className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Export
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-9 gap-2 rounded-lg border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all motion-reduce:transition-none" 
+                onClick={handleExportClick}
+              >
+                <File className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  {filter === 'unfulfilled' ? 'Export Production' : 'Export CSV'}
                 </span>
+                <span className="sm:hidden">Export</span>
               </Button>
             </FeatureHighlight>
           </div>
