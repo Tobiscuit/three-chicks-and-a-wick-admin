@@ -3,8 +3,10 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  serverActions: {
-    bodySizeLimit: '25mb',
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '25mb',
+    },
   },
   serverExternalPackages: ['@genkit-ai/core', 'genkit', 'express'],
   typescript: {
