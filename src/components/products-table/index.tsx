@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { ShopifyProduct } from "@/services/shopify"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
 import {
   Trash,
