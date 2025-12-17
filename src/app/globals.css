@@ -1,7 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(222.2 84% 4.9%);
 
@@ -85,6 +87,43 @@
     --color-sidebar-border: hsl(214 15% 35%);
     --color-sidebar-ring: hsl(45 65% 52%);
   }
+}
+
+/* Storefront theme - matches the customer storefront colors */
+.storefront {
+  --color-background: #F9F5F0;
+  --color-foreground: #3D3D3D;
+  --color-card: #ffffff;
+  --color-card-foreground: #3D3D3D;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #3D3D3D;
+  --color-primary: #E95276;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #FFE4E9;
+  --color-secondary-foreground: #E95276;
+  --color-muted: #F0EBE6;
+  --color-muted-foreground: #6B6B6B;
+  --color-accent: #00A19D;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #E63946;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #E5D4D9;
+  --color-input: #E5D4D9;
+  --color-ring: #E95276;
+  --color-chart-1: #E95276;
+  --color-chart-2: #00A19D;
+  --color-chart-3: #F9D423;
+  --color-chart-4: #3D3D3D;
+  --color-chart-5: #FFB6C1;
+  
+  --color-sidebar-background: linear-gradient(135deg, #F9F5F0 0%, #FFE4E9 100%);
+  --color-sidebar-foreground: #3D3D3D;
+  --color-sidebar-primary: #E95276;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #FFE4E9;
+  --color-sidebar-accent-foreground: #E95276;
+  --color-sidebar-border: #E5D4D9;
+  --color-sidebar-ring: #E95276;
 }
 
 /* AI Generated Content Styles */

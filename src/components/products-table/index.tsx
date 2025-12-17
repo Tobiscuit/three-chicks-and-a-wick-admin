@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { ShopifyProduct } from "@/services/shopify"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trash,
   LayoutGrid,
@@ -27,12 +28,14 @@ import {
   ExternalLink,
   ClipboardCopy,
   Pencil,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { ProductSearch } from "./product-search";
 import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useProductImage } from "@/hooks/use-product-image";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
+import { useUserSettings } from "@/hooks/use-user-settings";
 import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -169,16 +172,20 @@ function SecureDeleteDialog({
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { enableBulkSelection } = useUserSettings();
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [quickEditProduct, setQuickEditProduct] = useState<ShopifyProduct | null>(null);
   const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
   const [filteredProducts, setFilteredProducts] = useState<ShopifyProduct[]>(products);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
 
   // Handle filter changes from ProductSearch
   const handleFilterChange = useCallback((filtered: ShopifyProduct[]) => {
     // Apply deleted products filter on top
     setFilteredProducts(filtered.filter(p => !deletedProductIds.has(p.id)));
+    // Clear selection when filter changes
+    setSelectedIds(new Set());
   }, [deletedProductIds]);
 
   // Collect all inventory item IDs for SSE connection
@@ -189,6 +196,33 @@ export function ProductsTable({ products }: ProductsTableProps) {
   // TEMPORARILY DISABLE SSE - focusing on core Firestore real-time updates
   // const { isConnected: sseConnected } = useServerSentEvents(inventoryItemIds);
   const sseConnected = true; // Fake it for now
+
+  // Bulk selection handlers
+  const displayProducts = filteredProducts;
+  const allSelected = displayProducts.length > 0 && displayProducts.every(p => selectedIds.has(p.id));
+  const someSelected = displayProducts.some(p => selectedIds.has(p.id));
+  
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(displayProducts.map(p => p.id)));
+    }
+  };
+  
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+  
+  const clearSelection = () => setSelectedIds(new Set());
 
   const handleRowClick = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`);
@@ -238,8 +272,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
     }
   };
 
-  // Products filtered by ProductSearch component + deleted IDs
-  const displayProducts = filteredProducts;
+  // Note: displayProducts is defined above in bulk selection handlers section
 
   return (
     <>
@@ -271,12 +304,60 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </div>
           </div>
         </CardHeader>
+        
+        {/* Contextual Bulk Actions Toolbar */}
+        {enableBulkSelection && selectedIds.size > 0 && (
+          <div className="flex items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/20">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">
+                {selectedIds.size} selected
+              </span>
+              <Button variant="ghost" size="sm" onClick={clearSelection} className="h-7">
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" size="sm" className="h-7" onClick={async () => {
+                const ids = Array.from(selectedIds);
+                for (const id of ids) {
+                  setDeletedProductIds(prev => new Set([...prev, id]));
+                  try {
+                    await deleteProductAction(id);
+                  } catch (e) {
+                    console.error('Bulk delete error:', e);
+                  }
+                }
+                clearSelection();
+                toast({ title: `${ids.length} products deleted` });
+              }}>
+                <Trash className="h-3 w-3 mr-1" />
+                Delete {selectedIds.size}
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Product Counter */}
+        <div className="px-4 py-2 text-xs text-muted-foreground border-b">
+          Showing {displayProducts.length} of {products.length} products
+        </div>
+        
         <CardContent className="p-2 sm:p-2">
           {view === 'list' ? (
             <div className="overflow-x-auto -mx-2 sm:mx-0">
               <Table className="w-full min-w-[320px]">
                 <TableHeader>
                   <TableRow>
+                    {enableBulkSelection && (
+                      <TableHead className="w-[40px] text-center">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="hidden w-[100px] sm:table-cell text-center">
                       Image
                     </TableHead>
@@ -295,9 +376,18 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 {displayProducts.map((product, index) => (
                   <TableRow 
                     key={product.id} 
-                    className="group cursor-pointer table-row-interactive table-zebra transition-colors"
-                    onClick={() => handleRowClick(product.id)}
+                    className={`group cursor-pointer table-row-interactive table-zebra transition-colors ${selectedIds.has(product.id) ? 'bg-primary/5' : ''}`}
+                    onClick={() => enableBulkSelection ? toggleSelect(product.id) : handleRowClick(product.id)}
                   >
+                    {enableBulkSelection && (
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelect(product.id)}
+                          aria-label={`Select ${product.title}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="hidden sm:table-cell text-center">
                       <div className="flex justify-center">
                         <ProductImageCell 

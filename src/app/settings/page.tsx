@@ -9,10 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/components/auth/auth-provider';
 import { auth } from '@/lib/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Palette, Store, Settings as SettingsIcon } from 'lucide-react';
+import { LogOut, Palette, Store, Settings as SettingsIcon, Package } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getUserSettings, updateImageStudioSetting } from '@/services/user-settings';
+import { getUserSettings, updateImageStudioSetting, updateProductsSetting } from '@/services/user-settings';
 import { useToast } from '@/hooks/use-toast';
 import { useFeatureDiscovery } from '@/context/feature-discovery-context';
 import { Lightbulb } from 'lucide-react';
@@ -24,6 +24,7 @@ export default function SettingsPage() {
     const shopifyStoreUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'Not configured';
 
     const [includeSourceImages, setIncludeSourceImages] = useState<boolean | null>(null);
+    const [enableBulkSelection, setEnableBulkSelection] = useState<boolean | null>(null);
     const [settingsLoading, setSettingsLoading] = useState(true);
 
 
@@ -43,6 +44,7 @@ export default function SettingsPage() {
                 setSettingsLoading(true);
                 const settings = await getUserSettings(user.uid);
                 setIncludeSourceImages(settings.imageStudioSettings.includeSourceImages);
+                setEnableBulkSelection(settings.productsSettings.enableBulkSelection);
             } catch (error) {
                 console.error('Error loading user settings:', error);
                 toast({
@@ -75,6 +77,30 @@ export default function SettingsPage() {
             console.error('Error updating setting:', error);
             // Revert the toggle on error
             setIncludeSourceImages(!checked);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to update setting. Please try again.",
+            });
+        }
+    };
+
+    // Handle bulk selection toggle
+    const handleBulkSelectionToggle = async (checked: boolean) => {
+        if (!user?.uid) return;
+
+        try {
+            setEnableBulkSelection(checked);
+            await updateProductsSetting(user.uid, checked);
+            toast({
+                title: "Setting Updated",
+                description: checked
+                    ? "Bulk selection is now enabled on the Products page."
+                    : "Bulk selection is now disabled on the Products page.",
+            });
+        } catch (error) {
+            console.error('Error updating setting:', error);
+            setEnableBulkSelection(!checked);
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -129,6 +155,30 @@ export default function SettingsPage() {
                             <Switch
                                 checked={includeSourceImages}
                                 onCheckedChange={handleSourceImagesToggle}
+                                disabled={settingsLoading}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Package /> Products Settings</CardTitle>
+                        <CardDescription>Configure how the products list behaves.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">Enable Bulk Selection</p>
+                            <p className="text-xs text-muted-foreground">
+                                Show checkboxes to select multiple products for bulk actions like delete or status change.
+                            </p>
+                        </div>
+                        {settingsLoading || enableBulkSelection === null ? (
+                            <Skeleton className="h-6 w-11 rounded-full" />
+                        ) : (
+                            <Switch
+                                checked={enableBulkSelection}
+                                onCheckedChange={handleBulkSelectionToggle}
                                 disabled={settingsLoading}
                             />
                         )}

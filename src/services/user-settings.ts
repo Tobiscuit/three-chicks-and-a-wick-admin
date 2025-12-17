@@ -8,6 +8,12 @@ export interface UserSettings {
   customCandleSettings: {
     enableCustomCandleAI: boolean;
   };
+  productsSettings: {
+    enableBulkSelection: boolean;
+  };
+  appearance: {
+    theme: 'light' | 'dark' | 'storefront' | 'system';
+  };
 }
 
 const defaultSettings: UserSettings = {
@@ -16,6 +22,12 @@ const defaultSettings: UserSettings = {
   },
   customCandleSettings: {
     enableCustomCandleAI: false,
+  },
+  productsSettings: {
+    enableBulkSelection: true,
+  },
+  appearance: {
+    theme: 'system',
   },
 };
 
@@ -32,6 +44,12 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
         },
         customCandleSettings: {
           enableCustomCandleAI: data.customCandleSettings?.enableCustomCandleAI ?? defaultSettings.customCandleSettings.enableCustomCandleAI,
+        },
+        productsSettings: {
+          enableBulkSelection: data.productsSettings?.enableBulkSelection ?? defaultSettings.productsSettings.enableBulkSelection,
+        },
+        appearance: {
+          theme: data.appearance?.theme ?? defaultSettings.appearance.theme,
         },
       };
       return result;
@@ -83,3 +101,34 @@ export async function updateCustomCandleSetting(userId: string, enableCustomCand
     throw error;
   }
 }
+
+export async function updateProductsSetting(userId: string, enableBulkSelection: boolean): Promise<void> {
+  try {
+    const settingsRef = doc(db, 'userSettings', userId);
+    const data = {
+      productsSettings: {
+        enableBulkSelection,
+      },
+    };
+    await setDoc(settingsRef, data, { merge: true });
+  } catch (error) {
+    console.error('[UserSettings] Error updating products setting:', error);
+    throw error;
+  }
+}
+
+export async function updateAppearanceSetting(userId: string, theme: UserSettings['appearance']['theme']): Promise<void> {
+  try {
+    const settingsRef = doc(db, 'userSettings', userId);
+    const data = {
+      appearance: {
+        theme,
+      },
+    };
+    await setDoc(settingsRef, data, { merge: true });
+  } catch (error) {
+    console.error('[UserSettings] Error updating appearance setting:', error);
+    throw error;
+  }
+}
+
