@@ -6,6 +6,9 @@ description: Find UI elements that look interactive but aren't, or vice versa
 
 Identify and fix **false affordances** — elements that look clickable/interactive but don't do anything, or functional elements that don't LOOK interactive.
 
+> **📁 Project Context:** Reference `.agent/project-context.json` for stack info.
+> Run `/detect-stack` if missing or outdated.
+
 ---
 
 ## What is Affordance?
