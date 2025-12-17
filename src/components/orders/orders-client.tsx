@@ -15,6 +15,7 @@ import { useFeatureDiscovery } from '@/context/feature-discovery-context';
 import { ExportPreviewDialog } from './export-preview-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { orderColumns } from './order-columns';
+import { OrderCard } from './order-card';
 
 const client = generateClient();
 
@@ -168,6 +169,9 @@ export default function OrdersClient() {
         data={filteredOrders}
         onRowClick={handleOrderClick}
         isLoading={isLoading}
+        mobileCardRenderer={(order, onClick) => (
+          <OrderCard order={order} onClick={onClick} />
+        )}
       />
 
       <OrderDetailsModal
