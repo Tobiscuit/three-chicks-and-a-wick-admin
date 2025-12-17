@@ -170,3 +170,66 @@
     transform: translateX(100%);
   }
 }
+
+/* ============================================
+   DATA TABLE DESIGN SYSTEM
+   Reusable utilities for consistent data display
+   ============================================ */
+
+/* Money/currency values - align decimals, distinguish 0 from O */
+@utility data-money {
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* IDs and order numbers - monospace for uniform width */
+@utility data-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+/* Secondary text - demoted visual importance */
+@utility data-secondary {
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+/* Table row zebra striping */
+@utility table-zebra {
+  &:nth-child(even) {
+    background-color: color-mix(in srgb, var(--color-muted) 30%, transparent);
+  }
+}
+
+/* Table row hover with smooth transition */
+@utility table-row-interactive {
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-muted) 50%, transparent);
+  }
+}
+
+/* Sticky table header */
+@utility table-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--color-card);
+}
+
+/* New row highlight animation */
+@keyframes rowHighlight {
+  0% {
+    background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@utility table-row-new {
+  animation: rowHighlight 2s ease-out forwards;
+}
