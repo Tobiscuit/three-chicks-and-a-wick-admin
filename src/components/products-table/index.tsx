@@ -413,8 +413,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
                             {product.title}
                             <DraftIndicator product={product} />
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground sm:hidden tabular-nums">
-                            <span>
+                          <div className="flex items-center gap-2 text-sm sm:hidden">
+                            <span className="data-money">
                               {new Intl.NumberFormat('en-US', { 
                                 style: 'currency', 
                                 currency: product.priceRange.minVariantPrice.currencyCode 
@@ -425,11 +425,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       </div>
                     </TableCell>
 
-                    <TableCell className="hidden md:table-cell tabular-nums">
-                       {new Intl.NumberFormat('en-US', { 
-                            style: 'currency', 
-                            currency: product.priceRange.minVariantPrice.currencyCode 
-                        }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
+                    <TableCell className="hidden md:table-cell">
+                       <span className="data-money">
+                         {new Intl.NumberFormat('en-US', { 
+                              style: 'currency', 
+                              currency: product.priceRange.minVariantPrice.currencyCode 
+                          }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
+                       </span>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell tabular-nums">
                       <InventoryCell
@@ -655,17 +657,19 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
         </div>
         <CardContent className="p-3">
           <h3 className="font-semibold text-sm leading-tight">{product.title}</h3>
-          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 tabular-nums">
-              <span>
+          <div className="flex items-center justify-between text-xs mt-1">
+              <span className="data-money">
                   {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: product.priceRange.minVariantPrice.currencyCode
                   }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
               </span>
-              <InventoryCell
-                  inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
-                  fallback={product.totalInventory}
-              />
+              <span className="tabular-nums text-muted-foreground">
+                <InventoryCell
+                    inventoryItemId={product.variants?.edges?.[0]?.node?.inventoryItem?.id as string | undefined}
+                    fallback={product.totalInventory}
+                />
+              </span>
           </div>
         </CardContent>
       </Card>
