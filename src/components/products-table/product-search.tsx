@@ -2,17 +2,23 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Search, X, Hash } from "lucide-react"
+import { Search, X, Hash, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
+  CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import type { ShopifyProduct } from "@/services/shopify"
 
 type FilterChip = {
@@ -30,23 +36,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   const [filters, setFilters] = React.useState<FilterChip[]>([])
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const containerRef = React.useRef<HTMLDivElement>(null)
   const router = useRouter()
-
-  // Click outside to close dropdown
-  React.useEffect(() => {
-    if (!open) return
-    
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [open])
 
   // Extract unique tags from products
   const allTags = React.useMemo(() => {
@@ -71,7 +61,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     // Product matches
     const productMatches = products
       .filter(p => p.title.toLowerCase().includes(term))
-      .slice(0, 3)
+      .slice(0, 5)
       .map(p => ({
         type: "product" as const,
         value: p.id,
@@ -127,9 +117,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
   }, [filters, products, onFilterChange])
 
   const addFilter = (type: FilterChip["type"], value: string, label: string) => {
-    // Don't add duplicate filters
     if (filters.some(f => f.type === type && f.value === value)) return
-    
     setFilters(prev => [...prev, { type, value, label }])
     setInputValue("")
     setOpen(false)
@@ -149,64 +137,54 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     setOpen(false)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && inputValue.trim()) {
-      e.preventDefault()
-      addFilter("search", inputValue.trim(), inputValue.trim())
-    }
-    if (e.key === "Escape") {
-      setOpen(false)
-    }
-  }
-
-  const hasSuggestions = 
-    suggestions.productMatches.length > 0 || 
-    suggestions.tagMatches.length > 0 || 
-    suggestions.statusMatches.length > 0
-
   return (
     <div className="w-full space-y-2">
-      <div ref={containerRef} className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-        <Input
-          ref={inputRef}
-          type="text"
-          placeholder={filters.length > 0 ? `${filters.length} filter${filters.length > 1 ? 's' : ''} active - type to add more...` : "Search products, tags, or status..."}
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value)
-            if (!open) setOpen(true)
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          className="pl-10 h-10"
-        />
-        {open && (
-          <div 
-            className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover/85 backdrop-blur-md shadow-xl animate-in fade-in-0 zoom-in-95 duration-100"
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-start text-muted-foreground font-normal h-10"
           >
-            <Command shouldFilter={false}>
-              <CommandList>
-              {!hasSuggestions && !inputValue && (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Start typing to search products, tags, or status...
-                </div>
-              )}
-              
-              {!hasSuggestions && inputValue && (
-                <CommandItem
-                  onSelect={() => addFilter("search", inputValue.trim(), inputValue.trim())}
-                  className="justify-center cursor-pointer"
-                >
-                  Press Enter to search for "{inputValue}"
-                </CommandItem>
-              )}
+            <Search className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {filters.length > 0 
+                ? `${filters.length} filter${filters.length > 1 ? 's' : ''} active` 
+                : "Search products, tags, or status..."}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0 bg-popover/90 backdrop-blur-md shadow-xl" 
+          align="start"
+        >
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder="Type to search..." 
+              value={inputValue}
+              onValueChange={setInputValue}
+            />
+            <CommandList>
+              <CommandEmpty>
+                {inputValue ? (
+                  <CommandItem
+                    onSelect={() => addFilter("search", inputValue.trim(), inputValue.trim())}
+                    className="justify-center cursor-pointer"
+                  >
+                    Search for "{inputValue}"
+                  </CommandItem>
+                ) : (
+                  <span className="text-muted-foreground">Start typing to search...</span>
+                )}
+              </CommandEmpty>
 
               {suggestions.productMatches.length > 0 && (
                 <CommandGroup heading="Products">
                   {suggestions.productMatches.map((suggestion) => (
                     <CommandItem
                       key={suggestion.value}
+                      value={suggestion.label}
                       onSelect={() => handleProductSelect(suggestion.value)}
                       className="cursor-pointer"
                     >
@@ -230,6 +208,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
                   {suggestions.tagMatches.map((suggestion) => (
                     <CommandItem
                       key={suggestion.value}
+                      value={suggestion.label}
                       onSelect={() => addFilter("tag", suggestion.value, suggestion.label)}
                       className="cursor-pointer"
                     >
@@ -248,6 +227,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
                   {suggestions.statusMatches.map((suggestion) => (
                     <CommandItem
                       key={suggestion.value}
+                      value={suggestion.label}
                       onSelect={() => addFilter("status", suggestion.value, suggestion.label)}
                       className="cursor-pointer"
                     >
@@ -264,9 +244,8 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
               )}
             </CommandList>
           </Command>
-          </div>
-        )}
-      </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Active filters */}
       {filters.length > 0 && (
