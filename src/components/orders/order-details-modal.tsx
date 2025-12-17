@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   CheckCircle2, Clock, Package, Printer,
-  MapPin, Calendar, User, Mail, Sparkles
+  MapPin, Calendar, Mail, Sparkles
 } from "lucide-react"
 import { useState } from "react"
 import { addTagsToOrder, ShopifyOrder } from "@/services/shopify"
@@ -99,280 +99,272 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-sm">
-
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent 
+        side="right" 
+        className="w-full sm:w-[540px] sm:max-w-[540px] p-0 flex flex-col"
+      >
         {/* Header Section */}
-        <div className="p-6 pr-12 border-b bg-muted/30">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                {order.name}
-                <Badge variant={isCustomOrder ? "default" : "secondary"} className="rounded-full px-3">
-                  {isCustomOrder ? "Custom Order" : "Standard Order"}
-                </Badge>
-              </DialogTitle>
-              <DialogDescription className="mt-1.5 flex items-center gap-2 text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                {format(new Date(order.createdAt), "PPP 'at' p")}
-              </DialogDescription>
+        <div className="p-6 border-b bg-muted/30">
+          <SheetHeader className="space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <SheetTitle className="text-2xl font-bold flex items-center gap-3">
+                  {order.name}
+                  <Badge variant={isCustomOrder ? "default" : "secondary"} className="rounded-full px-3">
+                    {isCustomOrder ? "Custom" : "Standard"}
+                  </Badge>
+                </SheetTitle>
+                <SheetDescription className="mt-1.5 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  {format(new Date(order.createdAt), "PPP 'at' p")}
+                </SheetDescription>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => {
-                const orderNumber = order.name.replace('#', '');
-                handlePrint(`/orders/${orderNumber}/ticket`);
-              }}>
-                <Printer className="w-4 h-4 mr-2" />
-                Ticket
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => {
-                const orderNumber = order.name.replace('#', '');
-                handlePrint(`/orders/${orderNumber}/receipt`);
-              }}>
-                <Printer className="w-4 h-4 mr-2" />
-                Receipt
-              </Button>
-            </div>
+          </SheetHeader>
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => {
+              const orderNumber = order.name.replace('#', '');
+              handlePrint(`/orders/${orderNumber}/ticket`);
+            }}>
+              <Printer className="w-4 h-4 mr-2" />
+              Ticket
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const orderNumber = order.name.replace('#', '');
+              handlePrint(`/orders/${orderNumber}/receipt`);
+            }}>
+              <Printer className="w-4 h-4 mr-2" />
+              Receipt
+            </Button>
           </div>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 space-y-6">
 
-            {/* Main Content (Left Column) */}
-            <div className="md:col-span-2 space-y-6">
-
-              {/* Production Status (Custom Only) */}
-              {isCustomOrder && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-semibold">Production Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between relative px-4 py-2">
-                      {/* Connecting Line */}
-                      <div className="absolute left-0 top-1/2 w-full h-0.5 bg-muted -z-10" />
-
-                      {PRODUCTION_STEPS.map((step, index) => {
-                        const isCompleted = PRODUCTION_STEPS.findIndex(s => s.id === currentStatus) >= index;
-                        const Icon = step.icon;
-
-                        return (
-                          <div key={step.id} className="flex flex-col items-center bg-background px-2 z-10">
-                            <Button
-                              variant={isCompleted ? "default" : "outline"}
-                              size="icon"
-                              className={`rounded-full w-10 h-10 transition-all ${isCompleted ? 'bg-primary ring-4 ring-primary/20' : 'bg-muted text-muted-foreground'}`}
-                              onClick={() => handleStatusUpdate(step.id)}
-                              disabled={isUpdating}
-                            >
-                              <Icon className="w-5 h-5" />
-                            </Button>
-                            <span className={`text-xs mt-2 font-medium ${isCompleted ? 'text-primary' : 'text-muted-foreground'}`}>
-                              {step.label}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Order Items */}
+            {/* Production Status (Custom Only) */}
+            {isCustomOrder && (
               <Card>
-                <CardHeader className="pb-3 border-b bg-muted/10">
-                  <CardTitle className="text-base font-semibold flex justify-between items-center">
-                    <span>Items</span>
-                    <Badge variant="outline" className="font-normal">
-                      {order.lineItems.edges.reduce((acc: number, edge: any) => acc + edge.node.quantity, 0)} items
-                    </Badge>
-                  </CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-semibold">Production Status</CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <div className="divide-y">
-                    {order.lineItems.edges.map((edge: any) => {
-                      const item = edge.node;
-                      const recipeAttr = item.customAttributes.find((attr: any) => attr.key === '_recipe_');
-                      const recipe = recipeAttr ? JSON.parse(recipeAttr.value) : null;
+                <CardContent>
+                  <div className="flex items-center justify-between relative px-4 py-2">
+                    {/* Connecting Line */}
+                    <div className="absolute left-0 top-1/2 w-full h-0.5 bg-muted -z-10" />
+
+                    {PRODUCTION_STEPS.map((step, index) => {
+                      const isCompleted = PRODUCTION_STEPS.findIndex(s => s.id === currentStatus) >= index;
+                      const Icon = step.icon;
 
                       return (
-                        <div key={item.id} className="p-4 hover:bg-muted/5 transition-colors">
-                          <div className="flex gap-4 items-start">
-                            <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center flex-shrink-0 border overflow-hidden relative">
-                              {item.product?.featuredImage ? (
-                                <img
-                                  src={item.product.featuredImage.url}
-                                  alt={item.product.featuredImage.altText || item.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Package className="w-8 h-8 text-muted-foreground/50" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-start gap-2">
-                                <div>
-                                  <h4 className="font-medium text-sm leading-tight">{item.title}</h4>
-                                  {item.variant?.title !== 'Default Title' && (
-                                    <p className="text-xs text-muted-foreground mt-1">{item.variant?.title}</p>
-                                  )}
-                                  {item.variant?.sku && (
-                                    <p className="text-xs text-muted-foreground font-mono mt-0.5">SKU: {item.variant.sku}</p>
-                                  )}
-                                </div>
-                                <div className="text-right">
-                                  <span className="text-sm font-medium">x{item.quantity}</span>
-                                </div>
-                              </div>
-
-                              {/* Recipe Card */}
-                              {/* Recipe Card */}
-                              {(recipe || item.customAttributes.length > 0) && (
-                                <div className="mt-4 bg-accent/30 border border-accent rounded-lg p-4">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <Sparkles className="w-4 h-4 text-primary fill-primary/20" />
-                                    <span className="font-semibold text-sm text-primary">Custom Creation Details</span>
-                                  </div>
-
-                                  {recipe ? (
-                                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                                      <div className="flex flex-col">
-                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Wax</span>
-                                        <span className="font-medium">{recipe.wax}</span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Wick</span>
-                                        <span className="font-medium">{recipe.wick}</span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Scent</span>
-                                        <span className="font-medium">{recipe.fragrance}</span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Color</span>
-                                        <span className="font-medium">{recipe.color}</span>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                      {item.customAttributes
-                                        .filter((attr: any) => !attr.key.startsWith('_'))
-                                        .map((attr: any) => (
-                                          <div key={attr.key} className="flex flex-col">
-                                            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{attr.key}</span>
-                                            <span className="font-medium">{attr.value}</span>
-                                          </div>
-                                        ))}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                        <div key={step.id} className="flex flex-col items-center bg-background px-2 z-10">
+                          <Button
+                            variant={isCompleted ? "default" : "outline"}
+                            size="icon"
+                            className={`rounded-full w-10 h-10 transition-all ${isCompleted ? 'bg-primary ring-4 ring-primary/20' : 'bg-muted text-muted-foreground'}`}
+                            onClick={() => handleStatusUpdate(step.id)}
+                            disabled={isUpdating}
+                          >
+                            <Icon className="w-5 h-5" />
+                          </Button>
+                          <span className={`text-xs mt-2 font-medium ${isCompleted ? 'text-primary' : 'text-muted-foreground'}`}>
+                            {step.label}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
 
-            {/* Sidebar (Right Column) */}
-            <div className="space-y-6">
+            {/* Order Status */}
+            <Card>
+              <CardHeader className="pb-3 border-b bg-muted/10">
+                <CardTitle className="text-base font-semibold">Order Status</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Payment</span>
+                  <Badge variant={order.displayFinancialStatus === 'PAID' ? 'default' : 'secondary'} className={order.displayFinancialStatus === 'PAID' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                    {order.displayFinancialStatus || 'PENDING'}
+                  </Badge>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Fulfillment</span>
+                  <Badge variant={order.displayFulfillmentStatus === 'FULFILLED' ? 'default' : 'outline'}>
+                    {order.displayFulfillmentStatus || 'UNFULFILLED'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Status Card */}
-              <Card>
-                <CardHeader className="pb-3 border-b bg-muted/10">
-                  <CardTitle className="text-base font-semibold">Order Status</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Payment</span>
-                    <Badge variant={order.displayFinancialStatus === 'PAID' ? 'default' : 'secondary'} className={order.displayFinancialStatus === 'PAID' ? 'bg-green-600 hover:bg-green-700' : ''}>
-                      {order.displayFinancialStatus || 'PENDING'}
-                    </Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Fulfillment</span>
-                    <Badge variant={order.displayFulfillmentStatus === 'FULFILLED' ? 'default' : 'outline'}>
-                      {order.displayFulfillmentStatus || 'UNFULFILLED'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Order Items */}
+            <Card>
+              <CardHeader className="pb-3 border-b bg-muted/10">
+                <CardTitle className="text-base font-semibold flex justify-between items-center">
+                  <span>Items</span>
+                  <Badge variant="outline" className="font-normal">
+                    {order.lineItems.edges.reduce((acc: number, edge: any) => acc + edge.node.quantity, 0)} items
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {order.lineItems.edges.map((edge: any) => {
+                    const item = edge.node;
+                    const recipeAttr = item.customAttributes.find((attr: any) => attr.key === '_recipe_');
+                    const recipe = recipeAttr ? JSON.parse(recipeAttr.value) : null;
 
-              {/* Customer Card */}
-              <Card>
-                <CardHeader className="pb-3 border-b bg-muted/10">
-                  <CardTitle className="text-base font-semibold">Customer</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20">
-                      {customerInitials}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-medium text-sm truncate" title={customerName}>{customerName}</div>
-                      {order.customer?.email && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1 truncate" title={order.customer.email}>
-                          <Mail className="w-3 h-3" />
-                          {order.customer.email}
+                    return (
+                      <div key={item.id} className="p-4 hover:bg-muted/5 transition-colors">
+                        <div className="flex gap-4 items-start">
+                          <div className="w-14 h-14 bg-muted rounded-md flex items-center justify-center flex-shrink-0 border overflow-hidden relative">
+                            {item.product?.featuredImage ? (
+                              <img
+                                src={item.product.featuredImage.url}
+                                alt={item.product.featuredImage.altText || item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package className="w-6 h-6 text-muted-foreground/50" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <h4 className="font-medium text-sm leading-tight">{item.title}</h4>
+                                {item.variant?.title !== 'Default Title' && (
+                                  <p className="text-xs text-muted-foreground mt-1">{item.variant?.title}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <span className="text-sm font-medium">x{item.quantity}</span>
+                              </div>
+                            </div>
+
+                            {/* Recipe Card */}
+                            {(recipe || item.customAttributes.length > 0) && (
+                              <div className="mt-3 bg-accent/30 border border-accent rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Sparkles className="w-3.5 h-3.5 text-primary fill-primary/20" />
+                                  <span className="font-semibold text-xs text-primary">Custom Creation</span>
+                                </div>
+
+                                {recipe ? (
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground uppercase tracking-wider font-semibold">Wax</span>
+                                      <span className="font-medium">{recipe.wax}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground uppercase tracking-wider font-semibold">Wick</span>
+                                      <span className="font-medium">{recipe.wick}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground uppercase tracking-wider font-semibold">Scent</span>
+                                      <span className="font-medium">{recipe.fragrance}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground uppercase tracking-wider font-semibold">Color</span>
+                                      <span className="font-medium">{recipe.color}</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                    {item.customAttributes
+                                      .filter((attr: any) => !attr.key.startsWith('_'))
+                                      .map((attr: any) => (
+                                        <div key={attr.key} className="flex flex-col">
+                                          <span className="text-muted-foreground uppercase tracking-wider font-semibold">{attr.key}</span>
+                                          <span className="font-medium">{attr.value}</span>
+                                        </div>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      <MapPin className="w-3.5 h-3.5" />
-                      Shipping Address
-                    </div>
-                    {order.shippingAddress ? (
-                      <div className="text-sm pl-5.5 leading-relaxed text-foreground/90">
-                        <div>{order.shippingAddress.address1}</div>
-                        {order.shippingAddress.address2 && <div>{order.shippingAddress.address2}</div>}
-                        <div>{order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.zip}</div>
-                        <div className="text-muted-foreground text-xs mt-0.5">{order.shippingAddress.country}</div>
                       </div>
-                    ) : (
-                      <div className="pl-5.5 text-sm text-muted-foreground italic">No shipping address provided</div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Customer Card */}
+            <Card>
+              <CardHeader className="pb-3 border-b bg-muted/10">
+                <CardTitle className="text-base font-semibold">Customer</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20">
+                    {customerInitials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm truncate" title={customerName}>{customerName}</div>
+                    {order.customer?.email && (
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 truncate" title={order.customer.email}>
+                        <Mail className="w-3 h-3" />
+                        {order.customer.email}
+                      </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              {/* Summary Card */}
-              <Card className="bg-muted/30 border-none shadow-none">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}</span>
+                <Separator />
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Shipping Address
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>{order.totalShippingPriceSet ? formatCurrency(order.totalShippingPriceSet.shopMoney.amount, order.totalShippingPriceSet.shopMoney.currencyCode) : '--'}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>{order.totalTaxSet ? formatCurrency(order.totalTaxSet.shopMoney.amount, order.totalTaxSet.shopMoney.currencyCode) : '--'}</span>
-                  </div>
-                  <Separator className="bg-border/50" />
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="font-semibold">Total</span>
-                    <span className="font-bold text-lg">
-                      {formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  {order.shippingAddress ? (
+                    <div className="text-sm pl-5.5 leading-relaxed text-foreground/90">
+                      <div>{order.shippingAddress.address1}</div>
+                      {order.shippingAddress.address2 && <div>{order.shippingAddress.address2}</div>}
+                      <div>{order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.zip}</div>
+                      <div className="text-muted-foreground text-xs mt-0.5">{order.shippingAddress.country}</div>
+                    </div>
+                  ) : (
+                    <div className="pl-5.5 text-sm text-muted-foreground italic">No shipping address provided</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Summary Card */}
+            <Card className="bg-muted/30 border-none shadow-none">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>{formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span>{order.totalShippingPriceSet ? formatCurrency(order.totalShippingPriceSet.shopMoney.amount, order.totalShippingPriceSet.shopMoney.currencyCode) : '--'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tax</span>
+                  <span>{order.totalTaxSet ? formatCurrency(order.totalTaxSet.shopMoney.amount, order.totalTaxSet.shopMoney.currencyCode) : '--'}</span>
+                </div>
+                <Separator className="bg-border/50" />
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold text-lg">
+                    {formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
