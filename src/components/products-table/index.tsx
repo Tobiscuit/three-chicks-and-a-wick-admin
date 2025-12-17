@@ -55,6 +55,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddProductModal } from "@/components/products/add-product-modal";
 
 // Subtle draft indicator - returns inline text instead of badge
 function DraftIndicator({ product }: { product: ShopifyProduct }) {
@@ -282,14 +283,17 @@ export function ProductsTable({ products }: ProductsTableProps) {
             <div className="flex-1">
               <ProductSearch products={products} onFilterChange={handleFilterChangeWithReset} />
             </div>
-            <SegmentedControl
-              value={view}
-              onValueChange={setView}
-              options={[
-                { value: 'list', label: 'List', icon: <List className="h-4 w-4" /> },
-                { value: 'grid', label: 'Grid', icon: <LayoutGrid className="h-4 w-4" /> },
-              ]}
-            />
+            <div className="flex items-center gap-2">
+              <SegmentedControl
+                value={view}
+                onValueChange={setView}
+                options={[
+                  { value: 'list', label: 'List', icon: <List className="h-4 w-4" /> },
+                  { value: 'grid', label: 'Grid', icon: <LayoutGrid className="h-4 w-4" /> },
+                ]}
+              />
+              <AddProductModal />
+            </div>
           </div>
         </CardHeader>
         
