@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
+import { FIREBASE_CONFIG, FIREBASE_ADMIN_CONFIG } from '@/lib/env-config';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   // Diagnostic endpoint to check Firebase connection
   try {
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+    const projectId = FIREBASE_CONFIG.PROJECT_ID;
+    const serviceAccount = FIREBASE_ADMIN_CONFIG.SERVICE_ACCOUNT;
 
     console.log('[Diagnostic] Project ID:', projectId ? 'configured' : 'NOT SET');
     console.log('[Diagnostic] Service Account:', serviceAccount ? 'configured' : 'NOT SET');
@@ -28,7 +31,7 @@ export async function GET() {
       status: 'error',
       timestamp: new Date().toISOString(),
       error: e?.message || 'Unknown error',
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'not set',
+      projectId: FIREBASE_CONFIG.PROJECT_ID || 'not set',
       stack: e?.stack
     }, { status: 500 });
   }

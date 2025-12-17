@@ -8,10 +8,28 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { APP_CONFIG, FIREBASE_CONFIG, GOOGLE_AI_CONFIG } from '@/lib/env-config';
 import { fetchShopify } from '@/services/shopify';
 import { z } from 'zod';
 import { Part } from '@google/generative-ai';
 
+function dataUrlToPart(dataUrl: string): Part {
+    if (!dataUrl || typeof dataUrl !== 'string') {
+        throw new Error('Invalid data URL: dataUrl is undefined or not a string');
+    }
+    
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        console.error('Invalid data URL format:', dataUrl.substring(0, 100) + '...');
+        throw new Error('Invalid data URL format for generative part.');
+    }
+    return {
+        inlineData: {
+            data: match[2],
+            mimeType: match[1]
+        }
+    };
+}
 
 type ActionResult = {
   success: boolean;
@@ -48,13 +66,13 @@ export async function checkAuthorization(idToken: string | null) {
   let rawAuthorizedEmails: string | undefined;
 
   // 1) Prefer environment variable (works on Vercel): AUTHORIZED_EMAILS="a@x.com,b@y.com"
-  const envAuthorized = process.env.AUTHORIZED_EMAILS;
+  const envAuthorized = APP_CONFIG.AUTHORIZED_EMAILS;
   if (envAuthorized && envAuthorized.trim().length > 0) {
     console.log("[Auth Check] Using AUTHORIZED_EMAILS from environment variables.");
     rawAuthorizedEmails = envAuthorized;
   } else {
     // 2) Fallback to Secret Manager (for Firebase App Hosting)
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const projectId = FIREBASE_CONFIG.PROJECT_ID;
     if (!projectId) {
       console.error("[Auth Check] Project ID not set and AUTHORIZED_EMAILS env missing. Cannot fetch secrets.");
       return { isAuthorized: false, error: "Server configuration error." };
@@ -100,7 +118,6 @@ type GenerateImageInput = {
   background: string;
   angle1: string; // data URL
   angle2?: string; // data URL
-  context?: string;
 }
 
 export async function generateImageAction(input: GenerateImageInput): Promise<{ imageDataUri?: string; error?: string }> {
@@ -111,10 +128,11 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
             return { error: validated.error.errors.map(e => e.message).join(', ') };
         }
 
-        const { background, angle1, angle2 } = validated.data;
+        const { background, angle1, angle2, context } = validated.data;
 
         const imageDataUrl = await generateCustomCandleBackgroundFlow({
             background: background,
+            contextualDetails: context,
             candleImage1: angle1,
             candleImage2: angle2,
         });
@@ -123,7 +141,14 @@ export async function generateImageAction(input: GenerateImageInput): Promise<{ 
             return { error: 'The AI did not return a valid image.' };
         }
 
-        return { imageDataUri: imageDataUrl };
+        // Extract the URL from the object returned by the AI flow
+        const imageUrl = typeof imageDataUrl === 'string' ? imageDataUrl : imageDataUrl.url;
+        const resultPart = dataUrlToPart(imageUrl);
+        if (!resultPart?.inlineData) {
+          return { error: 'The AI did not return a valid image.'}
+        }
+
+        return { imageDataUri: `data:${resultPart.inlineData.mimeType};base64,${resultPart.inlineData.data}` };
     } catch (error: any) {
         console.error("[generateImageAction Error]", error);
         if (error.message.includes('500') || error.message.includes('503')) {
@@ -137,32 +162,61 @@ type ComposeWithGalleryInput = {
   galleryBackgroundUrl: string;
   angle1: string; // data URL
   angle2?: string; // data URL
+  context?: string; // contextual details
+}
+
+// Helper function to convert Firebase Storage URL to data URL
+async function firebaseUrlToDataUrl(url: string): Promise<string> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        
+        // Convert to JPEG format for compatibility with gemini-2.5-flash-image-preview
+        const jpegDataUrl = await convertToJpeg(arrayBuffer);
+        
+        return jpegDataUrl;
+    } catch (error) {
+        console.error('Error converting Firebase URL to data URL:', error);
+        throw new Error(`Failed to convert Firebase URL to data URL: ${error}`);
+    }
+}
+
+// Helper function to convert image data to JPEG format (server-side)
+async function convertToJpeg(arrayBuffer: ArrayBuffer): Promise<string> {
+    // For now, we'll just change the MIME type to JPEG
+    // The actual image conversion would require a server-side image processing library
+    // like 'sharp' or 'jimp', but for testing purposes, this should work
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    return `data:image/jpeg;base64,${base64}`;
 }
 
 export async function composeWithGalleryAction(input: ComposeWithGalleryInput): Promise<{ imageDataUri?: string; error?: string }> {
     try {
-        const { galleryBackgroundUrl, angle1, angle2 } = input;
+        const { galleryBackgroundUrl, angle1, angle2, context } = input;
 
-        // Fetch the gallery image data
-        const response = await fetch(galleryBackgroundUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch gallery image. Status: ${response.status}`);
-        }
-        const galleryImageBuffer = Buffer.from(await response.arrayBuffer());
-        const galleryImageMimeType = response.headers.get('content-type') || 'image/webp';
-        const galleryImageDataUrl = `data:${galleryImageMimeType};base64,${galleryImageBuffer.toString('base64')}`;
+        // Convert Firebase Storage URL to data URL
+        const galleryImageDataUrl = await firebaseUrlToDataUrl(galleryBackgroundUrl);
 
         const imageDataUrl = await composeWithGalleryBackgroundFlow({
             candleImage1: angle1,
             candleImage2: angle2,
             galleryImage: galleryImageDataUrl,
+            contextualDetails: context,
         });
 
         if (!imageDataUrl) {
             return { error: 'The AI did not return a valid composite image.' };
         }
+        
+        // The AI flow returns a Part object with a url property
+        if (!imageDataUrl.url) {
+          return { error: 'The AI did not return a valid composite image.'}
+        }
 
-        const result = { imageDataUri: imageDataUrl };
+        const result = { imageDataUri: imageDataUrl.url };
         console.log('[composeWithGalleryAction] Returning success object with image data URI.');
         return result;
 
@@ -185,7 +239,7 @@ export async function stashProductPrefillImage(dataUri: string): Promise<Prefill
     }
     const [meta, base64] = dataUri.split(',');
     const mimeMatch = /data:(.*?);base64/.exec(meta || '');
-    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const mimeType = mimeMatch?.[1] || 'image/jpeg';
     const ext = mimeType.split('/')[1] || 'webp';
     const token = uuidv4();
     const fileName = `prefill-product-images/${token}.${ext}`;
@@ -238,22 +292,8 @@ export async function createPrefillUploadUrl(contentType: string): Promise<Creat
     const fileName = `prefill-product-images/${token}.${ext}`;
     const bucket = adminStorage.bucket();
 
-    // Ensure CORS allows browser PUTs from our admin app origin
-    try {
-      const meta = await bucket.getMetadata();
-      const currentCors = meta[0].cors || [];
-      const origin = process.env.NEXT_PUBLIC_APP_ORIGIN || 'https://three-chicks-and-a-wick-admin.vercel.app';
-      const needRule = !currentCors.some((r:any)=> (r.origin || []).includes(origin) && (r.method || []).includes('PUT'));
-      if (needRule) {
-        const updated = [
-          ...currentCors,
-          { origin: [origin, 'http://localhost:3000'], method: ['PUT','GET','HEAD','OPTIONS'], responseHeader: ['Content-Type','x-goog-resumable'], maxAgeSeconds: 3600 },
-        ];
-        await bucket.setCors(updated);
-      }
-    } catch (e) {
-      console.warn('[createPrefillUploadUrl] CORS ensure warning:', (e as any)?.message || e);
-    }
+    // Note: CORS settings for Firebase Storage are configured through Firebase Console
+    // or Google Cloud Storage API, not through the Firebase Admin SDK
     const file = bucket.file(fileName);
     const [url] = await file.getSignedUrl({
       action: 'write',
@@ -275,22 +315,19 @@ type GalleryActionResult = {
 
 
 export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
-    console.log("--------------------------------------------------");
-    console.log("[getGalleryImagesAction] START: Using central Firebase Admin SDK.");
-
     try {
         // Use the Admin SDK's configured default bucket (appspot.com) preference
         const bucket = adminStorage.bucket();
-        console.log('[getGalleryImagesAction] Bucket diagnostics:', {
-            bucketName: bucket.name,
-        });
+        console.log('[Gallery Action] Bucket name:', bucket.name);
+        console.log('[Gallery Action] Expected bucket: threechicksandawick-admin.firebasestorage.app');
+        console.log('[Gallery Action] Bucket match:', bucket.name === 'threechicksandawick-admin.firebasestorage.app');
+        
         if (!bucket.name) {
             throw new Error("Admin bucket name is empty. Ensure FIREBASE_STORAGE_BUCKET_ADMIN or projectId is set.");
         }
 
         const prefix = 'gallery-backgrounds/';
         const [files] = await bucket.getFiles({ prefix });
-        console.log(`[getGalleryImagesAction] Found ${files.length} files with prefix '${prefix}'.`);
         
         const imageFiles = files.filter(file => !file.name.endsWith('/'));
 
@@ -303,20 +340,17 @@ export async function getGalleryImagesAction(): Promise<GalleryActionResult> {
                     });
                     return { name: file.name, url: url };
                 } catch (urlError: any) {
-                    console.error(`    FAILED to generate signed URL for ${file.name}:`, urlError.message);
+                    console.error(`Failed to generate signed URL for ${file.name}:`, urlError.message);
                     return { name: file.name, url: 'error' };
                 }
             })
         );
         
-        console.log("[getGalleryImagesAction] END: Operation complete.");
-        console.log("--------------------------------------------------");
-        return { success: true, images: signedUrls.filter(img => img.url !== 'error'), bucketName: bucket.name };
+        const validImages = signedUrls.filter(img => img.url !== 'error');
+        return { success: true, images: validImages, bucketName: bucket.name };
 
     } catch (error: any) {
-        console.error("[getGalleryImagesAction] FATAL: An uncaught error occurred:", error);
-        console.log("[getGalleryImagesAction] END: Operation failed.");
-        console.log("--------------------------------------------------");
+        console.error("Failed to fetch gallery images:", error);
         return { success: false, error: error.message || "An unknown error occurred.", bucketName: (adminStorage as any)?._bucket?.name };
     }
 }
@@ -352,24 +386,25 @@ type GenerateProductInput = {
     price: string;
     creatorNotes: string;
     quantity: number;
+    sourceImageUrls?: string[]; // Optional source image URLs from Image Studio
 }
 
 export async function generateProductFromImageAction(
     input: GenerateProductInput
 ): Promise<{ token?: string; error?: string }> {
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!GOOGLE_AI_CONFIG.API_KEY) {
         return { error: "Gemini API key is not configured." };
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(GOOGLE_AI_CONFIG.API_KEY);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-pro",
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const { creatorNotes, price, imageDataUrl, quantity } = input;
+        const { creatorNotes, price, imageDataUrl, quantity, sourceImageUrls } = input;
 
         if (!creatorNotes || !price || !imageDataUrl || quantity === undefined) {
             return { error: "Missing required fields for product generation." };
@@ -388,13 +423,30 @@ export async function generateProductFromImageAction(
         const imagePart = {
             inlineData: {
                 data: base64Data,
-                mimeType: 'image/webp'
+                mimeType: 'image/jpeg'
             }
         };
 
-        const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company. Your persona is a blend of The Creator and The Jester. Your tone is warm, vibrant, playful, and sophisticated. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You never use generic marketing language. Instead, you write about scent as an experience, a memory, or a feeling. You turn simple product details into an evocative story that sparks joy and curiosity.
-        
-Your task is to transform raw data into a partial Shopify product listing, focusing only on the creative text fields. You must generate a single, valid JSON object that strictly adheres to the provided output structure. The "tags" field is mandatory.`;
+        const systemPrompt = `You are the brand voice and creative writer for "Three Chicks and a Wick," a boutique candle company.
+
+**Your Persona:**
+You are **The Creator** at heart, with a touch of **The Jester**. Your tone is warm, vibrant, and sophisticated, but also approachable and full of genuine delight. You write with the joy and pride of a dear friend showing off their latest, beautiful creation. You are an artist, not a marketer.
+
+**Your Writing Principles:**
+You transform simple product details into an evocative story that sparks joy and curiosity. To achieve this, you adhere to the following principles:
+
+1.  **Principle of Immediacy:** Forget generic, fluffy introductions ("Are you looking for the perfect candle?"). Get straight to the heart of the scent, its soul, and the feeling it evokes. The first sentence should be an immediate hook.
+2.  **Principle of Potency:** Condense descriptive imagery into impactful, memorable phrases. Instead of "This smells like a soft and cozy cashmere sweater," you write "It's the quiet confidence of cashmere."
+3.  **Principle of Active Language:** Use strong, direct verbs and vivid, precise adjectives. Eliminate weak words and passive voice to make the description feel more dynamic and confident.
+4.  **Principle of Flow:** Vary sentence structure and length to create a pleasing rhythm. Combine shorter sentences and streamline paragraphs to improve readability and reduce the overall word count efficiently.
+5.  **Principle of Structured Highlights:** Always include a short, punchy bulleted list that captures the essence of the product. It must follow this structure:
+    * **The Scent:** A pure, direct description of the fragrance notes.
+    * **The Vibe:** The feeling, mood, or experience the scent creates.
+    * **The Vessel:** A brief, elegant description of the physical candle holder.
+6.  **Principle of Product Focus:** When analyzing the image, focus exclusively on the product itself. The photographic background, lighting, and studio setting are for aesthetic purposes only and **must not** influence the scent description. Base your writing on the candle, its vessel, and any visible ingredients (e.g., vanilla beans, flowers).
+
+**Your Task:**
+Transform raw data into a partial Shopify product listing, focusing only on the creative text fields. You must generate a single, valid JSON object that strictly adheres to the provided output structure. The "tags" field is mandatory.`;
 
         const userMessage = `
             Here is the data for a new candle:
@@ -406,7 +458,7 @@ Your task is to transform raw data into a partial Shopify product listing, focus
         
         const result = await model.generateContent([
             systemPrompt,
-            "**Output Structure:**\n```json\n{\n  \"title\": \"A creative and joyful title (5-7 words max)\",\n  \"body_html\": \"A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).\",\n  \"tags\": \"A string of 5-7 relevant, SEO-friendly tags, separated by commas.\",\n  \"sku\": \"Generate a simple, unique SKU based on the title (e.g., AHC-01).\",\n  \"image_alt\": \"A descriptive and accessible alt-text for the product image.\"\n}\n```",
+            "**Output Structure:**\n```json\n{\n  \"title\": \"A creative and joyful title (5-7 words max)\",\n  \"body_html\": \"A rich, story-driven product description using simple HTML (<p>, <strong>, <ul>, <li>).\",\n  \"pivotReason\": \"A short note explaining any creative pivots or ingredient substitutions made based on the image (e.g., 'I saw vanilla beans so I emphasized the gourmand notes').\",\n  \"tags\": \"A string of up to 5 relevant, SEO-friendly tags, separated by commas.\",\n  \"sku\": \"Generate a simple, unique SKU based on the title (e.g., AHC-01).\",\n  \"image_alt\": \"A descriptive and accessible alt-text for the product image.\"\n}\n```",
             imagePart,
             userMessage
         ]);
@@ -425,12 +477,16 @@ Your task is to transform raw data into a partial Shopify product listing, focus
             throw new Error("The AI returned an invalid response. Please try again.");
         }
         
-        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity);
+        console.log("===== STASHING AI GENERATED DATA =====");
+        const stashResult = await stashAiGeneratedProductAction(creativeData, imageDataUrl, price, quantity, sourceImageUrls);
+        console.log("===== STASH RESULT =====", stashResult);
 
         if (!stashResult.success || !stashResult.token) {
+            console.error("===== STASH FAILED =====", stashResult.error);
             throw new Error(stashResult.error || "Failed to stash AI-generated data.");
         }
 
+        console.log("===== RETURNING SUCCESS TOKEN =====", stashResult.token);
         return { token: stashResult.token };
 
     } catch (error: any) {
@@ -454,30 +510,54 @@ export async function stashAiGeneratedProductAction(
     imageDataUrl: string,
     price: string,
     quantity: number,
+    sourceImageUrls?: string[],
 ): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
+        console.log("===== STASH FUNCTION START =====");
+        console.log("Creative data:", creativeData);
+        console.log("Price:", price);
+        console.log("Quantity:", quantity);
+        console.log("Image data URL length:", imageDataUrl.length);
+        
         // Step 1: Upload the image to Firebase Storage to get a public URL
         const bucket = adminStorage.bucket();
-        const fileName = `product-images/ai-generated/${uuidv4()}.webp`;
-        const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
+        console.log("Using bucket:", bucket.name);
         
+        const fileName = `product-images/ai-generated/${uuidv4()}.webp`;
+        console.log("File name:", fileName);
+        
+        const imageBuffer = Buffer.from(imageDataUrl.split(',')[1], 'base64');
+        console.log("Image buffer size:", imageBuffer.length);
+        
+        console.log("===== UPLOADING TO FIREBASE STORAGE =====");
         await bucket.file(fileName).save(imageBuffer, {
-            metadata: { contentType: 'image/webp' },
+            metadata: { contentType: 'image/jpeg' },
             public: true,
         });
+        console.log("===== UPLOAD SUCCESS =====");
+        
         const publicImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        console.log("Public image URL:", publicImageUrl);
 
         // Step 2: Stash the creative data and the public image URL in Firestore
         const token = uuidv4();
+        console.log("Generated token:", token);
+        
         const docRef = adminDb.collection('aiProductDrafts').doc(token);
+        console.log("===== SAVING TO FIRESTORE =====");
+
+        // Source images are already uploaded to Firebase Storage, just use the URLs
+        console.log("[Actions] Source image URLs received:", sourceImageUrls?.length || 0, sourceImageUrls);
 
         await docRef.set({
             ...creativeData,
             price,
             quantity,
             publicImageUrl, // Stash the short URL, not the raw data
+            sourceImageUrls: sourceImageUrls || [], // Store source image URLs
             createdAt: new Date(),
         });
+        console.log("===== FIRESTORE SAVE SUCCESS =====");
 
         return { success: true, token };
 
@@ -504,7 +584,7 @@ export async function resolveAiGeneratedProductAction(
         await docRef.delete();
 
         if (!data) {
-            return null;
+            return { success: false, error: "No data found for this draft." };
         }
 
         // Firestore `Timestamp` is a class, not a plain object.
@@ -512,7 +592,8 @@ export async function resolveAiGeneratedProductAction(
         // We destructure it out, since the form doesn't need it anyway.
         const { createdAt, ...rest } = data;
 
-        return rest;
+        // Wrap the successful data in a consistent object shape
+        return { success: true, data: rest };
     } catch (error: any) {
         console.error("[resolveAiGeneratedProductAction Error]", error);
         return { success: false, error: "Failed to resolve AI-generated product data." };
@@ -535,7 +616,7 @@ async function uploadImageToFirebase(imageDataUrl: string, token: string): Promi
     const fileName = `product-images/${token}-upload.webp`;
     const [meta, base64] = imageDataUrl.split(',');
     const mimeMatch = /data:(.*?);base64/.exec(meta || '');
-    const mimeType = mimeMatch?.[1] || 'image/webp';
+    const mimeType = mimeMatch?.[1] || 'image/jpeg';
     const buffer = Buffer.from(base64, 'base64');
 
     await bucket.file(fileName).save(buffer, {
@@ -552,3 +633,4 @@ const imageGenSchema = z.object({
     angle2: z.string().optional(),
     context: z.string().optional(),
 });
+

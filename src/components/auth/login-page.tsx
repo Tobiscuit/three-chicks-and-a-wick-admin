@@ -28,13 +28,12 @@ export const LoginPage = () => {
     try {
       await signInWithPopup(auth, provider);
       toast({
-        title: "Signed In",
-        description: "You have successfully signed in.",
+        title: "Success",
+        description: "Signed in successfully!",
       });
     } catch (error: any) {
-      // Don't show an error toast if the user simply closes the popup.
-      if (error.code === 'auth/popup-closed-by-user') {
-        console.log("Sign-in popup closed by user.");
+      if (error.code === 'auth/cancelled-popup-request') {
+        console.log("Sign-in cancelled by user.");
         return;
       }
       

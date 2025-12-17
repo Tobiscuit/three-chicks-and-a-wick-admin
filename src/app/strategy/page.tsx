@@ -10,6 +10,8 @@ import { getBusinessSnapshot } from '@/services/shopify';
 import { generateBusinessStrategy } from '@/ai/flows/generate-business-strategy';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCachedStrategy, isStrategyCacheFresh } from '@/lib/background-strategy';
+import { useAuth } from '@/components/auth/auth-provider';
 
 type Strategy = {
     pricing_recommendations: string[];
@@ -18,14 +20,27 @@ type Strategy = {
 }
 
 export default function StrategyPage() {
+    const { user } = useAuth();
     const [strategy, setStrategy] = useState<Strategy | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-    const fetchStrategy = async () => {
+    const fetchStrategy = async (forceRefresh = false) => {
         try {
             setLoading(true);
             setError(null);
+            
+            // Check if we have cached strategy (only for force refresh)
+            if (!forceRefresh) {
+                const cached = await getCachedStrategy(user?.uid);
+                if (cached) {
+                    setStrategy(cached.strategy);
+                    setLastUpdated(cached.lastUpdated);
+                    setLoading(false);
+                    return;
+                }
+            }
             
             // 1. Get business snapshot from Shopify
             const snapshot = await getBusinessSnapshot();
@@ -40,7 +55,78 @@ export default function StrategyPage() {
             // 2. Generate strategy with Genkit
             const result = await generateBusinessStrategy(snapshot);
 
-            setStrategy(result);
+            // Parse the string result into a Strategy object
+            try {
+                let strategyData;
+                
+                // Try to extract JSON from the result if it's wrapped in markdown or other text
+                const jsonMatch = result.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    strategyData = JSON.parse(jsonMatch[0]);
+                } else {
+                    strategyData = JSON.parse(result);
+                }
+                
+                // Validate that we have the expected structure
+                if (!strategyData.pricing_recommendations || !strategyData.marketing_suggestions) {
+                    throw new Error('Invalid strategy structure');
+                }
+                
+                setStrategy(strategyData);
+                
+                // Cache the result to AppSync with user ID for per-user caching
+                const expiresAt = Date.now() + (16 * 60 * 60 * 1000); // 16 hours
+                const cacheResponse = await fetch('/api/storefront/strategy-cache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        strategy: JSON.stringify(strategyData),
+                        expiresAt,
+                        userId: user?.uid
+                    })
+                });
+                
+                if (cacheResponse.ok) {
+                    console.log('Strategy cached to AppSync successfully');
+                } else {
+                    console.error('Failed to cache strategy to AppSync');
+                }
+                
+                setLastUpdated(new Date().toLocaleString());
+            } catch (parseError) {
+                console.error('Failed to parse strategy JSON:', parseError);
+                console.error('Raw result:', result);
+                
+                // If parsing fails, create a fallback strategy object
+                const fallbackStrategy = {
+                    pricing_recommendations: ["Unable to parse AI response. Please try regenerating the strategy."],
+                    marketing_suggestions: ["There was an issue processing the marketing recommendations."],
+                    inventory_alerts: ["Unable to analyze inventory data."]
+                };
+                setStrategy(fallbackStrategy);
+                
+                // Cache the fallback too with user ID
+                const expiresAt = Date.now() + (16 * 60 * 60 * 1000); // 16 hours
+                try {
+                    await fetch('/api/storefront/strategy-cache', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            strategy: JSON.stringify(fallbackStrategy),
+                            expiresAt,
+                            userId: user?.uid
+                        })
+                    });
+                } catch (cacheError) {
+                    console.error('Failed to cache fallback strategy:', cacheError);
+                }
+                
+                setLastUpdated(new Date().toLocaleString());
+            }
         } catch (err: any) {
             console.error("Failed to generate strategy:", err);
             setError(err.message || "An unknown error occurred while generating the business strategy.");
@@ -51,7 +137,20 @@ export default function StrategyPage() {
     };
 
     useEffect(() => {
-        fetchStrategy();
+        // Load cached strategy immediately if available
+        const loadCachedStrategy = async () => {
+            const cached = await getCachedStrategy();
+            if (cached) {
+                setStrategy(cached.strategy);
+                setLastUpdated(cached.lastUpdated);
+                setLoading(false);
+            } else {
+                // No cache available - fetch strategy
+                fetchStrategy();
+            }
+        };
+        
+        loadCachedStrategy();
     }, []);
 
     const renderStrategyContent = () => {
@@ -131,16 +230,23 @@ export default function StrategyPage() {
                                 Actionable recommendations based on your latest Shopify data.
                             </CardDescription>
                         </div>
-                        <Button onClick={() => fetchStrategy()} disabled={loading}>
-                            {loading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Generating...
-                                </>
-                            ): (
-                                "Regenerate Strategy"
+                        <div className="flex flex-col items-end gap-2">
+                            <Button onClick={() => fetchStrategy(true)} disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generating...
+                                    </>
+                                ): (
+                                    "Regenerate Strategy"
+                                )}
+                            </Button>
+                            {lastUpdated && (
+                                <p className="text-xs text-muted-foreground">
+                                    Last updated: {lastUpdated}
+                                </p>
                             )}
-                        </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>

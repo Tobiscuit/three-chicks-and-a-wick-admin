@@ -8,8 +8,8 @@ import { ProductForm } from '@/components/product-form';
 import type { ShopifyCollection, ShopifyProduct } from '@/services/shopify';
 
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const productId = decodeURIComponent(id);
     let product: ShopifyProduct | null = null;
     let collections: ShopifyCollection[] = [];
@@ -20,6 +20,10 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
             getProductById(productId),
             getCollections()
         ]);
+
+        // --- ADD THIS LOG ---
+        console.log("[SERVER Edit Page] Raw product data fetched from Shopify:", product);
+
     } catch (e: any) {
         error = e.message;
     }

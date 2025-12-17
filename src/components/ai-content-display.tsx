@@ -1,0 +1,191 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+
+interface AIContentDisplayProps {
+  content: string;
+  className?: string;
+}
+
+/**
+ * Component for displaying AI-generated content with scoped styling
+ * This ensures consistent typography and spacing for AI-generated HTML content
+ * without affecting the rest of the admin panel
+ */
+export function AIContentDisplay({ content, className }: AIContentDisplayProps) {
+  return (
+    <div 
+      className={cn("ai-generated-content", className)}
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  );
+}
+
+/**
+ * CSS-in-JS styles for AI-generated content
+ * These styles are scoped to .ai-generated-content to avoid conflicts
+ */
+export const aiContentStyles = `
+  .ai-generated-content {
+    /* Reset and base styles */
+    line-height: 1.6;
+    color: inherit;
+    font-family: inherit;
+  }
+
+  .ai-generated-content p {
+    margin: 0 0 1rem 0;
+    line-height: 1.6;
+  }
+
+  .ai-generated-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-generated-content strong {
+    font-weight: 600;
+    color: inherit;
+  }
+
+  .ai-generated-content em {
+    font-style: italic;
+    color: inherit;
+  }
+
+  .ai-generated-content ul {
+    margin: 0 0 1rem 0;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+  }
+
+  .ai-generated-content ol {
+    margin: 0 0 1rem 0;
+    padding-left: 1.5rem;
+    list-style-type: decimal;
+  }
+
+  .ai-generated-content li {
+    margin: 0.25rem 0;
+    line-height: 1.5;
+  }
+
+  .ai-generated-content li:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-generated-content h1,
+  .ai-generated-content h2,
+  .ai-generated-content h3,
+  .ai-generated-content h4,
+  .ai-generated-content h5,
+  .ai-generated-content h6 {
+    margin: 1.5rem 0 0.75rem 0;
+    font-weight: 600;
+    line-height: 1.3;
+    color: inherit;
+  }
+
+  .ai-generated-content h1:first-child,
+  .ai-generated-content h2:first-child,
+  .ai-generated-content h3:first-child,
+  .ai-generated-content h4:first-child,
+  .ai-generated-content h5:first-child,
+  .ai-generated-content h6:first-child {
+    margin-top: 0;
+  }
+
+  .ai-generated-content blockquote {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid #e5e7eb;
+    background-color: #f9fafb;
+    font-style: italic;
+    color: #6b7280;
+  }
+
+  .ai-generated-content code {
+    padding: 0.125rem 0.25rem;
+    background-color: #f3f4f6;
+    border-radius: 0.25rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875em;
+    color: #374151;
+  }
+
+  .ai-generated-content pre {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f3f4f6;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875em;
+    line-height: 1.5;
+  }
+
+  .ai-generated-content pre code {
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+    color: inherit;
+  }
+
+  .ai-generated-content a {
+    color: #3b82f6;
+    text-decoration: underline;
+    text-decoration-color: #93c5fd;
+    text-underline-offset: 2px;
+  }
+
+  .ai-generated-content a:hover {
+    color: #1d4ed8;
+    text-decoration-color: #3b82f6;
+  }
+
+  .ai-generated-content hr {
+    margin: 2rem 0;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  /* Special styling for product descriptions */
+  .ai-generated-content.product-description {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .ai-generated-content.product-description p {
+    margin-bottom: 0.875rem;
+  }
+
+  .ai-generated-content.product-description ul {
+    margin-bottom: 0.875rem;
+  }
+
+  .ai-generated-content.product-description li {
+    margin: 0.125rem 0;
+  }
+
+  /* Compact variant for smaller spaces */
+  .ai-generated-content.compact {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .ai-generated-content.compact p {
+    margin-bottom: 0.5rem;
+  }
+
+  .ai-generated-content.compact ul {
+    margin-bottom: 0.5rem;
+  }
+
+  .ai-generated-content.compact h1,
+  .ai-generated-content.compact h2,
+  .ai-generated-content.compact h3,
+  .ai-generated-content.compact h4,
+  .ai-generated-content.compact h5,
+  .ai-generated-content.compact h6 {
+    margin: 0.75rem 0 0.5rem 0;
+  }
+`;

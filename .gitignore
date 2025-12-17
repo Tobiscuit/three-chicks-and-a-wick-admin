@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Configuration archive (contains sensitive backup files)
+/config-archive/
+
 # Dependencies
 /node_modules
 **/node_modules
@@ -48,6 +51,7 @@ pnpm-debug.log*
 
 # Local environment variables
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -55,6 +59,8 @@ pnpm-debug.log*
 .env.*.local
 /.secret*
 /.credentials*
+.env.vercel
+/scripts
 
 # Vercel
 .vercel
@@ -77,6 +83,10 @@ apphosting.yaml
 # Test scripts
 test-inventory-webhook.ps1
 *.ps1
+scripts/test-feature-flag.js
+
+# Environment variable files
+vercel-env-vars.txt
 
 # Logs and OS/IDE clutter
 Thumbs.db
@@ -98,3 +108,10 @@ temp
 *.tar
 *.tar.gz
 *.rar
+# Internal documentation
+# /docs-internal/
+*.INTERNAL.md
+
+.vercel
+
+src/test-subscription.js

@@ -1,4 +1,3 @@
-
 "use server";
 
 import 'server-only';
@@ -8,23 +7,41 @@ import { z } from 'zod';
 import {
     createProduct,
     updateProduct,
+    updateProductDescription,
     deleteProduct,
-    quickUpdateInventory,
+    getPrimaryLocationId,
+    updateInventoryQuantity,
+    getProductById,
+    collectionAddProducts,
+    collectionRemoveProducts,
+    updateProductImages,
 } from '@/services/shopify';
 import { adminDb } from '@/lib/firebase-admin';
 import { encodeShopifyId } from '@/lib/utils';
 import { FieldValue } from 'firebase-admin/firestore';
+import { incrementTagUsage } from '@/services/tag-learning';
+import { generateSmartTags as generateAITags } from '@/services/ai-tag-generator';
+import { rewriteDescriptionFlow } from '@/ai/flows/reengineer-description';
+import { 
+  saveDescriptionHistory, 
+  loadDescriptionHistory, 
+  addDescriptionVersion,
+  deleteDescriptionHistory,
+  type DescriptionVersion 
+} from '@/services/description-history';
 
 const productSchema = z.object({
     id: z.string().optional(),
     inventoryItemId: z.string().optional(),
     inventory: z.number().optional(),
     title: z.string(),
-    description: z.string(),
+    description: z.string().optional(),
     price: z.string(),
-    tags: z.string(),
+    tags: z.string().optional(),
     sku: z.string(),
+    status: z.string(),
     imageUrls: z.array(z.string().url()).optional().nullable(),
+    collections: z.array(z.string()).optional(),
 });
 
 export async function addProductAction(formData: z.infer<typeof productSchema>) {
@@ -32,12 +49,31 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
         const product = productSchema.parse(formData);
         const result = await createProduct({
             title: product.title,
-            description: product.description,
-            tags: product.tags,
+            description: product.description || '',
+            tags: product.tags || '',
             price: product.price,
             sku: product.sku,
+            status: product.status,
+            inventory: product.inventory || 0,
             imageUrls: product.imageUrls || [],
+            collections: product.collections || [],
         });
+        
+        // Write to Firestore for real-time updates
+        if (result.product?.id) {
+            const productDocId = encodeShopifyId(result.product.id);
+            
+            // Write image data
+            await adminDb.collection('productImages').doc(productDocId).set({
+                imageUrl: product.imageUrls?.[0] || null,
+                status: 'confirmed',
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            
+            // Note: Inventory data will be written by the createProduct function
+            // which already handles inventoryStatus updates via updateInventoryQuantity
+        }
+        
         revalidatePath('/products');
         return { success: true, product: result };
     } catch (error) {
@@ -49,40 +85,73 @@ export async function addProductAction(formData: z.infer<typeof productSchema>) 
 
 export async function updateProductAction(formData: z.infer<typeof productSchema>) {
     try {
-        // Note: A full update would require a multi-step process similar to create.
-        // This is a simplified version for core details only.
-        const product = productSchema.parse(formData);
-        if (!product.id) {
-            throw new Error('Product ID is required for updates.');
-        }
+        const productData = productSchema.parse(formData);
+        const productId = productData.id;
+        if (!productId) throw new Error('Product ID is required for updates.');
 
-        const locationId = await getPrimaryLocationId();
-        if (!locationId) {
-            throw new Error("Could not determine primary location for inventory update.");
-        }
+        // First, get the product's current collections
+        const existingProduct = await getProductById(productId);
+        const existingCollectionIds = new Set(existingProduct?.collections.edges.map(e => e.node.id) || []);
+        const newCollectionIds = new Set(productData.collections || []);
 
-        if (product.inventoryItemId && typeof product.inventory === 'number') {
-            await updateInventoryQuantity(product.inventoryItemId, product.inventory, locationId);
-        }
+        // Determine which collections to add the product to
+        const collectionsToAdd = [...newCollectionIds].filter(id => !existingCollectionIds.has(id));
+        // Determine which collections to remove the product from
+        const collectionsToRemove = [...existingCollectionIds].filter(id => !newCollectionIds.has(id));
 
-        const result = await updateProduct(product.id, {
-            title: product.title,
-            tags: product.tags,
-            // description is now a metafield and needs to be updated separately.
-        });
-
-        // Update Firestore for real-time UI
-        if (product.inventoryItemId && typeof product.inventory === 'number') {
-            const docId = encodeShopifyId(product.inventoryItemId);
-            await adminDb.collection('inventoryStatus').doc(docId).set({
-                quantity: product.inventory,
-                status: 'confirmed',
-                updatedAt: FieldValue.serverTimestamp(),
-            }, { merge: true });
-        }
+        // Perform all updates concurrently
+        await Promise.all([
+            // Update core details including native description
+            updateProduct(productId, {
+                title: productData.title,
+                tags: productData.tags,
+                status: productData.status,
+                descriptionHtml: productData.description,
+            }),
+            // Update description metafield (keep in sync)
+            productData.description ? updateProductDescription(productId, productData.description) : Promise.resolve(),
+            // Update Shadow Description (Authoritative Source)
+            (async () => {
+                if (productData.description) {
+                    const { saveShadowDescription } = await import('@/services/product-shadow');
+                    await saveShadowDescription(productId, productData.description);
+                }
+            })(),
+            // Update inventory
+            (productData.inventoryItemId && typeof productData.inventory === 'number') ? 
+                (async () => {
+                    console.log(`[SERVER] updateProductAction: Updating inventory for item ${productData.inventoryItemId} to quantity ${productData.inventory}`);
+                    const locationId = await getPrimaryLocationId();
+                    if (!locationId) throw new Error("Could not determine primary location.");
+                    await updateInventoryQuantity(productData.inventoryItemId!, productData.inventory!, locationId);
+                    
+                    const docId = encodeShopifyId(productData.inventoryItemId!);
+                    await adminDb.collection('inventoryStatus').doc(docId).set({
+                        quantity: productData.inventory,
+                        status: 'confirmed',
+                        updatedAt: FieldValue.serverTimestamp(),
+                    }, { merge: true });
+                })() 
+                : Promise.resolve(),
+                            // Update product images on Shopify (add/remove/reorder)
+            productData.imageUrls ? updateProductImages(productId, productData.imageUrls) : Promise.resolve(),
+            // Update product image in Firestore for real-time updates
+            (async () => {
+                const productDocId = encodeShopifyId(productId);
+                await adminDb.collection('productImages').doc(productDocId).set({
+                    imageUrl: productData.imageUrls?.[0] || null,
+                    status: 'confirmed',
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+            })(),
+            // Add to new collections
+            ...collectionsToAdd.map(collectionId => collectionAddProducts(collectionId, [productId])),
+            // Remove from old collections
+            ...collectionsToRemove.map(collectionId => collectionRemoveProducts(collectionId, [productId]))
+        ]);
 
         revalidatePath('/products');
-        return { success: true, product: result };
+        return { success: true };
     } catch (error) {
         console.error('Error updating product:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -92,7 +161,42 @@ export async function updateProductAction(formData: z.infer<typeof productSchema
 
 export async function deleteProductAction(productId: string) {
     try {
-        await deleteProduct(productId);
+        console.log(`[SERVER] Attempting to delete product: ${productId}`);
+        const result = await deleteProduct(productId);
+        console.log(`[SERVER] Delete result:`, result);
+        
+        // Check for user errors in the response
+        if (result.userErrors && result.userErrors.length > 0) {
+            const errorMessage = result.userErrors.map((e: any) => e.message).join(', ');
+            console.error('Shopify delete errors:', errorMessage);
+            return { success: false, error: errorMessage };
+        }
+        // Also archive and delete description history (best-effort)
+        try {
+            console.log('[SERVER] Archiving description history for product before delete:', productId);
+            const versions = await loadDescriptionHistory(productId);
+            if (versions && versions.length > 0) {
+                const expireDays = 30; // TTL window in days (adjustable)
+                const expireAt = new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000);
+                await adminDb.collection('recycle_bin').add({
+                    type: 'description_history',
+                    productId,
+                    versions,
+                    deletedAt: new Date(),
+                    expireAt, // Configure TTL on this field in Firestore
+                });
+                console.log('[SERVER] Description history archived to recycle_bin with expireAt:', expireAt.toISOString());
+            } else {
+                console.log('[SERVER] No description history to archive');
+            }
+
+            console.log('[SERVER] Deleting description history for product:', productId);
+            await deleteDescriptionHistory(productId);
+            console.log('[SERVER] Description history deleted');
+        } catch (historyError) {
+            console.warn('[SERVER] Failed to delete description history (non-fatal):', historyError);
+        }
+
         revalidatePath('/products');
         return { success: true };
     } catch (error) {
@@ -110,12 +214,18 @@ export async function quickUpdateInventoryAction({
     quantity: number;
 }) {
     try {
-        await quickUpdateInventory(inventoryItemId, quantity);
+        // --- ADD THIS LOG ---
+        console.log(`[SERVER] quickUpdateInventoryAction: Updating inventory for item ${inventoryItemId} to quantity ${quantity}`);
 
-        // Update Firestore for real-time updates
+        const locationId = await getPrimaryLocationId();
+        if (!locationId) {
+            throw new Error("Could not determine primary location for inventory update.");
+        }
+
+        await updateInventoryQuantity(inventoryItemId, quantity, locationId);
+
         const docId = encodeShopifyId(inventoryItemId);
-        const docRef = adminDb.collection('inventoryStatus').doc(docId);
-        await docRef.set(
+        await adminDb.collection('inventoryStatus').doc(docId).set(
             {
                 quantity,
                 status: 'confirmed',
@@ -131,6 +241,146 @@ export async function quickUpdateInventoryAction({
         console.error('Quick inventory update error:', error);
         const errorMessage =
             error instanceof Error ? error.message : 'An unknown error occurred';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function generateSmartTagsAction(productData: {
+    name: string;
+    description: string;
+    scent?: string;
+    currentTags?: string;
+}): Promise<{ success: boolean; tags?: string[]; error?: string }> {
+    try {
+        console.log('[Smart Tags] Generating tags for:', productData.name);
+        
+        const result = await generateAITags({
+            name: productData.name,
+            description: productData.description,
+            scent: productData.scent,
+            tags: productData.currentTags
+        });
+
+        console.log('[Smart Tags] Generated result:', result);
+        console.log('[Smart Tags] Final tags count:', result.final_tags.length);
+        console.log('[Smart Tags] Final tags:', result.final_tags);
+        
+        return {
+            success: true,
+            tags: result.final_tags
+        };
+    } catch (error) {
+        console.error('[Smart Tags] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to generate smart tags';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function getTagPoolAction(): Promise<{ success: boolean; tagPool?: any; error?: string }> {
+    try {
+        const { getTagPool } = await import('@/services/tag-learning');
+        const tagPool = await getTagPool();
+        
+        console.log('[Tag Pool] Current tag pool:', tagPool);
+        console.log('[Tag Pool] Total tags by category:');
+        Object.entries(tagPool.existing_tags).forEach(([category, tags]) => {
+            console.log(`  ${category}: ${tags.length} tags`);
+        });
+        console.log('[Tag Pool] Usage counts:', tagPool.usage_count);
+        
+        return {
+            success: true,
+            tagPool: tagPool
+        };
+    } catch (error) {
+        console.error('[Tag Pool] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to get tag pool';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function rewriteDescriptionAction(data: {
+    originalDescription: string;
+    userPrompt: string;
+    productContext: {
+        name: string;
+        imageAnalysis?: string;
+        brandGuidelines?: string;
+    };
+}): Promise<{ success: boolean; result?: any; error?: string }> {
+    try {
+        console.log('[Rewrite Action] Starting rewrite for:', data.productContext.name);
+        
+        const result = await rewriteDescriptionFlow({
+            originalDescription: data.originalDescription,
+            userPrompt: data.userPrompt,
+            productContext: data.productContext
+        });
+
+        console.log('[Rewrite Action] Rewrite complete:', result);
+        
+        return {
+            success: true,
+            result: result
+        };
+    } catch (error) {
+        console.error('[Rewrite Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to rewrite description';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function loadDescriptionHistoryAction(productId: string): Promise<{ success: boolean; versions?: DescriptionVersion[]; error?: string }> {
+    try {
+        console.log('[Description History Action] Loading history for product:', productId);
+        const versions = await loadDescriptionHistory(productId);
+        console.log('[Description History Action] Loaded versions:', versions.length);
+        return {
+            success: true,
+            versions: versions
+        };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load description history';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function saveDescriptionHistoryAction(productId: string, versions: DescriptionVersion[]): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[Description History Action] Saving history for product:', productId, 'versions:', versions.length);
+        await saveDescriptionHistory(productId, versions);
+        console.log('[Description History Action] History saved successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to save description history';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function addDescriptionVersionAction(productId: string, version: DescriptionVersion): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[Description History Action] Adding version for product:', productId);
+        await addDescriptionVersion(productId, version);
+        console.log('[Description History Action] Version added successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to add description version';
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function deleteDescriptionHistoryAction(productId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[Description History Action] Deleting history for product:', productId);
+        await deleteDescriptionHistory(productId);
+        console.log('[Description History Action] History deleted successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('[Description History Action] Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete description history';
         return { success: false, error: errorMessage };
     }
 }

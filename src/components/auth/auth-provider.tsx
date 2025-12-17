@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         setUser(user);
         try {
-          const token = await user.getIdToken(true); // Force refresh
+          const token = await user.getIdToken(); // Use cached token if valid
           setIdToken(token);
         } catch (error) {
           console.error("Error getting ID token:", error);

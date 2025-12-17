@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -33,12 +32,35 @@ import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast";
 import { addProductAction, updateProductAction } from "@/app/products/actions";
 import { uploadImageAction } from "@/app/actions";
-import { Loader2, UploadCloud, Check, ChevronsUpDown, X, Info, ArrowLeft, Copy, Plus } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code, Sparkles } from "lucide-react";
+import { Skeleton } from '@/components/ui/skeleton';
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
-import { toWebpAndResize } from "@/lib/image";
-import { resolveAiDraftAction } from "@/app/actions";
-import { useSearchParams } from "next/navigation";
+import { resolveAiGeneratedProductAction } from "@/app/actions";
+import { AIContentDisplay } from "@/components/ai-content-display";
+import { isHtmlContent, getAIContentClassName, formatHtmlForEditing, unescapeHtml } from "@/lib/ai-content-utils";
+import { SynchronizedEditor } from "@/components/synchronized-editor";
+import { getUserSettings } from "@/services/user-settings";
+import { useAuth } from "@/components/auth/auth-provider";
+
+// --- DND KIT IMPORTS ---
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const productFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -49,11 +71,11 @@ const productFormSchema = z.object({
   sku: z.string().min(1, { message: "SKU is required." }),
   inventory: z.coerce.number().int().min(0, { message: "Inventory must be a non-negative number." }),
   status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
-  image: z.any().optional(),
   productType: z.string().optional(),
   collections: z.array(z.string()).optional(),
   tags: z.string().optional(),
   featured: z.boolean().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -74,25 +96,91 @@ function generateSku(title: string): string {
     return `${titlePart}-${randomPart}`.substring(0, 20).toUpperCase();
 }
 
+// --- SORTABLE IMAGE COMPONENT ---
+function SortableImage({ 
+    url, 
+    index, 
+    onRemove 
+}: { 
+    url: string; 
+    index: number; 
+    onRemove: (index: number) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: url });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 1, // Ensure dragged item is on top
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div 
+            ref={setNodeRef} 
+            style={style} 
+            {...attributes} 
+            {...listeners}
+            className="relative aspect-square group cursor-grab active:cursor-grabbing touch-none" // touch-none is important for touch devices
+        >
+            <Image
+                src={url}
+                alt={`Product image ${index + 1}`}
+                fill
+                className="object-cover rounded-md"
+                draggable={false} // Prevent native drag
+            />
+            <div className="absolute top-1 right-1">
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    // Stop propagation to prevent drag start when clicking delete
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(index);
+                    }}
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 export function ProductForm({ collections, initialData = null }: ProductFormProps) {
+  
+  // --- ADD THIS LOG ---
+  console.log("[CLIENT Form] initialData received on page load:", initialData);
+  console.log("[CLIENT Form] Raw description:", initialData?.description);
+  console.log("[CLIENT Form] Unescaped description:", unescapeHtml(initialData?.description || ""));
+  console.log("[CLIENT Form] Inventory value from initialData:", initialData?.totalInventory);
+
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images?.edges.map(e => e.node.url) || []);
+  const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images?.edges.map((e: any) => e.node.url) || []);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasFetchedAiData = useRef(false);
+  const [includeSourceImages, setIncludeSourceImages] = useState(false);
+  const [pivotReason, setPivotReason] = useState<string | undefined>(undefined);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   const isEditMode = !!initialData;
   
   const rawPriceString = initialData?.priceRange.minVariantPrice.amount;
-  const priceString = rawPriceString !== undefined
-    ? (() => {
-        const num = parseFloat(rawPriceString);
-        return isNaN(num) ? "" : num.toFixed(2);
-      })()
-    : "";
+  const priceString = rawPriceString ? parseFloat(rawPriceString).toFixed(2) : "";
   
   const FEATURED_ALIASES = ['featured','home-page','homepage','home','home page'];
   const featuredCollection = collections.find(c => {
@@ -103,19 +191,20 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   const defaultValues: Partial<ProductFormValues> = {
       title: initialData?.title || "",
-      description: initialData?.description || "",
+      description: unescapeHtml(initialData?.description || ""),
       price: priceString,
       sku: initialData?.variants.edges[0]?.node.sku || "",
       inventory: initialData?.totalInventory || 0,
       status: initialData?.status || "ACTIVE",
-      image: initialData?.featuredImage?.url || null,
       productType: initialData?.productType || "Candle",
-      collections: initialData?.collections?.edges.map(e => e.node.id) || [],
+      collections: initialData?.collections?.edges.map((e: any) => e.node.id) || [],
       tags: initialData?.tags.join(', ') || "",
       featured: (() => {
-        const ids = initialData?.collections?.edges.map(e => e.node.id) || [];
-        return featuredCollection ? ids.includes(featuredCollection.id) : false;
+        if (!featuredCollection) return false;
+        const ids = initialData?.collections?.edges.map((e: any) => e.node.id) || [];
+        return ids.includes(featuredCollection.id);
       })(),
+      images: initialData?.images?.edges.map((e: any) => e.node.url) || [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -123,155 +212,227 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     defaultValues,
   });
   
-  const { setValue, getValues, formState, reset } = form;
-  // Prefill image by token (from Image Studio)
+  const { setValue, getValues, formState, watch } = form;
+  const watchedImages = watch('images') || [];
+
+  // Keep imagePreviews in sync with form's images field
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (!token || isEditMode) return;
-    (async () => {
-      try {
-        const res = await resolveProductPrefillImage(token);
-        if (!res.success || !res.url) return;
-        const response = await fetch(res.url);
-        const blob = await response.blob();
-        const rawFile = new File([blob], `prefill-${Date.now()}.webp`, { type: blob.type || 'image/webp' });
-        console.log('[ProductForm prefill] original bytes:', rawFile.size);
-        const optimized = await toWebpAndResize(rawFile, 1600, 0.82);
-        console.log('[ProductForm prefill] optimized bytes:', optimized.size);
-        setValue('image', optimized, { shouldValidate: true, shouldDirty: true });
-        const reader = new FileReader();
-        reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result as string]);
-        reader.readAsDataURL(optimized);
-      } catch {}
-    })();
-  }, [isEditMode, setValue]);
+    setImagePreviews(watchedImages);
+  }, [watchedImages]);
+
+  // --- DND SENSORS ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 8, // Require 8px movement before drag starts (prevents accidental drags on click)
+        },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // --- DND HANDLER ---
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = imagePreviews.indexOf(active.id as string);
+      const newIndex = imagePreviews.indexOf(over.id as string);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrder = arrayMove(imagePreviews, oldIndex, newIndex);
+          setImagePreviews(newOrder);
+          setValue('images', newOrder, { shouldDirty: true });
+      }
+    }
+  }
 
   // Prefill form with AI generated data
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
     const token = searchParams.get('draftToken');
-    if (!token || isEditMode || hasFetchedAiData.current) return;
+
+    console.log('[ProductForm] AI Prefill useEffect:', {
+      token,
+      isEditMode,
+      hasFetchedAiData: hasFetchedAiData.current,
+      currentDescription: form.getValues('description')?.substring(0, 100) + '...'
+    });
+
+    if (!token || isEditMode || hasFetchedAiData.current) {
+      return;
+    }
 
     (async () => {
         try {
-            hasFetchedAiData.current = true; // Prevent multiple fetches
-            toast({ id: 'prefill-toast', title: "🪄 Loading AI Content..." });
+            hasFetchedAiData.current = true;
+            toast({ title: "🪄 Loading AI Content..." });
             
-            const res = await resolveAiDraftAction(token);
+            // Load user settings to check if source images should be included
+            let includeSourceImagesFromSettings = false;
+            if (user?.uid) {
+                try {
+                    const userSettings = await getUserSettings(user.uid);
+                    console.log('[ProductForm] includeSourceImages setting:', userSettings.imageStudioSettings.includeSourceImages);
+                    includeSourceImagesFromSettings = userSettings.imageStudioSettings.includeSourceImages;
+                    setIncludeSourceImages(includeSourceImagesFromSettings);
+                } catch (error) {
+                    console.error('Error loading user settings:', error);
+                }
+            }
+            
+            const res = await resolveAiGeneratedProductAction(token);
 
             if (res.success && res.data) {
-                const { title, body_html, tags, sku, price, quantity, imageUrl } = res.data;
+                const { title, body_html, tags, sku, price, quantity, publicImageUrl, sourceImageUrls, pivotReason } = res.data;
                 
-                // Prefill text and quantity fields
-                reset({
-                    ...defaultValues,
-                    title,
-                    description: body_html,
-                    price,
-                    sku,
-                    tags,
-                    inventory: quantity,
-                    status: "DRAFT",
-                });
+                console.log('🔍 [ProductForm] Raw body_html from AI:', body_html?.substring(0, 200) + '...');
+                console.log('🔍 [ProductForm] pivotReason from AI:', pivotReason);
+                console.log('✅ [ProductForm] body_html contains HTML tags:', body_html?.includes('<p>') || body_html?.includes('<ul>') || body_html?.includes('<strong>'));
                 
-                // Fetch the temporary image, convert it to a File, and set it in the form
-                const response = await fetch(imageUrl);
+                setValue('title', title, { shouldDirty: true });
+                // Unescape HTML to prevent double-escaping issues
+                const cleanHtml = unescapeHtml(body_html);
+                console.log('🧹 [ProductForm] Cleaned HTML:', cleanHtml?.substring(0, 50) + '...');
+                setValue('description', cleanHtml, { shouldDirty: true });
+                setValue('price', String(price), { shouldDirty: true });
+                setValue('sku', sku, { shouldDirty: true });
+                setValue('tags', tags, { shouldDirty: true });
+                setValue('inventory', quantity, { shouldDirty: true });
+                setValue('status', 'ACTIVE', { shouldDirty: true });
+                
+                if (pivotReason) {
+                    setPivotReason(pivotReason);
+                }
+
+                // Upload the composed image
+                const response = await fetch(publicImageUrl);
                 const blob = await response.blob();
-                const file = new File([blob], `ai-generated-${Date.now()}.webp`, { type: 'image/webp' });
+                const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
                 
-                // This mimics the manual upload flow
                 const reader = new FileReader();
-                reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result as string]);
+                reader.onloadend = async () => {
+                  const dataUrl = reader.result as string;
+                  const finalPublicUrl = await uploadImageAction(dataUrl);
+                  
+                  let imageUrls = [];
+                  if (finalPublicUrl) {
+                    imageUrls.push(finalPublicUrl);
+                  }
+                  
+                  // Add source images if setting is enabled and they exist
+                  console.log('[ProductForm] Source image decision - includeSourceImages:', includeSourceImagesFromSettings, 'sourceImageUrls count:', sourceImageUrls?.length || 0);
+                  if (includeSourceImagesFromSettings && sourceImageUrls && sourceImageUrls.length > 0) {
+                    console.log('[ProductForm] ✅ Adding source images to gallery:', sourceImageUrls.length);
+                    imageUrls.push(...sourceImageUrls);
+                  } else {
+                    console.log('[ProductForm] ❌ Not adding source images - setting:', includeSourceImagesFromSettings, 'count:', sourceImageUrls?.length || 0);
+                  }
+                  
+                  if (imageUrls.length > 0) {
+                    setImagePreviews(prev => [...imageUrls, ...prev]);
+                    setValue('images', imageUrls, { shouldDirty: true });
+                  }
+                }
                 reader.readAsDataURL(file);
 
-                toast.update('prefill-toast', { title: "✅ AI Content Loaded!", description: "Review and save your new product." });
+                toast({ 
+                  title: "✅ AI Content Loaded!", 
+                  description: "Review and save your new product." 
+                });
                 
-                // Clean the URL
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
             } else {
                 throw new Error(res.error || "Could not load AI content.");
             }
         } catch (error: any) {
-            toast.update('prefill-toast', {
+            console.error("[AI PREFILL] Error caught:", error);
+            toast({
                 variant: "destructive",
                 title: "❌ Error Loading AI Content",
                 description: error.message,
             });
         }
     })();
-  }, [isEditMode, searchParams, reset, defaultValues, toast]);
+  }, [isEditMode, setValue, defaultValues, toast]);
 
 
   const handleTitleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
       const titleValue = event.target.value;
-      const skuValue = getValues('sku');
-
-      // Generate SKU only if the title has a value and the SKU is currently empty.
-      if (titleValue && !skuValue) {
-          const newSku = generateSku(titleValue);
-          setValue('sku', newSku, { shouldValidate: true, shouldDirty: true });
+      if (titleValue && !getValues('sku')) {
+          setValue('sku', generateSku(titleValue), { shouldValidate: true, shouldDirty: true });
       }
-  };
-
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    try {
-        const newPreviews = await Promise.all(
-            Array.from(files).map(file => {
-                return new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            })
-        );
-        setImagePreviews(prev => [...prev, ...newPreviews]);
-    } catch (error) {
-        console.error("Error reading files:", error);
-        toast({
-            title: "Error",
-            description: "Could not preview images.",
-            variant: "destructive"
-        });
-    }
   };
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
-        if (!files) return;
+        if (!files || files.length === 0) return;
 
-        setIsSubmitting(true);
+        setIsUploadingImage(true);
         toast({ title: 'Uploading images...' });
 
         try {
-            const uploadPromises = Array.from(files).map(async file => {
-                const imageDataUrl = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-                return await uploadImageAction(imageDataUrl);
+            const uploadPromises = Array.from(files).map(async (file, index) => {
+                try {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        throw new Error(`File ${index + 1} is not an image`);
+                    }
+                    
+                    // Validate file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        throw new Error(`File ${index + 1} is too large (max 10MB)`);
+                    }
+
+                    const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+        reader.readAsDataURL(file);
+                    });
+                    
+                    const uploadedUrl = await uploadImageAction(imageDataUrl);
+                    if (!uploadedUrl) {
+                        throw new Error(`Failed to upload file ${index + 1}`);
+                    }
+                    
+                    return uploadedUrl;
+                } catch (error) {
+                    console.error(`Upload failed for file ${index + 1}:`, error);
+                    return null;
+                }
             });
 
-            const uploadedUrls = await Promise.all(uploadPromises);
-            setImagePreviews(prev => [...prev, ...uploadedUrls.filter(Boolean) as string[]]);
-            toast({ title: 'Upload complete!' });
+            const results = await Promise.all(uploadPromises);
+            const uploadedUrls = results.filter((url): url is string => url !== null);
+            
+            if (uploadedUrls.length === 0) {
+                throw new Error('All image uploads failed');
+            }
+            
+            if (uploadedUrls.length < results.length) {
+                toast({ 
+                    title: 'Partial Upload Success', 
+                    description: `Uploaded ${uploadedUrls.length} of ${results.length} images` 
+                });
+            } else {
+                toast({ title: 'Upload complete!' });
+            }
+            
+            setImagePreviews(prev => [...prev, ...uploadedUrls]);
+            // Also update the form field to trigger dirty state
+            setValue('images', [...imagePreviews, ...uploadedUrls], { shouldDirty: true });
         } catch (error) {
-            console.error("Error uploading files:", error);
+            console.error('Image upload error:', error);
             toast({
                 title: "Upload Error",
-                description: "Could not upload images.",
+                description: error instanceof Error ? error.message : "Could not upload images.",
                 variant: "destructive"
             });
         } finally {
-            setIsSubmitting(false);
-            // Clear the file input
+            setIsUploadingImage(false);
             if(fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -279,62 +440,28 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
     };
 
   const removeImage = (index: number) => {
-      setImagePreviews(prev => prev.filter((_, i) => i !== index));
+      const newPreviews = imagePreviews.filter((_, i) => i !== index);
+      setImagePreviews(newPreviews);
+      // Also update the form field to trigger dirty state
+      setValue('images', newPreviews, { shouldDirty: true });
   };
 
   async function onSubmit(data: ProductFormValues) {
     setIsSubmitting(true);
 
-    const formData = new FormData();
-    if (isEditMode && initialData) {
-        const variant = initialData.variants.edges[0]?.node;
-        if (!variant) {
-             toast({
-                variant: "destructive",
-                title: "Update Failed",
-                description: "Product variant data is missing.",
-            });
-            setIsSubmitting(false);
-            return;
-        }
-        formData.append('id', initialData.id);
-        formData.append('variantId', variant.id);
-        formData.append('inventoryItemId', variant.inventoryItem.id);
-    }
+    // --- ADD THIS LOG ---
+    console.log(`[CLIENT] Form submitted. Inventory value: ${data.inventory}`);
     
-    formData.append('title', data.title);
-    if(data.description) formData.append('description', data.description);
-    formData.append('price', String(data.price));
-    formData.append('sku', data.sku);
-    formData.append('status', data.status);
-    formData.append('inventory', String(data.inventory));
-    
-    if (imagePreviews.length > 0) {
-        formData.append('imageUrls', JSON.stringify(imagePreviews)); // Send all image previews
-    }
-
-    if (data.productType) formData.append('productType', data.productType);
-    if (data.tags) formData.append('tags', data.tags);
-    if (data.collections) {
-        data.collections.forEach(id => formData.append('collections', id));
-    }
-    // When editing, compute collections to leave (so toggling featured off is reflected)
-    if (isEditMode && initialData) {
-        const original = new Set((initialData.collections?.edges || []).map(e => e.node.id));
-        const current = new Set(data.collections || []);
-        const toLeave: string[] = [];
-        original.forEach(id => { if (!current.has(id)) toLeave.push(id); });
-        toLeave.forEach(id => formData.append('collectionsToLeave', id));
-    }
-
-
     try {
+      // Filter out any invalid image URLs before sending to server
+      const validImageUrls = (data.images || []).filter(url => url && typeof url === 'string' && url.startsWith('http'));
+      
       const action = isEditMode ? updateProductAction : addProductAction;
       const result = await action({
         ...data,
         id: initialData?.id,
         inventoryItemId: initialData?.variants.edges[0]?.node.inventoryItem.id,
-        imageUrls: imagePreviews, // Pass the entire imagePreviews array
+        imageUrls: validImageUrls,
       });
       
       if (result.success) {
@@ -342,30 +469,15 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
           title: `Product ${isEditMode ? 'Updated' : 'Created'}!`,
           description: `"${data.title}" has been successfully saved.`,
         });
-
-        // Use a full page reload to bypass the client-side router cache
         window.location.href = '/products';
       } else {
         throw new Error(result.error || "An unknown error occurred.");
       }
     } catch (error: any) {
-      const errorMessage = error.message || "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: `Failed to ${isEditMode ? 'Update' : 'Create'} Product`,
-        description: <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4"><code className="text-white">{errorMessage}</code></pre>,
-        action: (
-           <ToastAction
-                altText="Copy"
-                onClick={() => {
-                    navigator.clipboard.writeText(errorMessage);
-                    toast({ description: "Error message copied to clipboard." });
-                }}
-            >
-                <Copy className="h-4 w-4" />
-                Copy
-            </ToastAction>
-        )
+        description: error.message,
       });
     } finally {
         setIsSubmitting(false);
@@ -374,8 +486,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="flex items-center justify-between">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 sm:space-y-6 lg:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" asChild>
                   <Link href="/products">
@@ -384,26 +496,25 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                   </Link>
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-semibold">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground text-sm sm:text-base">
                         {isEditMode ? `Editing "${initialData?.title}"` : 'Fill in the details below to add a new product.'}
                     </p>
                 </div>
             </div>
-            <div className="flex gap-2">
-                 <Button variant="outline" type="button" onClick={() => router.push('/products')}>Cancel</Button>
-                 <Button type="submit" disabled={isSubmitting || !formState.isDirty}>
+            <div className="flex gap-2 w-full sm:w-auto">
+                 <Button variant="outline" type="button" onClick={() => router.push('/products')} className="flex-1 sm:flex-none">Cancel</Button>
+                 <Button type="submit" disabled={isSubmitting || !formState.isDirty} className="flex-1 sm:flex-none">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditMode ? 'Save Changes' : 'Add Product'}
                  </Button>
             </div>
         </div>
         <TooltipProvider>
-            <div className="grid gap-6 md:grid-cols-3">
-            <div className="grid gap-6 md:col-span-2">
+            <div className="grid gap-2 md:gap-6 md:grid-cols-3 overflow-x-hidden">
+            <div className="grid gap-2 md:gap-6 md:col-span-2">
                 <Card>
-                <CardHeader><CardTitle>Product Details</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
+                <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl">Product Details</CardTitle></CardHeader>
+                <CardContent className="space-y-2 sm:space-y-4 p-2 sm:p-4 pt-0">
                     <FormField control={form.control} name="title" render={({ field }) => ( 
                         <FormItem>
                             <FormLabel>Title</FormLabel>
@@ -417,63 +528,92 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             <FormMessage />
                         </FormItem>
                     )} />
-                    <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your product..." className="min-h-32" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <SynchronizedEditor
+                              initialContent={field.value || ''}
+                              onContentChange={(content) => {
+                                console.log('[ProductForm] SynchronizedEditor content change:', {
+                                  newContent: content?.substring(0, 100) + '...',
+                                  fieldValue: field.value?.substring(0, 100) + '...'
+                                });
+                                setValue('description', content, { shouldDirty: true });
+                              }}
+                                productId={initialData?.id}
+                              productName={form.watch('title') || 'Product'}
+                              imageAnalysis={undefined}
+                              placeholder="Start typing your product description... Use the toolbar above to format your text with bold, italic, and bullet points."
+                              pivotReason={pivotReason}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
                 </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Media</CardTitle>
-                        <CardDescription>Add or replace the featured image. An image is optional.</CardDescription>
+                    <CardHeader className="p-2 sm:p-4">
+                        <CardTitle className="text-lg sm:text-xl">Media</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mb-4">
-                            {imagePreviews.map((src, index) => (
-                                <div key={index} className="relative aspect-square group">
-                                    <Image
-                                        src={src}
-                                        alt={`Product image ${index + 1}`}
-                                        fill
-                                        className="object-cover rounded-md"
-                                    />
-                                    <div className="absolute top-1 right-1">
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => removeImage(index)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
+                    <CardContent className="p-2 sm:p-4 pt-0">
+                        <DndContext 
+                            sensors={sensors} 
+                            collisionDetection={closestCenter} 
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext 
+                                items={imagePreviews} 
+                                strategy={rectSortingStrategy}
+                            >
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-4">
+                                    {imagePreviews.filter(src => src && typeof src === 'string').map((src, index) => (
+                                        <SortableImage 
+                                            key={src} 
+                                            url={src} 
+                                            index={index} 
+                                            onRemove={removeImage} 
+                                        />
+                                    ))}
+                                    
+                                    {/* Loading skeleton while uploading */}
+                                    {isUploadingImage && (
+                                        <div className="relative aspect-square">
+                                            <Skeleton className="w-full h-full rounded-md animate-pulse" />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                                <p className="text-xs text-muted-foreground">Uploading...</p>
+                                            </div>
+                                            </div>
+                                        )}
+                                    
+                                    {/* Always show dropzone */}
+                                    <div
+                                        className="aspect-square flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
+                                        onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+                                    >
+                                        <div className="text-center">
+                                            <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
+                                            <p className="text-sm text-muted-foreground mt-1">Add Image</p>
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                            <Card
-                                className="aspect-square flex items-center justify-center border-2 border-dashed cursor-pointer hover:border-primary transition-colors"
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <div className="text-center">
-                                    <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
-                                    <p className="text-sm text-muted-foreground mt-1">Add Image</p>
-                                </div>
-                            </Card>
-                        </div>
-                        <FormControl>
-                            <Input
-                                type="file"
-                                className="hidden"
-                                ref={fileInputRef}
-                                onChange={handleImageChange}
-                                accept="image/*"
-                                multiple
-                            />
-                        </FormControl>
-                        <FormMessage />
+                            </SortableContext>
+                        </DndContext>
+                        <Input
+                            type="file"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            multiple
+                        />
                     </CardContent>
                 </Card>
                 <Card>
-                <CardHeader><CardTitle>Pricing &amp; Inventory</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
+                <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl">Pricing &amp; Inventory</CardTitle></CardHeader>
+                <CardContent className="grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2 p-2 sm:p-4 pt-0">
                     <FormField
                         control={form.control}
                         name="price"
@@ -499,52 +639,29 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                     type="number" 
                                     placeholder="0" 
                                     {...field}
-                                    onChange={e => field.onChange(parseInt(e.target.value, 10))}
                                 />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )} />
-                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU (Stock Keeping Unit)</FormLabel><FormControl><Input placeholder="Auto-generated if left empty" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU</FormLabel><FormControl><Input placeholder="Auto-generated" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </CardContent>
                 </Card>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-2 sm:space-y-6">
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            Product Status
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button type="button" className="focus:outline-none">
-                                        <Info className="h-4 w-4 text-muted-foreground" />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-xs">
-                                    <ul className="list-disc pl-4 space-y-2 text-left">
-                                        <li><b>Active:</b> Visible and available for purchase on your store.</li>
-                                        <li><b>Draft:</b> Hidden from your store. Use for products you're still working on.</li>
-                                        <li><b>Archived:</b> Hidden from your store and admin. Use for past products.</li>
-                                    </ul>
-                                </TooltipContent>
-                            </Tooltip>
-                        </CardTitle>
+                    <CardHeader className="p-2 sm:p-4">
+                        <CardTitle className="text-lg sm:text-xl">Product Status</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-2 sm:p-4 pt-0">
                     <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select product status" /></SelectTrigger></FormControl>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
                                 <SelectContent>
-                                     <SelectItem value="ACTIVE">
-                                        Active
-                                    </SelectItem>
-                                    <SelectItem value="DRAFT">
-                                        Draft
-                                    </SelectItem>
-                                    <SelectItem value="ARCHIVED">
-                                        Archived
-                                    </SelectItem>
+                                     <SelectItem value="ACTIVE">Active</SelectItem>
+                                     <SelectItem value="DRAFT">Draft</SelectItem>
+                                     <SelectItem value="ARCHIVED">Archived</SelectItem>
                                 </SelectContent>
                             </Select>
                         <FormMessage />
@@ -553,13 +670,8 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Product Organization</CardTitle>
-                        <CardDescription>
-                            Categorize your product to make it easier for customers to find and for you to manage.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl">Organization</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 sm:space-y-4 p-2 sm:p-4 pt-0">
                         {featuredCollection && (
                           <FormField
                             control={form.control}
@@ -567,22 +679,23 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                             render={({ field }) => (
                               <FormItem className="flex items-center justify-between rounded-lg border p-3">
                                 <div>
-                                  <FormLabel>Featured on Homepage</FormLabel>
-                                  <FormDescription>Toggle to add/remove from the "{featuredCollection.title}" collection used on the storefront home page.</FormDescription>
+                                  <FormLabel>Featured</FormLabel>
                                 </div>
                                 <FormControl>
                                   <Switch
                                     checked={field.value}
                                     onCheckedChange={(checked) => {
                                       field.onChange(checked);
-                                      const current = new Set(form.getValues('collections') || []);
-                                      if (checked) current.add(featuredCollection.id);
-                                      else current.delete(featuredCollection.id);
-                                      form.setValue('collections', Array.from(current), { shouldDirty: true });
+                                      const current = new Set(getValues('collections') || []);
+                                      if (checked) {
+                                        current.add(featuredCollection.id);
+                                      } else {
+                                        current.delete(featuredCollection.id);
+                                      }
+                                      setValue('collections', Array.from(current), { shouldDirty: true });
                                     }}
                                   />
                                 </FormControl>
-                                <FormMessage />
                               </FormItem>
                             )}
                           />
@@ -590,48 +703,61 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         <FormField control={form.control} name="productType" render={({ field }) => (
                             <FormItem>
                             <FormLabel>Product Type</FormLabel>
-                            <FormControl><Input placeholder="e.g. Candle, Wax Melt" {...field} /></FormControl>
+                            <FormControl><Input placeholder="e.g. Candle" {...field} /></FormControl>
                             <FormMessage />
                             </FormItem>
                         )} />
                         <FormField control={form.control} name="tags" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Tags</FormLabel>
-                                <FormControl><Input placeholder="e.g. Lavender, Soy, Handmade" {...field} /></FormControl>
-                                <FormDescription>Comma-separated values.</FormDescription>
+                                <FormControl><Input placeholder="e.g. Lavender, Soy" {...field} /></FormControl>
+                                <FormDescription>Comma-separated.</FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )} />
                         <FormField control={form.control} name="collections" render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>Collections</FormLabel>
-                                <Popover>
+                                <Popover open={collectionOpen} onOpenChange={setCollectionOpen}>
                                     <PopoverTrigger asChild>
                                     <FormControl>
-                                        <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}>
-                                            <span className="truncate">{field.value?.length ? `${field.value.length} selected` : "Select collections"}</span>
+                                        <Button variant="outline" role="combobox" className="w-full justify-between text-muted-foreground">
+                                            <span className="truncate">{field.value?.length ? `${field.value.length} selected` : "Select"}</span>
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                     <Command>
-                                        <CommandInput placeholder="Search collections..." />
+                                        <CommandInput placeholder="Search..." />
                                         <CommandList>
-                                            <CommandEmpty>No collections found.</CommandEmpty>
+                                            <CommandEmpty>No collections.</CommandEmpty>
                                             <CommandGroup>
-                                                {collections.map((collection) => (
-                                                    <CommandItem key={collection.id} onSelect={() => {
-                                                        const selected = field.value || [];
-                                                        const isSelected = selected.includes(collection.id);
-                                                        if (isSelected) {
-                                                            field.onChange(selected.filter((id) => id !== collection.id));
-                                                        } else {
-                                                            field.onChange([...selected, collection.id]);
-                                                        }
-                                                    }}>
-                                                        <Check className={cn("mr-2 h-4 w-4",(field.value || []).includes(collection.id) ? "opacity-100" : "opacity-0")} />
-                                                        {collection.title}
+                                                {collections.map((c) => (
+                                                    <CommandItem 
+                                                        key={c.id} 
+                                                        value={c.title}
+                                                        onSelect={() => {
+                                                            console.log(`[ProductForm] Selected collection: ${c.title} (${c.id})`);
+                                                            const selected = new Set(field.value || []);
+                                                            const isCurrentlySelected = selected.has(c.id);
+                                                            
+                                                            if (isCurrentlySelected) {
+                                                                selected.delete(c.id);
+                                                            } else {
+                                                                selected.add(c.id);
+                                                            }
+                                                            
+                                                            field.onChange(Array.from(selected));
+                                                            
+                                                            // Special handling for Featured collection
+                                                            if (featuredCollection && c.id === featuredCollection.id) {
+                                                                setValue('featured', !isCurrentlySelected, { shouldDirty: true });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4",(field.value || []).includes(c.id) ? "opacity-100" : "opacity-0")} />
+                                                        {c.title}
                                                     </CommandItem>
                                                 ))}
                                             </CommandGroup>
@@ -640,25 +766,22 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                     </PopoverContent>
                                 </Popover>
                                 <div className="space-x-1 space-y-1 pt-2">
-                                    {(field.value || []).map((collectionId) => {
-                                        const collection = collections.find(c => c.id === collectionId);
-                                        return collection ? (
-                                            <Badge variant="secondary" key={collectionId}>
-                                                {collection.title}
-                                                <button type="button" className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    {(field.value || []).map((id) => {
+                                        const c = collections.find(c => c.id === id);
+                                        return c ? (
+                                            <Badge variant="secondary" key={id}>
+                                                {c.title}
+                                                <button type="button" className="ml-1"
                                                     onClick={() => {
-                                                        const newValue = (field.value || []).filter(id => id !== collectionId);
-                                                        field.onChange(newValue);
-
+                                                        field.onChange((field.value || []).filter(v => v !== id));
                                                     }}
                                                 >
-                                                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                                    <X className="h-3 w-3" />
                                                 </button>
                                             </Badge>
                                         ) : null
                                     })}
                                 </div>
-                                <FormMessage />
                             </FormItem>
                         )} />
                     </CardContent>

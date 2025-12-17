@@ -1,11 +1,70 @@
-
 'use server';
 
-import { ShopifyProduct } from "@/types/shopify";
+import { cache } from 'react';
 
-// A service for interacting with the Shopify Admin GraphQL API.
-// Note: This service is intended for server-side use only.
-// Do not expose your Shopify Admin Access Token to the client.
+import { ShopifyProduct } from "@/types/shopify";
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { encodeShopifyId } from '@/lib/utils';
+
+export type { ShopifyProduct };
+
+export type ShopifyOrder = {
+  id: string;
+  name: string;
+  createdAt: string;
+  processedAt: string;
+  totalPriceSet: {
+    shopMoney: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  totalShippingPriceSet: {
+    shopMoney: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  totalTaxSet: {
+    shopMoney: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  customer?: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+  };
+  shippingAddress?: {
+    address1: string;
+    address2?: string;
+    city: string;
+    province: string;
+    zip: string;
+    country: string;
+  };
+  displayFinancialStatus: string;
+  displayFulfillmentStatus: string;
+  lineItems: {
+    edges: Array<{
+      node: {
+        id: string;
+        title: string;
+        quantity: number;
+        product?: {
+          id: string;
+          title: string;
+          featuredImage?: {
+            url: string;
+            altText: string | null;
+          };
+        };
+      };
+    }>;
+  };
+};
 
 type ShopifyGraphQLResponse<T> = {
   data: T;
@@ -13,53 +72,26 @@ type ShopifyGraphQLResponse<T> = {
 };
 
 export type ShopifyCollection = {
-    id: string;
-    title: string;
-    handle: string;
+  id: string;
+  title: string;
+  handle: string;
 }
 
-export type ShopifyOrder = {
-    id: string;
-    name: string;
-    processedAt: string;
-    totalPriceSet: {
-        shopMoney: {
-            amount: string;
-            currencyCode: string;
-        }
-    };
-    lineItems: {
-        edges: {
-            node: {
-                title: string;
-                quantity: number;
-                product: {
-                    id: string | null;
-                } | null;
-            }
-        }[]
-    }
-}
+import { SHOPIFY_CONFIG } from '@/lib/env-config';
 
-const SHOPIFY_API_URL = process.env.SHOPIFY_STORE_URL!;
-const SHOPIFY_ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN!;
+const SHOPIFY_API_URL = `https://${SHOPIFY_CONFIG.STORE_URL}/admin/api/${SHOPIFY_CONFIG.API_VERSION}/graphql.json`;
+const SHOPIFY_ADMIN_TOKEN = SHOPIFY_CONFIG.ADMIN_ACCESS_TOKEN;
 
-export async function fetchShopify<T>(query: string, variables?: Record<string, any>): Promise<T> {
-  
+// Debug logging for admin token
+console.log('[Shopify] Admin token last 4 chars:', SHOPIFY_ADMIN_TOKEN?.slice(-4) || 'NOT SET');
+console.log('[Shopify] Store URL:', SHOPIFY_CONFIG.STORE_URL);
+console.log('[Shopify] API Version:', SHOPIFY_CONFIG.API_VERSION);
+console.log('[Shopify] Full API URL:', SHOPIFY_API_URL);
+
+export async function fetchShopify<T = any>(query: string, variables?: Record<string, any>): Promise<T> {
   if (!SHOPIFY_API_URL || !SHOPIFY_ADMIN_TOKEN) {
     throw new Error('Shopify environment variables are not set.');
   }
-
-  // Log the query and variables for debugging
-  console.log("--- Shopify API Call ---");
-  console.log("Endpoint:", SHOPIFY_API_URL);
-  console.log("Query:", query.trim().replace(/\s+/g, ' '));
-  if (variables) {
-    console.log("Variables:", JSON.stringify(variables, null, 2));
-  }
-  console.log("------------------------");
-
-
   try {
     const response = await fetch(SHOPIFY_API_URL, {
       method: 'POST',
@@ -68,82 +100,21 @@ export async function fetchShopify<T>(query: string, variables?: Record<string, 
         'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN,
       },
       body: JSON.stringify({ query, variables }),
-      cache: 'no-store', // Disables caching for this fetch request
-      next: { revalidate: 0 } // Forces revalidation every time
+      next: {
+        revalidate: 60, // Cache for 60 seconds
+        tags: ['shopify-data'] // For on-demand revalidation if needed
+      }
     });
-
-    const rawResponseText = await response.text();
-
-    const result: ShopifyGraphQLResponse<T> = JSON.parse(rawResponseText);
-
-
-    if (!response.ok) {
-        let errorMessage = `Shopify API request failed with status ${response.status}: ${response.statusText}`;
-        if (result.errors) {
-            errorMessage += `\nGraphQL Errors: ${result.errors.map(e => e.message).join('\n')}`;
-        }
-        throw new Error(errorMessage);
-    }
-    
+    const result: ShopifyGraphQLResponse<T> = await response.json();
     if (result.errors) {
-        // Log the full error for server-side debugging
-        console.error("[Shopify Service] GraphQL Errors:", JSON.stringify(result.errors, null, 2));
-        throw new Error(`GraphQL Error: ${result.errors.map(e => e.message).join('\n')}`);
+      console.error("[Shopify Service] GraphQL Errors:", JSON.stringify(result.errors, null, 2));
+      throw new Error(`GraphQL Error: ${result.errors.map(e => e.message).join('\n')}`);
     }
-    
     return result.data;
-
   } catch (error: any) {
     console.error("[Shopify Service] Unhandled fetch error:", error);
     throw error;
   }
-}
-
-const GET_PRODUCTS_QUERY = `
-  query getProducts($first: Int!) {
-    products(first: $first, sortKey: TITLE, reverse: false) {
-      edges {
-        node {
-          id
-          title
-          handle
-          status
-          totalInventory
-          tags
-          featuredImage {
-            url(transform: {maxWidth: 512, maxHeight: 512})
-          }
-          priceRange: priceRangeV2 {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          variants(first: 1) {
-            edges {
-              node {
-                inventoryItem { id }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type GetProductsResponse = {
-  products: {
-    edges: {
-      node: ShopifyProduct;
-    }[];
-  };
-};
-
-export async function getProducts(count: number = 25): Promise<ShopifyProduct[]> {
-  const response = await fetchShopify<GetProductsResponse>(GET_PRODUCTS_QUERY, { first: count });
-  const products = response.products.edges.map(edge => edge.node);
-  return products;
 }
 
 const GET_PRODUCT_BY_ID_QUERY = `
@@ -153,17 +124,22 @@ const GET_PRODUCT_BY_ID_QUERY = `
       title
       handle
       status
-      description
       productType
       tags
       totalInventory
       onlineStoreUrl
+      description
+      descriptionHtml
+      customDescription: metafield(namespace: "custom", key: "description") {
+        value
+      }
       featuredImage {
         url(transform: {maxWidth: 1024, maxHeight: 1024})
       }
-      images(first: 10) {
+      images(first: 20) {
         edges {
           node {
+            id
             url(transform: {maxWidth: 1024, maxHeight: 1024})
             altText
           }
@@ -199,18 +175,221 @@ const GET_PRODUCT_BY_ID_QUERY = `
 `;
 
 type GetProductByIdResponse = {
-    product: ShopifyProduct | null;
+  product: {
+    description: string;
+    descriptionHtml: string;
+    customDescription: { value: string } | null;
+  } & Omit<ShopifyProduct, 'description'> | null;
 };
 
-export async function getProductById(id: string): Promise<ShopifyProduct | null> {
-    const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
-    return response.product;
+const GET_PRODUCTS_QUERY = `
+  query getProducts($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          title
+          handle
+          status
+          productType
+          tags
+          totalInventory
+          onlineStoreUrl
+          description
+          descriptionHtml
+          customDescription: metafield(namespace: "custom", key: "description") {
+            value
+          }
+          featuredImage {
+            url(transform: {maxWidth: 1024, maxHeight: 1024})
+          }
+          images(first: 100) {
+            edges {
+              node {
+                id
+                url(transform: {maxWidth: 1024, maxHeight: 1024})
+                altText
+              }
+            }
+          }
+          priceRange: priceRangeV2 {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          variants(first: 1) {
+            edges {
+              node {
+                id
+                sku
+                inventoryItem {
+                  id
+                }
+              }
+            }
+          }
+          collections(first: 10) {
+            edges {
+                node {
+                    id
+                    title
+                }
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+type GetProductsResponse = {
+  products: {
+    edges: Array<{
+      node: {
+        description: string;
+        descriptionHtml: string;
+        customDescription: { value: string } | null;
+      } & Omit<ShopifyProduct, 'description'>;
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+      endCursor: string;
+    };
+  };
+};
+
+// Collection management functions
+export async function collectionAddProducts(collectionId: string, productIds: string[]) {
+  const mutation = `
+        mutation collectionAddProducts($id: ID!, $productIds: [ID!]!) {
+            collectionAddProducts(id: $id, productIds: $productIds) {
+                collection { id }
+                userErrors { field message }
+            }
+        }
+    `;
+  await fetchShopify(mutation, { id: collectionId, productIds });
 }
 
+export async function collectionRemoveProducts(collectionId: string, productIds: string[]) {
+  const mutation = `
+        mutation collectionRemoveProducts($id: ID!, $productIds: [ID!]!) {
+            collectionRemoveProducts(id: $id, productIds: $productIds) {
+                collection { id }
+                userErrors { field message }
+            }
+        }
+    `;
+  await fetchShopify(mutation, { id: collectionId, productIds });
+}
+
+export const getOrders = cache(async (first: number = 50, after?: string): Promise<ShopifyOrder[]> => {
+  const query = `
+    query getOrders($first: Int!, $after: String) {
+      orders(first: $first, after: $after, sortKey: CREATED_AT, reverse: true) {
+        edges {
+          node {
+            id
+            name
+            createdAt
+            processedAt
+            totalPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            totalShippingPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            totalTaxSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            customer {
+              firstName
+              lastName
+              email
+            }
+            shippingAddress {
+              address1
+              address2
+              city
+              province
+              zip
+              country
+            }
+            displayFinancialStatus
+            displayFulfillmentStatus
+            lineItems(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  quantity
+                  product {
+                    id
+                    title
+                    featuredImage {
+                      url
+                      altText
+                    }
+                  }
+                  variant {
+                    title
+                    sku
+                  }
+                  customAttributes {
+                    key
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await fetchShopify<any>(query, { first, after });
+    return result.orders.edges.map((edge: any) => edge.node);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    throw error;
+  }
+});
+
+export const getProducts = cache(async (first: number = 50, after?: string): Promise<ShopifyProduct[]> => {
+  const response = await fetchShopify<GetProductsResponse>(GET_PRODUCTS_QUERY, { first, after });
+
+  return response.products.edges.map(({ node }) => {
+    const { description, descriptionHtml, customDescription, ...restOfProduct } = node;
+    return {
+      ...restOfProduct,
+      description: description || descriptionHtml || customDescription?.value || "",
+    };
+  });
+});
 
 const GET_COLLECTIONS_QUERY = `
-  query getCollections($first: Int!) {
-    collections(first: $first, sortKey: TITLE) {
+  query getCollections($first: Int!, $after: String) {
+    collections(first: $first, after: $after) {
       edges {
         node {
           id
@@ -218,44 +397,102 @@ const GET_COLLECTIONS_QUERY = `
           handle
         }
       }
-    }
-  }
-`;
-
-type GetCollectionsResponse = {
-    collections: {
-        edges: {
-            node: ShopifyCollection;
-        }[];
-    };
-};
-
-export async function getCollections(count: number = 50): Promise<ShopifyCollection[]> {
-    const response = await fetchShopify<GetCollectionsResponse>(GET_COLLECTIONS_QUERY, { first: count });
-    return response.collections.edges.map(edge => edge.node);
-}
-
-const GET_PRIMARY_LOCATION_ID_QUERY = `
-  query {
-    locations(first: 1, query: "isPrimary:true") {
-      edges {
-        node {
-          id
-        }
+      pageInfo {
+        hasNextPage
+        endCursor
       }
     }
   }
 `;
 
-type GetLocationResponse = {
-  locations: {
-    edges: { node: { id: string } }[]
+type GetCollectionsResponse = {
+  collections: {
+    edges: Array<{
+      node: ShopifyCollection;
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+      endCursor: string;
+    };
+  };
+};
+
+export async function getCollections(first: number = 50, after?: string): Promise<ShopifyCollection[]> {
+  const response = await fetchShopify<GetCollectionsResponse>(GET_COLLECTIONS_QUERY, { first, after });
+
+  return response.collections.edges.map(({ node }) => node);
+}
+
+export async function getProductById(id: string): Promise<ShopifyProduct | null> {
+  // Step 1: Fetch the main product data
+  const response = await fetchShopify<GetProductByIdResponse>(GET_PRODUCT_BY_ID_QUERY, { id });
+  if (!response.product) return null;
+
+  // Load Shadow Description from Firestore (Authoritative Source)
+  const { loadShadowDescription } = await import('@/services/product-shadow');
+  const shadowDescription = await loadShadowDescription(id);
+
+  const { description, descriptionHtml, customDescription, ...restOfProduct } = response.product;
+
+  // Prioritization: Shadow > HTML > Custom Metafield > Plain Text
+  const finalDescription = shadowDescription || descriptionHtml || customDescription?.value || description || "";
+
+  let product: ShopifyProduct = {
+    ...restOfProduct,
+    description: finalDescription,
+  };
+
+  // Step 2: Perform a more precise, real-time inventory check
+  const inventoryItemId = product.variants.edges[0]?.node.inventoryItem.id;
+  if (inventoryItemId) {
+    try {
+      // This new query fetches the correct, stable InventoryLevel ID
+      const inventoryLevelsQuery = `
+                query getInventoryLevels($id: ID!) {
+                    inventoryItem(id: $id) {
+                        inventoryLevels(first: 5) {
+      edges {
+        node {
+          id
+                                    available
+                                    location { id }
+                                }
+        }
+      }
+    }
   }
+`;
+      const inventoryLevelsResult = await fetchShopify<any>(inventoryLevelsQuery, { id: inventoryItemId });
+      const locationId = await getPrimaryLocationId();
+
+      // Find the specific inventory level for our primary location
+      const primaryLocationLevel = inventoryLevelsResult.inventoryItem?.inventoryLevels.edges
+        .find((edge: any) => edge.node.location.id === locationId)?.node;
+
+      if (primaryLocationLevel) {
+        product.totalInventory = primaryLocationLevel.available;
+      }
+
+    } catch (error) {
+      console.warn("Could not fetch real-time inventory. Error:", error);
+    }
+  }
+
+  return product;
 }
 
 export async function getPrimaryLocationId(): Promise<string | null> {
+  const query = `
+  query {
+    locations(first: 1, query: "isPrimary:true") {
+      edges {
+          node { id }
+      }
+    }
+  }
+`;
   try {
-    const response = await fetchShopify<GetLocationResponse>(GET_PRIMARY_LOCATION_ID_QUERY);
+    const response = await fetchShopify<any>(query);
     return response.locations.edges[0]?.node.id || null;
   } catch (error) {
     console.error("Failed to fetch primary location ID:", error);
@@ -264,16 +501,95 @@ export async function getPrimaryLocationId(): Promise<string | null> {
 }
 
 type ProductData = {
-    title: string;
-    description: string; // HTML string
-    tags: string;
-    price: string;
-    sku: string;
-    imageUrls: string[];
+  title: string;
+  description: string;
+  tags: string;
+  price: string;
+  sku: string;
+  status: string;
+  inventory: number; // Ensure this is part of the type
+  imageUrls: string[];
+  collections?: string[]; // Add collections support
 };
 
+// REPLACEMENT for getOnlineStorePublicationId
+// This new version can find multiple channels by their names.
+async function getPublicationIds(channelNames: string[]): Promise<string[]> {
+  const query = `
+    query getPublications {
+      publications(first: 25) {
+        edges {
+          node {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+  const result = await fetchShopify<any>(query);
+  const allPublications = result.publications.edges.map((e: any) => e.node);
+
+  const publicationIds = allPublications
+    .filter((p: { name: string }) => channelNames.includes(p.name))
+    .map((p: { id: string }) => p.id);
+
+  if (publicationIds.length === 0) {
+    console.warn("Could not find any of the requested sales channels:", channelNames);
+  }
+
+  return publicationIds;
+}
+
+// REPLACEMENT for publishProductToChannel
+// This new version publishes a product to all the channels we find.
+async function publishProductToChannel(productId: string) {
+  // Define all the channels you want to publish to here
+  // TODO: Update channel name for production - currently using dev headless channel
+  const channelsToPublish = ['Online Store', 'Threechicksandawick Dev Headless'];
+  const publicationIds = await getPublicationIds(channelsToPublish);
+
+  if (publicationIds.length === 0) {
+    console.warn(`No valid publication channels found to publish product ${productId}`);
+    console.warn(`⚠️  PRODUCTION WARNING: Channel names may need updating for production deployment`);
+    console.warn(`Current channels searched:`, channelsToPublish);
+    return; // Stop if no channels were found
+  }
+
+  const mutation = `
+    mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
+      publishablePublish(id: $id, input: $input) {
+        publishable {
+          ... on Product {
+            id
+            status
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  // The 'input' is now an array of all the channel IDs we want to publish to
+  const result = await fetchShopify<any>(mutation, {
+    id: productId,
+    input: publicationIds.map(id => ({ publicationId: id }))
+  });
+
+  const userErrors = result.publishablePublish.userErrors;
+  if (userErrors && userErrors.length > 0) {
+    console.warn(`Failed to publish product ${productId}: ${JSON.stringify(userErrors)}`);
+  } else {
+    console.log(`✅ Successfully published product ${productId} to ${publicationIds.length} channel(s):`, channelsToPublish);
+    console.log(`Published to publication IDs:`, publicationIds);
+  }
+}
+
 export async function createProduct(productData: ProductData) {
-  // 1. Create the product (title, tags, status)
+  // 1. Create the product shell (title, tags, status)
   const createProductMutation = `
     mutation productCreate($input: ProductInput!) {
       productCreate(input: $input) {
@@ -285,15 +601,16 @@ export async function createProduct(productData: ProductData) {
   const productInput = {
     title: productData.title,
     tags: productData.tags,
-    status: "DRAFT"
+    status: productData.status,
+    descriptionHtml: productData.description
   };
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
   const productId = createProductResult.productCreate.product?.id;
   if (!productId) throw new Error(`Product create failed: ${JSON.stringify(createProductResult.productCreate.userErrors)}`);
 
-  // 2. Get the default variant and inventoryItemId
-  const getProductQuery = `
-    query getProductById($id: ID!) {
+  // 2. Get the default variant and its inventoryItemId
+  const getVariantQuery = `
+    query getProductVariant($id: ID!) {
       product(id: $id) {
         variants(first: 1) {
           edges {
@@ -306,11 +623,10 @@ export async function createProduct(productData: ProductData) {
       }
     }
   `;
-  const getProductResult = await fetchShopify<any>(getProductQuery, { id: productId });
-  const variantNode = getProductResult.product.variants.edges[0]?.node;
+  const getVariantResult = await fetchShopify<any>(getVariantQuery, { id: productId });
+  const variantNode = getVariantResult.product.variants.edges[0]?.node;
   if (!variantNode) throw new Error("No default variant found");
-  const variantId = variantNode.id;
-  const inventoryItemId = variantNode.inventoryItem.id;
+  const { id: variantId, inventoryItem: { id: inventoryItemId } } = variantNode;
 
   // 3. Update the variant's price
   const updateVariantMutation = `
@@ -321,32 +637,67 @@ export async function createProduct(productData: ProductData) {
       }
     }
   `;
-  const updateVariantResult = await fetchShopify<any>(updateVariantMutation, {
+  await fetchShopify<any>(updateVariantMutation, {
     productId,
     variants: [{ id: variantId, price: productData.price }]
   });
-  if (updateVariantResult.productVariantsBulkUpdate.userErrors?.length) {
-    throw new Error(`Variant update failed: ${JSON.stringify(updateVariantResult.productVariantsBulkUpdate.userErrors)}`);
-  }
 
-  // 4. Update the inventory item's SKU
-  const updateInventoryMutation = `
+  // --- Step from Shopify Docs: Enable Inventory Tracking ---
+  // 4. Update the inventory item to set the SKU and explicitly enable tracking.
+  const updateInventoryItemMutation = `
     mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
       inventoryItemUpdate(id: $id, input: $input) {
-        inventoryItem { id sku }
+        inventoryItem { id sku tracked }
         userErrors { field message }
       }
     }
   `;
-  const updateInventoryResult = await fetchShopify<any>(updateInventoryMutation, {
+  await fetchShopify<any>(updateInventoryItemMutation, {
     id: inventoryItemId,
-    input: { sku: productData.sku }
+    input: {
+      sku: productData.sku,
+      tracked: true // Explicitly enable tracking as required.
+    }
   });
-  if (updateInventoryResult.inventoryItemUpdate.userErrors?.length) {
-    throw new Error(`Inventory update failed: ${JSON.stringify(updateInventoryResult.inventoryItemUpdate.userErrors)}`);
+
+  // --- THIS IS THE NEW, CRUCIAL STEP ---
+  // Step 5: Activate the inventory item at the primary location
+  const locationId = await getPrimaryLocationId();
+  if (!locationId) {
+    throw new Error("Could not determine primary location to activate inventory.");
+  }
+  const inventoryActivateMutation = `
+    mutation inventoryActivate($inventoryItemId: ID!, $locationId: ID!) {
+      inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId) {
+        inventoryLevel { id }
+        userErrors { field message }
+      }
+    }
+  `;
+  await fetchShopify<any>(inventoryActivateMutation, { inventoryItemId, locationId });
+  // --- END OF NEW STEP ---
+
+  // Step 6: Set the absolute inventory quantity now that it's activated
+  if (typeof productData.inventory === 'number') {
+    await updateInventoryQuantity(inventoryItemId, productData.inventory, locationId);
+
+    // Also write to Firestore for real-time updates
+    const docId = encodeShopifyId(inventoryItemId);
+    await adminDb.collection('inventoryStatus').doc(docId).set({
+      quantity: productData.inventory,
+      status: 'confirmed',
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
   }
 
-  // 5. Attach images
+  // Step 7: Add product to selected collections
+  if (productData.collections && productData.collections.length > 0) {
+    for (const collectionId of productData.collections) {
+      await collectionAddProducts(collectionId, [productId]);
+    }
+  }
+
+  // Step 8: Attach images
   if (productData.imageUrls.length > 0) {
     const createMediaMutation = `
         mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
@@ -356,16 +707,87 @@ export async function createProduct(productData: ProductData) {
             }
         }
     `;
-    const createMediaResult = await fetchShopify<any>(createMediaMutation, {
-        productId,
-        media: productData.imageUrls.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
+    await fetchShopify<any>(createMediaMutation, {
+      productId,
+      media: productData.imageUrls.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
     });
-    if (createMediaResult.productCreateMedia.userErrors?.length) {
-        console.warn(`Media create failed: ${JSON.stringify(createMediaResult.productCreateMedia.userErrors)}`);
-    }
   }
 
-  // 6. Set the description via metafield
+  // Step 9: Set the description via metafield for backward compatibility
+  await updateProductDescription(productId, productData.description);
+
+  // Step 10: Publish the product to the sales channel
+  try {
+    await publishProductToChannel(productId);
+  } catch (error) {
+    console.warn("Product was created but failed to publish to the Online Store channel.", error);
+  }
+
+  return { product: { id: productId } };
+}
+
+export async function updateProduct(productId: string, productInput: { title?: string, tags?: string, status?: string, descriptionHtml?: string }) {
+  const updateProductMutation = `
+        mutation productUpdate($input: ProductInput!) {
+            productUpdate(input: $input) {
+                product { id }
+                userErrors { field message }
+            }
+        }
+    `;
+  const validProductInput = {
+    id: productId,
+    ...productInput
+  };
+  const result = await fetchShopify<any>(updateProductMutation, { input: validProductInput });
+  const userErrors = result.productUpdate.userErrors;
+  if (userErrors && userErrors.length > 0) {
+    throw new Error(`Product update failed: ${userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+  return result;
+}
+
+export async function updateProductDescription(productId: string, description: string) {
+  // First, ensure the metafield definition exists with Storefront API access
+  const createDefinitionMutation = `
+        mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+            metafieldDefinitionCreate(definition: $definition) {
+                createdDefinition {
+                    id
+                    name
+                    namespace
+                    key
+                }
+                userErrors {
+                    field
+                    message
+                    code
+                }
+            }
+        }
+    `;
+
+  try {
+    // Create metafield definition with Storefront API access
+    await fetchShopify<any>(createDefinitionMutation, {
+      definition: {
+        name: "Custom Description",
+        namespace: "custom",
+        key: "description",
+        type: "multi_line_text_field",
+        ownerType: "PRODUCT",
+        access: {
+          storefront: "PUBLIC_READ"
+        }
+      }
+    });
+    console.log('✅ Metafield definition created with Storefront API access');
+  } catch (error) {
+    // Definition might already exist, which is fine
+    console.log('ℹ️ Metafield definition creation skipped (may already exist)');
+  }
+
+  // Then set the metafield value
   const setMetafieldMutation = `
     mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) {
@@ -374,55 +796,38 @@ export async function createProduct(productData: ProductData) {
         }
     }
   `;
-  const setMetafieldResult = await fetchShopify<any>(setMetafieldMutation, {
+  const result = await fetchShopify<any>(setMetafieldMutation, {
     metafields: [{
-        ownerId: productId,
-        namespace: "custom",
-        key: "description",
-        type: "multi_line_text_field",
-        value: productData.description
+      ownerId: productId,
+      namespace: "custom",
+      key: "description",
+      type: "multi_line_text_field",
+      value: description
     }]
   });
-  if (setMetafieldResult.metafieldsSet.userErrors?.length) {
-    console.warn(`Metafield set failed: ${JSON.stringify(setMetafieldResult.metafieldsSet.userErrors)}`);
+  const userErrors = result.metafieldsSet.userErrors;
+  if (userErrors && userErrors.length > 0) {
+    console.warn(`Metafield update failed: ${JSON.stringify(userErrors)}`);
+    throw new Error(`Description update failed: ${userErrors.map((e: any) => e.message).join(', ')}`);
   }
-
-  return { product: { id: productId } };
-}
-
-export async function updateProduct(productId: string, productInput: any) {
-    const updateProductMutation = `
-        mutation productUpdate($input: ProductInput!) {
-            productUpdate(input: $input) {
-                product {
-                    id
-                }
-                userErrors {
-                    field
-                    message
-                }
-            }
-        }
-    `;
-    
-    // For now, we only support updating core fields, not variants or images in this simplified flow
-    const { variants, images, ...coreInput } = productInput;
-    coreInput.id = productId;
-
-    const result = await fetchShopify<any>(updateProductMutation, { input: coreInput });
-    const userErrors = result.productUpdate.userErrors;
-
-     if (userErrors && userErrors.length > 0) {
-        throw new Error(`Product update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
-    }
-    
-    return result;
+  console.log('✅ Product description saved to metafield with Storefront API access');
+  return result;
 }
 
 export async function updateInventoryQuantity(inventoryItemId: string, quantity: number, locationId: string) {
-    const mutation = `
+  const mutation = `
         mutation InventorySetQuantities($input: InventorySetQuantitiesInput!) {
             inventorySetQuantities(input: $input) {
+                inventoryAdjustmentGroup {
+                    id
+                    changes {
+                        name
+                        delta
+                        quantityAfterChange
+                    }
+                    reason
+                    referenceDocumentUri
+                }
                 userErrors {
                     field
                     message
@@ -430,35 +835,170 @@ export async function updateInventoryQuantity(inventoryItemId: string, quantity:
             }
         }
     `;
-    
-    const variables = {
-        input: {
-            name: "available",
-            reason: "correction",
-            ignoreCompareQuantity: true,
-            quantities: [
-                {
-                    inventoryItemId,
-                    locationId,
-                    quantity,
-                },
-            ],
-        },
-    };
-    
-    const result = await fetchShopify<any>(mutation, variables);
-    const userErrors = result.inventorySetQuantities.userErrors;
 
-    if (userErrors && userErrors.length > 0) {
-        throw new Error(`Inventory update failed: ${userErrors.map((e:any) => e.message).join(', ')}`);
-    }
-    
-    return result;
+  // --- ADD THIS LOG ---
+  console.log(`[SERVICE] Sending to Shopify: Set inventory for item ${inventoryItemId} at location ${locationId} to quantity ${quantity}`);
+
+  const variables = {
+    input: {
+      name: "available",
+      reason: "correction",
+      ignoreCompareQuantity: true,
+      quantities: [
+        {
+          inventoryItemId,
+          locationId,
+          quantity,
+        },
+      ],
+    },
+  };
+  const result = await fetchShopify<any>(mutation, variables);
+
+  // Check for user errors
+  if (result.inventorySetQuantities.userErrors && result.inventorySetQuantities.userErrors.length > 0) {
+    const errors = result.inventorySetQuantities.userErrors.map((e: any) => e.message).join(', ');
+    throw new Error(`Inventory update failed: ${errors}`);
+  }
 }
 
+export async function productDeleteMedia(productId: string, mediaIds: string[]) {
+  if (mediaIds.length === 0) return;
+  const mutation = `
+        mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
+            productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+                deletedMediaIds
+                userErrors { field message }
+            }
+        }
+    `;
+  await fetchShopify<any>(mutation, { productId, mediaIds });
+}
 
-// --- Delete Product ---
-const PRODUCT_DELETE_MUTATION = `
+export async function productReorderMedia(productId: string, moves: { id: string, newPosition: string }[]) {
+  if (moves.length === 0) return;
+  const mutation = `
+        mutation productReorderMedia($productId: ID!, $moves: [MoveInput!]!) {
+            productReorderMedia(id: $productId, moves: $moves) {
+                job { id }
+                userErrors { field message }
+            }
+    `;
+  return await fetchShopify<any>(mutation, { productId, moves });
+}
+
+// Helper: Sleep utility
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function updateProductImages(productId: string, newImageUrls: string[]) {
+  console.log(`[Shopify Service] Syncing images for product ${productId}`);
+
+  try {
+    // 1. Get current media
+    let product = await getProductById(productId);
+    if (!product) throw new Error("Product not found");
+
+    // Map current images: URL -> ID
+    // Note: We use the transformed URL from getProductById. 
+    // We assume the frontend sends back the same URLs for existing images.
+    let currentImages = product.images.edges.map((e: any) => ({
+      id: e.node.id,
+      url: e.node.url
+    }));
+
+    // 2. Identify images to delete
+    // Delete any current image whose URL is NOT in the new list
+    const imagesToDelete = currentImages.filter(img => !newImageUrls.includes(img.url));
+    if (imagesToDelete.length > 0) {
+      console.log(`[Shopify Service] Deleting ${imagesToDelete.length} images`);
+      await productDeleteMedia(productId, imagesToDelete.map(img => img.id));
+    }
+
+    // 3. Identify images to add
+    // Add any URL in the new list that is NOT in the current list
+    const imagesToAdd = newImageUrls.filter(url => !currentImages.find(img => img.url === url));
+
+    if (imagesToAdd.length > 0) {
+      console.log(`[Shopify Service] Adding ${imagesToAdd.length} new images`);
+      const createMediaMutation = `
+                mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+                    productCreateMedia(productId: $productId, media: $media) {
+                        media { 
+                            ... on MediaImage { 
+                                id 
+                                image { url(transform: {maxWidth: 1024, maxHeight: 1024}) }
+                            } 
+                        }
+                        userErrors { field message }
+                    }
+                }
+            `;
+
+      const result = await fetchShopify<any>(createMediaMutation, {
+        productId,
+        media: imagesToAdd.map(url => ({ originalSource: url, mediaContentType: 'IMAGE' }))
+      });
+
+      if (result.productCreateMedia.userErrors?.length > 0) {
+        throw new Error(`Failed to add images: ${result.productCreateMedia.userErrors.map((e: any) => e.message).join(', ')}`);
+      }
+
+      // Wait for media to be processed
+      console.log(`[Shopify Service] Waiting for media processing...`);
+      await sleep(2000);
+
+      // Re-fetch product to get new media IDs
+      product = await getProductById(productId);
+      if (!product) throw new Error("Product not found after update");
+
+      currentImages = product.images.edges.map((e: any) => ({
+        id: e.node.id,
+        url: e.node.url
+      }));
+    }
+
+    // 4. Reorder images
+    // Construct moves using 1-based indexing
+    const moves = newImageUrls.map((url, index) => {
+      // Find the ID for this URL
+      // We need to match loosely because Shopify might transform the URL slightly?
+      // Actually, let's try exact match first.
+      const media = currentImages.find(img => img.url === url);
+
+      if (!media) {
+        console.warn(`[Shopify Service] Could not find media ID for URL: ${url}`);
+        return null;
+      }
+
+      return {
+        id: media.id,
+        newPosition: (index + 1).toString() // 1-indexed!
+      };
+    }).filter(m => m !== null) as { id: string, newPosition: string }[];
+
+    if (moves.length > 1) {
+      console.log(`[Shopify Service] Reordering ${moves.length} images`);
+      console.log(`[Shopify Service] Moves:`, JSON.stringify(moves, null, 2));
+
+      const reorderResult = await productReorderMedia(productId, moves);
+      console.log(`[Shopify Service] Reorder result:`, JSON.stringify(reorderResult, null, 2));
+
+      if (reorderResult.productReorderMedia?.userErrors?.length > 0) {
+        console.error(`[Shopify Service] Reorder errors:`, reorderResult.productReorderMedia.userErrors);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error(`[Shopify Service] Error syncing images:`, error);
+    throw error;
+  }
+}
+
+export async function deleteProduct(productId: string) {
+  const mutation = `
   mutation productDelete($input: ProductDeleteInput!) {
     productDelete(input: $input) {
       deletedProductId
@@ -466,155 +1006,239 @@ const PRODUCT_DELETE_MUTATION = `
     }
   }
 `;
-
-type ProductDeleteResponse = {
-  productDelete: {
-    deletedProductId: string | null;
-    userErrors: { field?: string[]; message: string }[];
-  };
-};
-
-export async function deleteProduct(productId: string): Promise<ProductDeleteResponse> {
-  const variables = { input: { id: productId } };
-  return fetchShopify<ProductDeleteResponse>(PRODUCT_DELETE_MUTATION, variables);
+  const result = await fetchShopify<any>(mutation, { input: { id: productId } });
+  return result.productDelete;
 }
 
 
-const INVENTORY_ITEM_UPDATE_MUTATION = `
-    mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
-        inventoryItemUpdate(id: $id, input: $input) {
-            inventoryItem {
-                id
-                sku
-                unitCost { amount currencyCode }
-            }
-            userErrors {
-                field
-                message
-            }
+
+export async function addTagsToOrder(orderId: string, tags: string[]) {
+  const mutation = `
+    mutation tagsAdd($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        node {
+          id
         }
+        userErrors {
+          field
+          message
+        }
+      }
     }
-`;
+  `;
 
-type InventoryItemUpdateResponse = {
-    inventoryItemUpdate: {
-        inventoryItem: {
-            id: string;
-            sku: string | null;
-        } | null;
-        userErrors: {
-            field: string[];
-            message: string;
-        }[];
-    }
+  const result = await fetchShopify<any>(mutation, { id: orderId, tags });
+
+  if (result.tagsAdd.userErrors && result.tagsAdd.userErrors.length > 0) {
+    throw new Error(`Failed to add tags: ${result.tagsAdd.userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+
+  return result.tagsAdd.node;
 }
 
-export async function updateInventoryItem(input: {id: string; sku?: string | null; cost?: number; tracked?: boolean;}): Promise<InventoryItemUpdateResponse> {
-    const { id, sku, cost, tracked } = input;
-    const variables = { id, input: { ...(sku !== undefined ? { sku } : {}), ...(typeof cost === 'number' ? { cost } : {}), ...(typeof tracked === 'boolean' ? { tracked } : {}) } };
-    return fetchShopify<InventoryItemUpdateResponse>(INVENTORY_ITEM_UPDATE_MUTATION, variables);
+export async function removeTagsFromOrder(orderId: string, tags: string[]) {
+  const mutation = `
+    mutation tagsRemove($id: ID!, $tags: [String!]!) {
+      tagsRemove(id: $id, tags: $tags) {
+        node {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const result = await fetchShopify<any>(mutation, { id: orderId, tags });
+
+  if (result.tagsRemove.userErrors && result.tagsRemove.userErrors.length > 0) {
+    throw new Error(`Failed to remove tags: ${result.tagsRemove.userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+
+  return result.tagsRemove.node;
 }
 
-
-// --- Fetch Orders ---
-const GET_ORDERS_QUERY = `
-    query getOrders($first: Int!) {
-        orders(first: $first, sortKey: PROCESSED_AT, reverse: true) {
+// ADD THIS ENTIRE NEW FUNCTION
+export async function listAllSalesChannels() {
+  console.log(`--- DIAGNOSTIC --- Fetching all sales channels (Publications)...`);
+  const query = `
+    query GetPublications {
+      publications(first: 25) {
             edges {
                 node {
                     id
                     name
-                    processedAt
-                    totalPriceSet {
-                        shopMoney {
-                            amount
-                            currencyCode
-                        }
-                    }
-                    lineItems(first: 10) {
-                        edges {
-                            node {
-                                title
-                                quantity
-                                product {
-                                    id
-                                 }
-                            }
-                        }
-                    }
                 }
             }
         }
     }
 `;
+  try {
+    const result = await fetchShopify<any>(query);
+    const publications = result.publications.edges.map((e: any) => e.node);
 
-type GetOrdersResponse = {
-    orders: {
-        edges: {
-            node: ShopifyOrder;
-        }[];
-    };
-};
-
-export async function getOrders(count: number = 20): Promise<ShopifyOrder[]> {
-    const response = await fetchShopify<GetOrdersResponse>(GET_ORDERS_QUERY, { first: count });
-    return response.orders.edges.map(edge => edge.node);
-}
-
-// --- Get Business Snapshot for AI ---
-export async function getBusinessSnapshot(orderCount = 50, productCount = 50) {
-    const [orders, products] = await Promise.all([
-        getOrders(orderCount),
-        getProducts(productCount)
-    ]);
-    return { orders, products };
-}
-
-// --- Inventory quantity updates (2025-07) ---
-const INVENTORY_SET_QUANTITIES_MUTATION = `
-  mutation InventorySetQuantities($input: InventorySetQuantitiesInput!) {
-    inventorySetQuantities(input: $input) {
-      inventoryAdjustmentGroup {
-        createdAt
-        reason
-        referenceDocumentUri
-        changes { name delta }
-      }
-      userErrors { field message }
+    console.log('--- DIAGNOSTIC: SALES CHANNEL REPORT ---');
+    if (publications.length === 0) {
+      console.log('No sales channels found.');
+    } else {
+      console.log(JSON.stringify(publications, null, 2));
     }
+    console.log('--- END SALES CHANNEL REPORT ---');
+
+    return publications;
+  } catch (error) {
+    console.error("Error fetching sales channels:", error);
+    return null;
   }
-`;
-
-type InventorySetQuantitiesResponse = {
-  inventorySetQuantities: {
-    inventoryAdjustmentGroup: {
-      createdAt: string;
-      reason: string | null;
-      referenceDocumentUri: string | null;
-      changes: { name: string; delta: number }[];
-    } | null;
-    userErrors: { field?: string[]; message: string }[];
-  };
-};
-
-export async function setInventoryQuantity(params: { inventoryItemId: string; locationId: string; quantity: number; compareQuantity?: number; }): Promise<InventorySetQuantitiesResponse> {
-  const { inventoryItemId, locationId, quantity, compareQuantity } = params;
-  const useCompare = typeof compareQuantity === 'number';
-  const variables = {
-    input: {
-      name: "available",
-      reason: "correction",
-      ...(useCompare ? {} : { ignoreCompareQuantity: true }),
-      quantities: [
-        {
-          inventoryItemId,
-          locationId,
-          quantity,
-          ...(useCompare ? { compareQuantity } : {}),
-        },
-      ],
-    },
-  };
-  return fetchShopify<InventorySetQuantitiesResponse>(INVENTORY_SET_QUANTITIES_MUTATION, variables);
 }
 
+export async function getBusinessSnapshot() {
+  try {
+    // Get recent orders and products for business analysis
+    const [orders, products] = await Promise.all([
+      getOrders(10), // Get last 10 orders
+      getProducts(20) // Get last 20 products
+    ]);
+
+    // Format data for AI to ensure clarity (Flatten structure, parse numbers)
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      name: order.name,
+      created_at: order.createdAt,
+      total_price: parseFloat(order.totalPriceSet?.shopMoney?.amount || "0"),
+      currency: order.totalPriceSet?.shopMoney?.currencyCode,
+      customer_name: order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : "Guest",
+      items: order.lineItems.edges.map(edge => ({
+        title: edge.node.title,
+        quantity: edge.node.quantity,
+        price: "0.00" // Line item price not currently fetched, defaulting to avoid confusion
+      }))
+    }));
+
+    return {
+      orders: formattedOrders,
+      products,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Failed to get business snapshot:', error);
+    throw new Error('Failed to retrieve business data');
+  }
+}
+
+export async function getOrder(id: string) {
+  const query = `
+    query getOrder($id: ID!) {
+      order(id: $id) {
+        id
+        name
+        createdAt
+        processedAt
+        displayFulfillmentStatus
+        note
+        customer {
+          firstName
+          lastName
+          email
+        }
+        shippingAddress {
+          address1
+          address2
+          city
+          province
+          zip
+          country
+        }
+        lineItems(first: 50) {
+          edges {
+            node {
+              id
+              title
+              quantity
+              variant {
+                title
+                sku
+              }
+              product {
+                id
+                title
+                descriptionHtml
+                tags
+              }
+              customAttributes {
+                key
+                value
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const result = await fetchShopify<any>(query, { id });
+  return result.order;
+}
+
+export async function getOrderByNumber(orderNumber: string) {
+  // Ensure order number has # prefix for the query
+  const queryTerm = orderNumber.startsWith('#') ? orderNumber : `#${orderNumber}`;
+
+  const query = `
+    query getOrderByNumber($query: String!) {
+      orders(first: 1, query: $query) {
+        edges {
+          node {
+            id
+            name
+            createdAt
+            processedAt
+            displayFulfillmentStatus
+            note
+            customer {
+              firstName
+              lastName
+              email
+            }
+            shippingAddress {
+              address1
+              address2
+              city
+              province
+              zip
+              country
+            }
+            lineItems(first: 50) {
+              edges {
+                node {
+                  id
+                  title
+                  quantity
+                  variant {
+                    title
+                    sku
+                  }
+                  product {
+                    id
+                    title
+                    descriptionHtml
+                    tags
+                  }
+                  customAttributes {
+                    key
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const result = await fetchShopify<any>(query, { query: `name:${queryTerm}` });
+  return result.orders.edges[0]?.node || null;
+}
