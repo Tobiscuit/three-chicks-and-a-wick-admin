@@ -24,6 +24,30 @@ Before touching code, answer:
 
 ---
 
+## 0.5 Semantic Hierarchy Check (DON'T SKIP)
+
+**Ask: Does the visual hierarchy match what the USER actually cares about?**
+
+For each piece of data displayed, ask:
+1. **What does this represent from the user's perspective?** (not the database's)
+2. **Is this the primary identifier?** (what would the user SAY they ordered?)
+3. **Is metadata being shown as primary content?** (container type vs actual product)
+4. **Are raw field names user-friendly?** ("Original Prompt" → "Customer's Inspiration")
+
+**Red flags:**
+- Technical/database field names visible to users
+- Container/wrapper/variant shown as title instead of content
+- Important info buried in a nested card when it should be the headline
+- Labels that require domain knowledge to understand
+
+**Example fix we learned:**
+| Data field | Database says | User thinks | Display as |
+|------------|---------------|-------------|------------|
+| Product | "Metal Tin 8oz" | "My candle" | Subtitle/meta |
+| Custom Name | "Literary Blueberry Bliss" | "What I ordered" | **Primary title** |
+
+---
+
 ## 1. Analyze Current Implementation
 
 - View the target component file(s)
@@ -80,10 +104,12 @@ Topics:
 ```
 
 ### UX Patterns (Web Search)
+**IMPORTANT: Use TODAY'S DATE (not hardcoded year) for truly bleeding-edge results**
 ```
-Search: "[component type] UX best practices 2024"
-Search: "[use case] UI pattern modern"
-Search: "information hierarchy [context]"
+Search: "[component type] UX best practices December 2025"
+Search: "[use case] UI pattern latest 2025"
+Search: "information hierarchy [context] modern"
+Search: "[component] shadcn tailwind beta canary"
 ```
 
 ---
@@ -134,6 +160,14 @@ Search: "information hierarchy [context]"
 1. High priority items
 2. Medium priority items
 3. Optional polish items
+
+---
+
+### 🧠 HITL Check (Human-In-The-Loop)
+> **Does my semantic hierarchy interpretation match your domain knowledge?**
+> 
+> I may have misunderstood what data is "primary" vs "metadata" in your context.
+> Please flag if any labels, hierarchy, or terminology seems wrong.
 
 **Which should I implement?**
 ```
