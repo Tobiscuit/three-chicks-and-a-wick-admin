@@ -4,56 +4,86 @@ description: Research and apply bleeding-edge CSS/Tailwind/UX patterns to any co
 
 # Bleeding-Edge Component Audit
 
-Use this workflow to modernize any component with the latest patterns from Tailwind, Shadcn, and CSS.
+Holistic modernization with the latest patterns from Tailwind, Shadcn, and UX best practices.
 **Bias towards highest effort / maximum polish** — this is about bleeding edge, not shipping fast.
 
 ---
 
+## 0. Understand Context First (CRITICAL)
+
+Before touching code, answer:
+1. **What is this component trying to accomplish?**
+2. **Who uses it?** (admin, customer, developer)
+3. **What's the ideal emotional response?** (trust, speed, delight, clarity)
+4. **Where does this fit in the user journey?**
+
+**Example contexts:**
+- Admin panel → prioritize **clarity, density, efficiency** (Inter, Geist, mono for data)
+- Customer-facing → prioritize **warmth, brand, delight** (softer fonts, more whitespace)
+- Data dashboard → prioritize **scannability, hierarchy** (tabular nums, tight spacing)
+
+---
+
 ## 1. Analyze Current Implementation
+
 - View the target component file(s)
-- Note current styling approach (Tailwind classes, animations, responsive behavior)
-- Identify all interactive elements, cards, badges, lists, buttons
+- Note current:
+  - **Typography** (font family, sizes, weights, line heights)
+  - **Spacing** (padding, margins, gaps)
+  - **Colors** (semantic usage, contrast)
+  - **Hierarchy** (visual weight, what draws eye first)
+  - **Animations** (current vs possible)
+  - **Mobile responsiveness**
 
 ---
 
 ## 2. Research Bleeding-Edge Patterns
 
-### Tailwind v4
+### Typography & Fonts
 ```
 Use context7 with: /websites/tailwindcss
 Topics:
-- "container queries @container"
-- "safe-area viewport dvh svh"
-- "touch scroll overscroll"
-- "motion prefers-reduced-motion"
-- "hover shadow transition"
-- "v4 new features"
+- "font-family font-sans font-mono"
+- "text-size tracking leading"
+- "tabular-nums font-feature"
+
+Web search:
+- "best font for admin panel 2024"
+- "modern dashboard typography tailwind"
 ```
 
-### Shadcn UI
+### Spacing & Layout
+```
+Use context7 with: /websites/tailwindcss
+Topics:
+- "gap space-y space-x"
+- "container queries @container"
+- "grid auto-fit minmax"
+```
+
+### Shadcn Components
 ```
 Use context7 with: /websites/ui_shadcn
 Topics:
-- "[component] skeleton loading"
-- "[component] animation hover"
-- "badge spinner status indicator"
-- "hover card tooltip"
-- "drawer dialog responsive"
+- "[component] responsive layout"
+- "card skeleton hover"
+- "badge spinner status"
 ```
 
-### tailwindcss-motion
+### Animations
 ```
 Use context7 with: /rombohq/tailwindcss-motion
 Topics:
 - "motion-preset-fade"
 - "motion-preset-slide"
-- "staggered animation delay"
+- "staggered delay"
 ```
 
-### Web Search (beta/canary features)
+### UX Patterns (Web Search)
 ```
-Search: "[component] shadcn tailwind v4 2024 bleeding edge animated"
-Search: "modern [component] UX pattern framer motion 2024"
+Search: "[component type] UX best practices 2024"
+Search: "[use case] UI pattern modern"
+Search: "information hierarchy [context]"
 ```
 
 ---
@@ -65,37 +95,45 @@ Search: "modern [component] UX pattern framer motion 2024"
 ```markdown
 ## 🔍 Bleeding-Edge Audit: [COMPONENT NAME]
 
-### Current Elements Analyzed
-- List each UI element found
+### Context Understanding
+- **Purpose:** What this component does
+- **User:** Who uses it  
+- **Goal:** Desired user feeling/outcome
+- **Current State:** Brief assessment
 
 ---
 
-### 🚀 Bleeding-Edge Improvements Found
+### 🚀 Improvements Found
 
-| Element | Current | Bleeding-Edge Upgrade |
-|---------|---------|----------------------|
-| Element 1 | Current state | ✨ Proposed upgrade with emoji |
-| Element 2 | Current state | 🔄 Proposed upgrade |
+#### Typography & Hierarchy
+| Element | Current | Upgrade |
+|---------|---------|---------|
+| ... | ... | ... |
+
+#### Spacing & Layout  
+| Element | Current | Upgrade |
+|---------|---------|---------|
+| ... | ... | ... |
+
+#### Animation & Interaction
+| Element | Current | Upgrade |
+|---------|---------|---------|
+| ... | ... | ... |
+
+#### UX & Information Design
+| Element | Current | Upgrade |
+|---------|---------|---------|
 | ... | ... | ... |
 
 ---
 
-### 📦 Dependencies to Add
-- List any new packages needed
+### 📦 Dependencies
+- List any new packages
 
----
-
-### Priority Recommendations
-
-**High Impact, Low Effort:**
-1. ✅ Item
-2. ✅ Item
-
-**Medium Effort:**
-3. 🔄 Item
-
-**Higher Effort (optional):**
-4. 💫 Item
+### Recommendations
+1. High priority items
+2. Medium priority items
+3. Optional polish items
 
 **Which should I implement?**
 ```
@@ -104,45 +142,45 @@ Search: "modern [component] UX pattern framer motion 2024"
 
 ## 4. Implement Changes (after approval)
 
-Apply in this order:
-1. Install dependencies if needed
-2. Add CSS imports to globals.css
-3. Update component with new patterns:
-   - Animation classes (motion-preset-*, staggered delays)
-   - Hover effects (shadow, scale, translate)
-   - Accessibility (motion-reduce variants)
-   - Mobile touch feedback (active states)
-4. Pass index props for staggered animations
+Order of implementation:
+1. **Typography first** (fonts, sizes, weights)
+2. **Spacing second** (padding, gaps, margins)
+3. **Colors/hierarchy third** (contrast, visual weight)
+4. **Animation last** (motion, transitions)
+
+Always include:
+- `motion-reduce:` variants for accessibility
+- Responsive breakpoints
+- Touch targets on mobile (min 44px)
 
 ---
 
 ## 5. Verify
 - Type-check: `npx tsc --noEmit`
-- Test desktop and mobile
-- Verify animations play correctly
-- Check accessibility (reduced motion)
+- Visual check on desktop AND mobile
+- Check reduced motion behavior
 - Commit and push
 
 ---
 
-## Key Dependencies for Bleeding-Edge
+## Typography Reference for Context
 
-| Package | Purpose |
-|---------|---------|
-| `tw-animate-css` | Tailwind v4 compatible animations |
-| `tailwindcss-motion` | Advanced animation presets |
-| `vaul` | Mobile drawer with swipe gestures |
-| `framer-motion` | Complex orchestrated animations (optional) |
+| Context | Recommended Fonts | Why |
+|---------|------------------|-----|
+| Admin Panel | Inter, Geist, SF Pro | Clean, dense, legible |
+| Dashboard | Inter + Mono for data | Tabular nums, scannable |
+| E-commerce | System UI, Outfit | Warm, approachable |
+| Documentation | JetBrains Mono, Fira | Code readability |
 
 ---
 
-## Example Usage Prompts
+## Example Prompts
 
-**Full audit:**
-> "Apply /bleeding-edge-audit to [COMPONENT]. Research latest Tailwind v4, Shadcn, and UX patterns via context7. Include beta features. Implement all recommendations."
+**Full holistic audit:**
+> "/bleeding-edge-audit the [COMPONENT]. Consider typography for [admin/customer/data] context, spacing, hierarchy, and animation. Implement all."
 
-**Scoped audit:**
-> "Apply /bleeding-edge-audit to the [SPECIFIC ELEMENT] in [COMPONENT]. Focus on [animation/mobile/accessibility]."
+**Typography focused:**
+> "/bleeding-edge-audit [COMPONENT] typography. What's the best font for an admin panel? Apply modern type scale."
 
-**Maximum effort:**
-> "Apply /bleeding-edge-audit to [COMPONENT]. Always choose highest effort options. I want maximum polish."
+**UX focused:**
+> "/bleeding-edge-audit [COMPONENT] UX. What is this trying to accomplish? How should it be presented for best clarity?"

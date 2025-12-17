@@ -292,33 +292,92 @@ function OrderContent({ order, isUpdating, onStatusUpdate }: {
                           <span className="text-sm font-semibold bg-muted/50 px-2 py-0.5 rounded">×{item.quantity}</span>
                         </div>
 
-                        {/* Recipe Card - with gradient border */}
+                        {/* Recipe Card - with gradient border and better UX labels */}
                         {(recipe || item.customAttributes.length > 0) && (
-                          <div className="mt-2 bg-gradient-to-br from-accent/50 to-accent/20 border border-accent rounded-lg p-3 relative overflow-hidden">
+                          <div className="mt-3 bg-gradient-to-br from-primary/5 via-accent/30 to-accent/10 border border-primary/20 rounded-xl p-3.5 relative overflow-hidden">
                             {/* Subtle shimmer effect */}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite] motion-reduce:animate-none" />
                             
-                            <div className="flex items-center gap-1.5 mb-2 relative">
-                              <Sparkles className="w-3.5 h-3.5 text-primary fill-primary/20" />
-                              <span className="font-semibold text-xs text-primary">Custom Creation</span>
+                            {/* Header with icon */}
+                            <div className="flex items-center gap-2 mb-3 relative">
+                              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              <span className="font-semibold text-sm text-primary">Custom Creation</span>
                             </div>
 
                             {recipe ? (
-                              <div className="grid grid-cols-2 gap-2 text-xs relative">
-                                <div><span className="text-muted-foreground">Wax:</span> <span className="font-medium">{recipe.wax}</span></div>
-                                <div><span className="text-muted-foreground">Wick:</span> <span className="font-medium">{recipe.wick}</span></div>
-                                <div><span className="text-muted-foreground">Scent:</span> <span className="font-medium">{recipe.fragrance}</span></div>
-                                <div><span className="text-muted-foreground">Color:</span> <span className="font-medium">{recipe.color}</span></div>
+                              <div className="space-y-3 relative">
+                                {/* Candle Name as prominent title */}
+                                {recipe.name && (
+                                  <div className="pb-2 border-b border-primary/10">
+                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Candle Name</div>
+                                    <div className="font-semibold text-base">{recipe.name}</div>
+                                  </div>
+                                )}
+                                
+                                {/* Recipe specs in compact grid */}
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Wax</span>
+                                    <span className="font-medium">{recipe.wax}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Wick</span>
+                                    <span className="font-medium">{recipe.wick}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Fragrance</span>
+                                    <span className="font-medium">{recipe.fragrance}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Color</span>
+                                    <span className="font-medium">{recipe.color}</span>
+                                  </div>
+                                </div>
+
+                                {/* Customer's inspiration as a styled quote */}
+                                {recipe.prompt && (
+                                  <div className="mt-3 pt-3 border-t border-primary/10">
+                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Customer's Inspiration</div>
+                                    <blockquote className="text-sm italic text-foreground/80 pl-3 border-l-2 border-primary/30">
+                                      "{recipe.prompt}"
+                                    </blockquote>
+                                  </div>
+                                )}
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 gap-2 text-xs relative">
+                              <div className="space-y-2 relative">
+                                {/* Fall back to displaying custom attributes with better formatting */}
                                 {item.customAttributes
                                   .filter((attr: any) => !attr.key.startsWith('_'))
-                                  .map((attr: any) => (
-                                    <div key={attr.key}>
-                                      <span className="text-muted-foreground">{attr.key}:</span> <span className="font-medium">{attr.value}</span>
-                                    </div>
-                                  ))}
+                                  .map((attr: any) => {
+                                    // Map raw keys to user-friendly labels
+                                    const labelMap: Record<string, string> = {
+                                      'Candle Name': 'Candle Name',
+                                      'Original Prompt': 'Customer\'s Inspiration',
+                                      'Wax Type': 'Wax',
+                                      'Wick Type': 'Wick',
+                                      'Fragrance': 'Fragrance',
+                                      'Color': 'Color',
+                                    };
+                                    const label = labelMap[attr.key] || attr.key;
+                                    const isPrompt = attr.key === 'Original Prompt';
+                                    
+                                    return isPrompt ? (
+                                      <div key={attr.key} className="pt-2 border-t border-primary/10">
+                                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">{label}</div>
+                                        <blockquote className="text-sm italic text-foreground/80 pl-3 border-l-2 border-primary/30">
+                                          "{attr.value}"
+                                        </blockquote>
+                                      </div>
+                                    ) : (
+                                      <div key={attr.key} className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">{label}</span>
+                                        <span className="font-medium">{attr.value}</span>
+                                      </div>
+                                    );
+                                  })}
                               </div>
                             )}
                           </div>
