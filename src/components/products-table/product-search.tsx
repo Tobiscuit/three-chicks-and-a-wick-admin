@@ -6,17 +6,6 @@ import { Search, X, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import type { ShopifyProduct } from "@/services/shopify"
 
 type FilterChip = {
@@ -34,7 +23,20 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   const [filters, setFilters] = React.useState<FilterChip[]>([])
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
   const router = useRouter()
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   // Extract unique tags from products
   const allTags = React.useMemo(() => {
@@ -49,25 +51,22 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
       .sort((a, b) => b.count - a.count)
   }, [products])
 
-  // Extract unique statuses
   const statuses = ["ACTIVE", "DRAFT", "ARCHIVED"]
 
   // Filter suggestions based on input
   const suggestions = React.useMemo(() => {
     const term = inputValue.toLowerCase()
     
-    // Product matches
     const productMatches = products
       .filter(p => p.title.toLowerCase().includes(term))
       .slice(0, 5)
       .map(p => ({
         type: "product" as const,
-        value: p.id,
+        id: p.id,
         label: p.title,
         imageUrl: p.featuredImage?.url
       }))
 
-    // Tag matches
     const tagMatches = allTags
       .filter(t => t.tag.includes(term) && !filters.some(f => f.type === "tag" && f.value === t.tag))
       .slice(0, 5)
@@ -78,7 +77,6 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
         count: t.count
       }))
 
-    // Status matches
     const statusMatches = statuses
       .filter(s => s.toLowerCase().includes(term) && !filters.some(f => f.type === "status" && f.value === s))
       .map(s => ({
@@ -119,6 +117,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     setFilters(prev => [...prev, { type, value, label }])
     setInputValue("")
     setOpen(false)
+    inputRef.current?.focus()
   }
 
   const removeFilter = (index: number) => {
@@ -130,9 +129,19 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     setInputValue("")
   }
 
-  const handleProductSelect = (productId: string) => {
+  const handleProductClick = (productId: string) => {
     router.push(`/products/${encodeURIComponent(productId)}`)
     setOpen(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && inputValue.trim()) {
+      e.preventDefault()
+      addFilter("search", inputValue.trim(), inputValue.trim())
+    }
+    if (e.key === "Escape") {
+      setOpen(false)
+    }
   }
 
   const hasSuggestions = 
@@ -142,121 +151,109 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
 
   return (
     <div className="w-full space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-start text-muted-foreground font-normal h-10"
-          >
-            <Search className="mr-2 h-4 w-4 shrink-0" />
-            <span className="truncate">
-              {filters.length > 0 
-                ? `${filters.length} filter${filters.length > 1 ? 's' : ''} active` 
-                : "Search products, tags, or status..."}
-            </span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0 bg-popover/90 backdrop-blur-md shadow-xl" 
-          align="start"
-        >
-          <Command>
-            <div className="flex items-center border-b px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <input
-                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
-                placeholder="Type to search..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
-            </div>
-            <CommandList>
-              {!hasSuggestions && !inputValue && (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Start typing to search products, tags, or status...
-                </div>
-              )}
+      <div ref={containerRef} className="relative">
+        {/* Single search input */}
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder={filters.length > 0 ? `${filters.length} filter${filters.length > 1 ? 's' : ''} active...` : "Search products, tags, or status..."}
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        />
 
-              {!hasSuggestions && inputValue && (
-                <div className="py-2 px-2">
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover/95 backdrop-blur-sm shadow-lg max-h-[300px] overflow-y-auto">
+            {!hasSuggestions && !inputValue && (
+              <div className="py-4 px-3 text-sm text-muted-foreground text-center">
+                Start typing to search...
+              </div>
+            )}
+
+            {!hasSuggestions && inputValue && (
+              <button
+                type="button"
+                onClick={() => addFilter("search", inputValue.trim(), inputValue.trim())}
+                className="w-full px-3 py-2 text-sm text-center hover:bg-accent cursor-pointer"
+              >
+                Press Enter to search for "{inputValue}"
+              </button>
+            )}
+
+            {suggestions.productMatches.length > 0 && (
+              <div className="p-1">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  Products
+                </div>
+                {suggestions.productMatches.map((item) => (
                   <button
-                    onClick={() => addFilter("search", inputValue.trim(), inputValue.trim())}
-                    className="w-full rounded-sm px-2 py-1.5 text-sm text-center hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleProductClick(item.id)}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer text-left"
                   >
-                    Search for "{inputValue}"
+                    {item.imageUrl && (
+                      <img src={item.imageUrl} alt="" className="w-8 h-8 rounded object-cover" />
+                    )}
+                    <span className="truncate">{item.label}</span>
                   </button>
+                ))}
+              </div>
+            )}
+
+            {suggestions.tagMatches.length > 0 && (
+              <div className="p-1 border-t">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  Tags
                 </div>
-              )}
+                {suggestions.tagMatches.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => addFilter("tag", item.value, item.label)}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
+                  >
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <span>{item.label}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{item.count} products</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-              {suggestions.productMatches.length > 0 && (
-                <CommandGroup heading="Products" forceMount>
-                  {suggestions.productMatches.map((suggestion) => (
-                    <CommandItem
-                      key={suggestion.value}
-                      value={suggestion.value}
-                      onSelect={() => handleProductSelect(suggestion.value)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        {suggestion.imageUrl && (
-                          <img 
-                            src={suggestion.imageUrl} 
-                            alt="" 
-                            className="w-8 h-8 rounded object-cover"
-                          />
-                        )}
-                        <span className="truncate">{suggestion.label}</span>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-
-              {suggestions.tagMatches.length > 0 && (
-                <CommandGroup heading="Tags" forceMount>
-                  {suggestions.tagMatches.map((suggestion) => (
-                    <CommandItem
-                      key={suggestion.value}
-                      value={suggestion.value}
-                      onSelect={() => addFilter("tag", suggestion.value, suggestion.label)}
-                      className="cursor-pointer"
-                    >
-                      <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>{suggestion.label}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {suggestion.count} products
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-
-              {suggestions.statusMatches.length > 0 && (
-                <CommandGroup heading="Status" forceMount>
-                  {suggestions.statusMatches.map((suggestion) => (
-                    <CommandItem
-                      key={suggestion.value}
-                      value={suggestion.value}
-                      onSelect={() => addFilter("status", suggestion.value, suggestion.label)}
-                      className="cursor-pointer"
-                    >
-                      <div className={cn(
-                        "w-2 h-2 rounded-full mr-2",
-                        suggestion.value === "ACTIVE" && "bg-green-500",
-                        suggestion.value === "DRAFT" && "bg-yellow-500",
-                        suggestion.value === "ARCHIVED" && "bg-gray-500"
-                      )} />
-                      <span>{suggestion.label}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+            {suggestions.statusMatches.length > 0 && (
+              <div className="p-1 border-t">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  Status
+                </div>
+                {suggestions.statusMatches.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => addFilter("status", item.value, item.label)}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
+                  >
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      item.value === "ACTIVE" && "bg-green-500",
+                      item.value === "DRAFT" && "bg-yellow-500",
+                      item.value === "ARCHIVED" && "bg-gray-500"
+                    )} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Active filters */}
       {filters.length > 0 && (
