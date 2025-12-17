@@ -1,31 +1,20 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { File } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getOrders } from '@/services/shopify';
+import { getOrders, ShopifyOrder } from '@/services/shopify';
 import { generateClient } from 'aws-amplify/api';
 import type { GraphQLSubscription } from 'aws-amplify/api';
-import { Hub } from 'aws-amplify/utils';
 import configureAmplify from '@/lib/amplify-client';
 import { OrderDetailsModal } from './order-details-modal';
 import { FeatureHighlight } from '@/components/ui/feature-highlight';
 import { generateProductionData, generateFinancialData, toCSV, downloadCSV } from '@/lib/export-utils';
 import { useFeatureDiscovery } from '@/context/feature-discovery-context';
 import { ExportPreviewDialog } from './export-preview-dialog';
+import { DataTable } from '@/components/ui/data-table';
+import { orderColumns } from './order-columns';
 
 const client = generateClient();
 
@@ -58,9 +47,9 @@ type OnNewOrderData = {
 };
 
 export default function OrdersClient() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<ShopifyOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<ShopifyOrder | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState('all');
 
@@ -105,13 +94,9 @@ export default function OrdersClient() {
     return () => sub.unsubscribe();
   }, []);
 
-  const handleOrderClick = (order: any) => {
+  const handleOrderClick = (order: ShopifyOrder) => {
     setSelectedOrder(order);
     setIsModalOpen(true);
-  };
-
-  const formatCurrency = (amount: string, currency: string) => {
-    return `${parseFloat(amount).toFixed(2)} ${currency}`;
   };
 
   const filteredOrders = orders.filter(order => {
@@ -121,8 +106,6 @@ export default function OrdersClient() {
     if (filter === 'fulfilled') return status === 'FULFILLED';
     return true;
   });
-
-
 
   const { markSeen } = useFeatureDiscovery();
 
@@ -180,53 +163,12 @@ export default function OrdersClient() {
         </div>
       </Tabs>
 
-      <Card>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">Loading orders...</TableCell>
-                </TableRow>
-              ) : filteredOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">No orders found.</TableCell>
-                </TableRow>
-              ) : (
-                filteredOrders.map((order) => (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleOrderClick(order)}
-                  >
-                    <TableCell className="font-medium">{order.name}</TableCell>
-                    <TableCell>
-                      {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest'}
-                    </TableCell>
-                    <TableCell>
-                      {/* Simple heuristic for type display in list, modal has full logic */}
-                      {order.lineItems.edges.some((e: any) => e.node.product?.title?.includes('Magic Request')) ? 'Custom' : 'Standard'}
-                    </TableCell>
-                    <TableCell>{order.displayFulfillmentStatus || 'Unfulfilled'}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(order.totalPriceSet.shopMoney.amount, order.totalPriceSet.shopMoney.currencyCode)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={orderColumns}
+        data={filteredOrders}
+        onRowClick={handleOrderClick}
+        isLoading={isLoading}
+      />
 
       <OrderDetailsModal
         isOpen={isModalOpen}
