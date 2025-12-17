@@ -48,7 +48,6 @@ const menuItems = [
   { href: "/orders", label: "Orders", icon: ShoppingCart, showBadge: true },
   { href: "/products", label: "Products", icon: Package },
   { href: "/magic-request", label: "Magic Request", icon: Wand2 },
-  { href: "/", label: "Image Studio", icon: Camera },
   { href: "/strategy", label: "Strategy", icon: BrainCircuit },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
