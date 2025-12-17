@@ -105,3 +105,57 @@
   backdrop-filter: blur(12px);
   border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
 }
+
+/* Animation keyframes for Sheet/Dialog transitions */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Sheet animation utilities */
+.animate-slide-in-from-right {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}
+
+.animate-slide-out-to-right {
+  animation: slideOutToRight 0.2s ease-in forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.15s ease-in forwards;
+}
