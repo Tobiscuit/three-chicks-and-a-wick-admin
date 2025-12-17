@@ -7,6 +7,7 @@ import type { ShopifyOrder } from "@/services/shopify";
 type OrderCardProps = {
   order: ShopifyOrder;
   onClick?: () => void;
+  index?: number; // For staggered animation
 };
 
 // Helper to format currency
@@ -45,17 +46,28 @@ const getStatusVariant = (
   }
 };
 
-export function OrderCard({ order, onClick }: OrderCardProps) {
+export function OrderCard({ order, onClick, index = 0 }: OrderCardProps) {
   const type = getOrderType(order);
   const status = order.displayFulfillmentStatus || "Unfulfilled";
   const customerName = order.customer
     ? `${order.customer.firstName} ${order.customer.lastName}`
     : "Guest";
 
+  // Staggered animation delay (max 500ms for first 10 items)
+  const animationDelay = Math.min(index * 50, 500);
+
   return (
     <div
       onClick={onClick}
-      className="rounded-lg border bg-card p-4 cursor-pointer active:bg-muted/50 transition-colors touch-manipulation"
+      style={{ animationDelay: `${animationDelay}ms` }}
+      className={`
+        rounded-lg border bg-card p-4 
+        cursor-pointer active:scale-[0.98] 
+        transition-transform duration-150
+        touch-manipulation
+        motion-safe:motion-preset-slide-up-sm
+        motion-safe:motion-opacity-in-0
+      `}
     >
       {/* Top row: Order number + Status badge */}
       <div className="flex justify-between items-start mb-3">
