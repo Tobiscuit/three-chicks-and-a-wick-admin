@@ -4,50 +4,52 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(222.2 84% 4.9%);
+  
+  /* Light mode - warm cream/parchment tones (Solarized Light inspired) */
+  --color-background: hsl(44 87% 94%);  /* Warm cream #fdf6e3 */
+  --color-foreground: hsl(192 81% 14%); /* Dark teal text */
 
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-card: hsl(44 87% 96%);        /* Slightly lighter cream */
+  --color-card-foreground: hsl(192 81% 14%);
 
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(44 100% 99%);    /* Near-white popover */
+  --color-popover-foreground: hsl(192 81% 14%);
 
-  --color-primary: hsl(222.2 47.4% 11.2%);
-  --color-primary-foreground: hsl(210 40% 98%);
+  --color-primary: hsl(199 89% 32%);    /* Solarized blue */
+  --color-primary-foreground: hsl(44 87% 94%);
 
-  --color-secondary: hsl(210 40% 96.1%);
-  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --color-secondary: hsl(46 42% 88%);   /* Warm tan */
+  --color-secondary-foreground: hsl(192 81% 14%);
 
-  --color-muted: hsl(210 40% 96.1%);
-  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-muted: hsl(46 42% 88%);       /* Warm muted */
+  --color-muted-foreground: hsl(196 13% 45%);
 
-  --color-accent: hsl(210 40% 96.1%);
-  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+  --color-accent: hsl(46 42% 88%);
+  --color-accent-foreground: hsl(192 81% 14%);
 
-  --color-destructive: hsl(0 84.2% 60.2%);
-  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-destructive: hsl(1 71% 52%);  /* Solarized red */
+  --color-destructive-foreground: hsl(44 87% 94%);
 
-  --color-border: hsl(214.3 31.8% 91.4%);
-  --color-input: hsl(214.3 31.8% 91.4%);
-  --color-ring: hsl(222.2 84% 4.9%);
+  --color-border: hsl(46 42% 82%);      /* Warm border */
+  --color-input: hsl(46 42% 85%);
+  --color-ring: hsl(199 89% 32%);
 
   --radius: 0.75rem;
 
-  --color-chart-1: hsl(12 76% 61%);
-  --color-chart-2: hsl(173 58% 39%);
-  --color-chart-3: hsl(197 37% 24%);
-  --color-chart-4: hsl(43 74% 66%);
-  --color-chart-5: hsl(27 87% 67%);
+  --color-chart-1: hsl(199 89% 32%);    /* Blue */
+  --color-chart-2: hsl(68 100% 30%);    /* Green */
+  --color-chart-3: hsl(175 59% 40%);    /* Cyan */
+  --color-chart-4: hsl(45 100% 35%);    /* Yellow */
+  --color-chart-5: hsl(18 89% 52%);     /* Orange */
 
-  --color-sidebar-background: hsl(0 0% 98%);
-  --color-sidebar-foreground: hsl(240 5.3% 26.1%);
-  --color-sidebar-primary: hsl(240 5.9% 10%);
-  --color-sidebar-primary-foreground: hsl(0 0% 98%);
-  --color-sidebar-accent: hsl(240 4.8% 95.9%);
-  --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --color-sidebar-border: hsl(220 13% 91%);
-  --color-sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --color-sidebar-background: hsl(44 87% 92%);  /* Warm sidebar */
+  --color-sidebar-foreground: hsl(192 81% 14%);
+  --color-sidebar-primary: hsl(199 89% 32%);
+  --color-sidebar-primary-foreground: hsl(44 87% 94%);
+  --color-sidebar-accent: hsl(46 42% 88%);
+  --color-sidebar-accent-foreground: hsl(192 81% 14%);
+  --color-sidebar-border: hsl(46 42% 82%);
+  --color-sidebar-ring: hsl(199 89% 32%);
 }
 
 /* Dark mode - activated by class="dark" on html element (next-themes) */
