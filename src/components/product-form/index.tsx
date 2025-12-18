@@ -565,8 +565,11 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
         <TooltipProvider>
             <div className="grid gap-2 md:gap-6 md:grid-cols-3 overflow-x-hidden">
             <div className="grid gap-2 md:gap-6 md:col-span-2">
-                <Card>
-                <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl">Product Details</CardTitle></CardHeader>
+                <Card className={cn(
+                    "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+                    "hover:shadow-md hover:border-primary/20 transition-all"
+                )}>
+                <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl font-semibold tracking-tight">Product Details</CardTitle></CardHeader>
                 <CardContent className="space-y-2 sm:space-y-4 p-2 sm:p-4 pt-0">
                     <FormField control={form.control} name="title" render={({ field }) => ( 
                         <FormItem>
@@ -606,9 +609,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                       )} />
                 </CardContent>
                 </Card>
-                <Card>
+                <Card className={cn(
+                    "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+                    "hover:shadow-md hover:border-primary/20 transition-all"
+                )}>
                     <CardHeader className="p-2 sm:p-4">
-                        <CardTitle className="text-lg sm:text-xl">Media</CardTitle>
+                        <CardTitle className="text-lg sm:text-xl font-semibold tracking-tight">Media</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 sm:p-4 pt-0">
                         <DndContext 
@@ -664,8 +670,11 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                         />
                     </CardContent>
                 </Card>
-                <Card>
-                <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl">Pricing &amp; Inventory</CardTitle></CardHeader>
+                <Card className={cn(
+                    "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+                    "hover:shadow-md hover:border-primary/20 transition-all"
+                )}>
+                <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl font-semibold tracking-tight">Pricing &amp; Inventory</CardTitle></CardHeader>
                 <CardContent className="grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2 p-2 sm:p-4 pt-0">
                     <FormField
                         control={form.control}
@@ -702,9 +711,12 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                 </Card>
             </div>
             <div className="space-y-2 sm:space-y-6">
-                <Card>
+                <Card className={cn(
+                    "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+                    "hover:shadow-md hover:border-primary/20 transition-all"
+                )}>
                     <CardHeader className="p-2 sm:p-4">
-                        <CardTitle className="text-lg sm:text-xl">Product Status</CardTitle>
+                        <CardTitle className="text-lg sm:text-xl font-semibold tracking-tight">Product Status</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 sm:p-4 pt-0">
                     <FormField control={form.control} name="status" render={({ field }) => (
@@ -722,8 +734,11 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                     )} />
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl">Organization</CardTitle></CardHeader>
+                <Card className={cn(
+                    "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+                    "hover:shadow-md hover:border-primary/20 transition-all"
+                )}>
+                    <CardHeader className="p-2 sm:p-4"><CardTitle className="text-lg sm:text-xl font-semibold tracking-tight">Organization</CardTitle></CardHeader>
                     <CardContent className="space-y-2 sm:space-y-4 p-2 sm:p-4 pt-0">
                         {featuredCollection && (
                           <FormField
