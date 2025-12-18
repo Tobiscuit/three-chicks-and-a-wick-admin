@@ -37,7 +37,10 @@ export async function getLowStockProducts(threshold: number = 10) {
             }
             inventoryItem {
               inventoryLevel(locationId: $locationId) {
-                available
+                quantities(names: "available") {
+                  name
+                  quantity
+                }
               }
             }
           }
@@ -62,7 +65,9 @@ export async function getLowStockProducts(threshold: number = 10) {
               featuredImage: { url: string } | null;
             };
             inventoryItem: {
-              inventoryLevel: { available: number } | null;
+              inventoryLevel: { 
+                quantities: Array<{ name: string; quantity: number }>;
+              } | null;
             };
           };
         }>;
@@ -71,14 +76,20 @@ export async function getLowStockProducts(threshold: number = 10) {
 
     // Filter and map to simpler structure
     const items = response.productVariants.edges
-      .map(edge => ({
-        productId: edge.node.product.id,
-        productTitle: edge.node.product.title,
-        variantTitle: edge.node.title,
-        sku: edge.node.sku,
-        inventoryQuantity: edge.node.inventoryItem?.inventoryLevel?.available ?? edge.node.inventoryQuantity,
-        imageUrl: edge.node.product.featuredImage?.url ?? null,
-      }))
+      .map(edge => {
+        // Get available quantity from new quantities array structure
+        const availableQty = edge.node.inventoryItem?.inventoryLevel?.quantities?.[0]?.quantity 
+          ?? edge.node.inventoryQuantity;
+        
+        return {
+          productId: edge.node.product.id,
+          productTitle: edge.node.product.title,
+          variantTitle: edge.node.title,
+          sku: edge.node.sku,
+          inventoryQuantity: availableQty,
+          imageUrl: edge.node.product.featuredImage?.url ?? null,
+        };
+      })
       .filter(item => item.inventoryQuantity <= threshold)
       .sort((a, b) => a.inventoryQuantity - b.inventoryQuantity);
 
@@ -92,3 +103,4 @@ export async function getLowStockProducts(threshold: number = 10) {
     };
   }
 }
+
