@@ -9,13 +9,33 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/components/auth/auth-provider';
 import { auth } from '@/lib/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Palette, Store, Settings as SettingsIcon, Package } from 'lucide-react';
+import { LogOut, Palette, Store, Settings as SettingsIcon, Package, Check, Lightbulb } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getUserSettings, updateImageStudioSetting, updateProductsSetting } from '@/services/user-settings';
 import { useToast } from '@/hooks/use-toast';
 import { useFeatureDiscovery } from '@/context/feature-discovery-context';
-import { Lightbulb } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// --- INLINE SAVED INDICATOR COMPONENT ---
+function SavedIndicator({ show }: { show: boolean }) {
+    if (!show) return null;
+    return (
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 motion-safe:animate-in fade-in slide-in-from-right-2 duration-200">
+            <Check className="h-3 w-3" />
+            Saved
+        </span>
+    );
+}
+
+// --- SECTION HEADER COMPONENT ---
+function SectionHeader({ children }: { children: React.ReactNode }) {
+    return (
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            {children}
+        </h2>
+    );
+}
 
 export default function SettingsPage() {
     const { user } = useAuth();
@@ -26,7 +46,11 @@ export default function SettingsPage() {
     const [includeSourceImages, setIncludeSourceImages] = useState<boolean | null>(null);
     const [enableBulkSelection, setEnableBulkSelection] = useState<boolean | null>(null);
     const [settingsLoading, setSettingsLoading] = useState(true);
-
+    
+    // Inline save indicators
+    const [savedSourceImages, setSavedSourceImages] = useState(false);
+    const [savedBulkSelection, setSavedBulkSelection] = useState(false);
+    const [savedTutorials, setSavedTutorials] = useState(false);
 
     const handleSignOut = () => {
         auth.signOut();
@@ -60,22 +84,18 @@ export default function SettingsPage() {
         loadUserSettings();
     }, [user?.uid, toast]);
 
-    // Handle setting change
+    // Handle setting change with inline indicator
     const handleSourceImagesToggle = async (checked: boolean) => {
         if (!user?.uid) return;
 
         try {
             setIncludeSourceImages(checked);
             await updateImageStudioSetting(user.uid, checked);
-            toast({
-                title: "Setting Updated",
-                description: checked
-                    ? "Source images will now be included when saving products from Image Studio."
-                    : "Only the composed image will be saved when creating products from Image Studio.",
-            });
+            // Show inline saved indicator
+            setSavedSourceImages(true);
+            setTimeout(() => setSavedSourceImages(false), 2000);
         } catch (error) {
             console.error('Error updating setting:', error);
-            // Revert the toggle on error
             setIncludeSourceImages(!checked);
             toast({
                 variant: "destructive",
@@ -85,19 +105,16 @@ export default function SettingsPage() {
         }
     };
 
-    // Handle bulk selection toggle
+    // Handle bulk selection toggle with inline indicator
     const handleBulkSelectionToggle = async (checked: boolean) => {
         if (!user?.uid) return;
 
         try {
             setEnableBulkSelection(checked);
             await updateProductsSetting(user.uid, checked);
-            toast({
-                title: "Setting Updated",
-                description: checked
-                    ? "Bulk selection is now enabled on the Products page."
-                    : "Bulk selection is now disabled on the Products page.",
-            });
+            // Show inline saved indicator
+            setSavedBulkSelection(true);
+            setTimeout(() => setSavedBulkSelection(false), 2000);
         } catch (error) {
             console.error('Error updating setting:', error);
             setEnableBulkSelection(!checked);
@@ -109,141 +126,207 @@ export default function SettingsPage() {
         }
     };
 
-
+    // Handle tutorials toggle with inline indicator
+    const handleTutorialsToggle = (checked: boolean) => {
+        toggleTutorials();
+        setSavedTutorials(true);
+        setTimeout(() => setSavedTutorials(false), 2000);
+    };
 
     return (
         <AuthWrapper>
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>User Profile</CardTitle>
-                        <CardDescription>This is your currently logged-in account.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <Avatar className="h-16 w-16">
-                                <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || "User"} />
-                                <AvatarFallback>{fallbackLetter}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="text-lg font-semibold">{user?.displayName || 'N/A'}</p>
-                                <p className="text-sm text-muted-foreground">{user?.email || 'N/A'}</p>
+            <div className="space-y-8">
+                {/* ═══════════════════════════════════════════════════════════════
+                    SECTION: ACCOUNT
+                ═══════════════════════════════════════════════════════════════ */}
+                <section className="space-y-3">
+                    <SectionHeader>Account</SectionHeader>
+                    
+                    <Card className={cn(
+                        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+                        "hover:shadow-md hover:border-primary/20 transition-all"
+                    )}>
+                        <CardHeader>
+                            <CardTitle className="font-semibold tracking-tight">User Profile</CardTitle>
+                            <CardDescription>This is your currently logged-in account.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || "User"} />
+                                    <AvatarFallback>{fallbackLetter}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="text-lg font-semibold">{user?.displayName || 'N/A'}</p>
+                                    <p className="text-sm text-muted-foreground">{user?.email || 'N/A'}</p>
+                                </div>
                             </div>
-                        </div>
-                        <Button variant="outline" onClick={handleSignOut}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Sign Out
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><SettingsIcon /> Image Studio Settings</CardTitle>
-                        <CardDescription>Configure how Image Studio behaves when creating products.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">Include source images when saving new products</p>
-                            <p className="text-xs text-muted-foreground">
-                                When enabled, the original images used for composition will be saved to the product's media gallery along with the final shot.
-                            </p>
-                        </div>
-                        {settingsLoading || includeSourceImages === null ? (
-                            <Skeleton className="h-6 w-11 rounded-full" />
-                        ) : (
-                            <Switch
-                                checked={includeSourceImages}
-                                onCheckedChange={handleSourceImagesToggle}
-                                disabled={settingsLoading}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Package /> Products Settings</CardTitle>
-                        <CardDescription>Configure how the products list behaves.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">Enable Bulk Selection</p>
-                            <p className="text-xs text-muted-foreground">
-                                Show checkboxes to select multiple products for bulk actions like delete or status change.
-                            </p>
-                        </div>
-                        {settingsLoading || enableBulkSelection === null ? (
-                            <Skeleton className="h-6 w-11 rounded-full" />
-                        ) : (
-                            <Switch
-                                checked={enableBulkSelection}
-                                onCheckedChange={handleBulkSelectionToggle}
-                                disabled={settingsLoading}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Palette /> Appearance</CardTitle>
-                        <CardDescription>Customize the look and feel of the application.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                        <p className="text-sm font-medium">Theme</p>
-                        <ThemeToggle />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Lightbulb /> Feature Discovery</CardTitle>
-                        <CardDescription>Manage in-app tutorials and feature highlights.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium">Show Feature Tips</p>
-                                <p className="text-xs text-muted-foreground">
-                                    Enable helpful tooltips that explain new features.
-                                </p>
-                            </div>
-                            <Switch
-                                checked={areTutorialsEnabled}
-                                onCheckedChange={toggleTutorials}
-                            />
-                        </div>
-                        <div className="flex items-center justify-between border-t pt-4">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium">Reset All Tutorials</p>
-                                <p className="text-xs text-muted-foreground">
-                                    Seen all the tips? Click here to see them again.
-                                </p>
-                            </div>
-                            <Button variant="outline" onClick={() => {
-                                resetAll();
-                                toast({ title: "Tutorials Reset", description: "All feature tips will be shown again." });
-                            }}>
-                                Reset Tutorials
+                            <Button variant="outline" onClick={handleSignOut}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Sign Out
                             </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </section>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Store /> Integrations</CardTitle>
-                        <CardDescription>Information about connected services.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between rounded-lg border p-3">
-                            <p className="text-sm font-medium">Shopify Store URL</p>
-                            <p className="text-sm text-muted-foreground truncate">{shopifyStoreUrl.replace('/api/2025-07/graphql.json', '')}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* ═══════════════════════════════════════════════════════════════
+                    SECTION: PREFERENCES
+                ═══════════════════════════════════════════════════════════════ */}
+                <section className="space-y-3">
+                    <SectionHeader>Preferences</SectionHeader>
+
+                    {/* Image Studio Settings */}
+                    <Card className={cn(
+                        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+                        "hover:shadow-md hover:border-primary/20 transition-all"
+                    )}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
+                                <SettingsIcon className="h-5 w-5" /> Image Studio Settings
+                            </CardTitle>
+                            <CardDescription>Configure how Image Studio behaves when creating products.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium">Include source images when saving new products</p>
+                                    <SavedIndicator show={savedSourceImages} />
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    When enabled, the original images used for composition will be saved to the product's media gallery along with the final shot.
+                                </p>
+                            </div>
+                            {settingsLoading || includeSourceImages === null ? (
+                                <Skeleton className="h-6 w-11 rounded-full" />
+                            ) : (
+                                <Switch
+                                    checked={includeSourceImages}
+                                    onCheckedChange={handleSourceImagesToggle}
+                                    disabled={settingsLoading}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Products Settings */}
+                    <Card className={cn(
+                        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+                        "hover:shadow-md hover:border-primary/20 transition-all"
+                    )}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
+                                <Package className="h-5 w-5" /> Products Settings
+                            </CardTitle>
+                            <CardDescription>Configure how the products list behaves.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium">Enable Bulk Selection</p>
+                                    <SavedIndicator show={savedBulkSelection} />
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Show checkboxes to select multiple products for bulk actions like delete or status change.
+                                </p>
+                            </div>
+                            {settingsLoading || enableBulkSelection === null ? (
+                                <Skeleton className="h-6 w-11 rounded-full" />
+                            ) : (
+                                <Switch
+                                    checked={enableBulkSelection}
+                                    onCheckedChange={handleBulkSelectionToggle}
+                                    disabled={settingsLoading}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Appearance */}
+                    <Card className={cn(
+                        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-200",
+                        "hover:shadow-md hover:border-primary/20 transition-all"
+                    )}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
+                                <Palette className="h-5 w-5" /> Appearance
+                            </CardTitle>
+                            <CardDescription>Customize the look and feel of the application.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-between">
+                            <p className="text-sm font-medium">Theme</p>
+                            <ThemeToggle />
+                        </CardContent>
+                    </Card>
+
+                    {/* Feature Discovery */}
+                    <Card className={cn(
+                        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-300",
+                        "hover:shadow-md hover:border-primary/20 transition-all"
+                    )}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
+                                <Lightbulb className="h-5 w-5" /> Feature Discovery
+                            </CardTitle>
+                            <CardDescription>Manage in-app tutorials and feature highlights.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-medium">Show Feature Tips</p>
+                                        <SavedIndicator show={savedTutorials} />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Enable helpful tooltips that explain new features.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={areTutorialsEnabled}
+                                    onCheckedChange={handleTutorialsToggle}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between border-t pt-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium">Reset All Tutorials</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Seen all the tips? Click here to see them again.
+                                    </p>
+                                </div>
+                                <Button variant="outline" onClick={() => {
+                                    resetAll();
+                                    toast({ title: "Tutorials Reset", description: "All feature tips will be shown again." });
+                                }}>
+                                    Reset Tutorials
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════════
+                    SECTION: INTEGRATIONS
+                ═══════════════════════════════════════════════════════════════ */}
+                <section className="space-y-3">
+                    <SectionHeader>Integrations</SectionHeader>
+
+                    <Card className={cn(
+                        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-[400ms]",
+                        "hover:shadow-md hover:border-primary/20 transition-all"
+                    )}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
+                                <Store className="h-5 w-5" /> Integrations
+                            </CardTitle>
+                            <CardDescription>Information about connected services.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-3">
+                                <p className="text-sm font-medium">Shopify Store URL</p>
+                                <p className="text-sm text-muted-foreground truncate">{shopifyStoreUrl.replace('/api/2025-07/graphql.json', '')}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </section>
             </div>
         </AuthWrapper>
     );
