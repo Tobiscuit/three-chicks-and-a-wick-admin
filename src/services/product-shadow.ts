@@ -17,7 +17,6 @@ export async function saveShadowDescription(productId: string, descriptionHtml: 
             descriptionHtml,
             updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
-        console.log(`[Shadow Description] Saved for product ${productId}`);
     } catch (error) {
         console.error(`[Shadow Description] Failed to save for product ${productId}:`, error);
         // We don't throw here because this is a secondary storage mechanism

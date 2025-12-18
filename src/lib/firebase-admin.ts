@@ -9,57 +9,31 @@ let app: App;
 
 // This ensures we only initialize the app once
 if (getApps().length === 0) {
-  console.log("[Firebase Admin] Initializing Firebase Admin SDK...");
-
   const projectId = FIREBASE_ADMIN_CONFIG.PROJECT_ID;
   const publicBucket = FIREBASE_CONFIG.STORAGE_BUCKET;
   const adminBucketEnv = FIREBASE_ADMIN_CONFIG.STORAGE_BUCKET_ADMIN;
   const serviceAccountJson = FIREBASE_ADMIN_CONFIG.SERVICE_ACCOUNT;
-  
-  console.log('[Firebase Admin] Raw values:');
-  console.log('  projectId:', projectId);
-  console.log('  publicBucket:', publicBucket);
-  console.log('  adminBucketEnv:', adminBucketEnv);
 
   try {
     // Use the public bucket directly for Firebase Storage (firebasestorage.app)
     // This ensures we use the correct bucket name that matches the client-side
     const storageBucket = publicBucket || adminBucketEnv;
 
-    console.log('[Firebase Admin] Bucket selection diagnostics:', {
-      projectIdCandidate: projectId || 'unset',
-      adminBucketEnv: adminBucketEnv || 'unset',
-      publicBucket,
-      chosenBucket: storageBucket || 'unset',
-    });
-    
-    console.log('[Firebase Admin] CRITICAL: Using bucket:', storageBucket);
-    console.log('[Firebase Admin] Expected bucket: threechicksandawick-admin.firebasestorage.app');
-    console.log('[Firebase Admin] Bucket match:', storageBucket === 'threechicksandawick-admin.firebasestorage.app');
-
     const options: any = { projectId, storageBucket };
 
     if (serviceAccountJson && serviceAccountJson.trim().length > 0) {
-      console.log("[Firebase Admin] Using credentials from FIREBASE_SERVICE_ACCOUNT env var.");
       try {
         const parsed = JSON.parse(serviceAccountJson);
-        console.log('[Firebase Admin] Service account fields present:', {
-          hasProjectId: Boolean(parsed.project_id),
-          hasClientEmail: Boolean(parsed.client_email),
-          hasPrivateKey: Boolean(parsed.private_key && parsed.private_key.startsWith('-----BEGIN PRIVATE KEY-----')),
-        });
         options.credential = cert(parsed);
       } catch (jsonErr: any) {
         console.error('[Firebase Admin] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:', jsonErr?.message || jsonErr);
         throw jsonErr;
       }
     } else {
-      console.log("[Firebase Admin] No service account provided; using application default credentials if available.");
       options.credential = applicationDefault();
     }
 
     app = initializeApp(options);
-    console.log(`[Firebase Admin] Initialized. Project: ${projectId || 'unknown'}, Bucket: ${storageBucket || 'unset'}`);
     if (!projectId) {
       console.warn('[Firebase Admin] WARNING: projectId is not set. Set NEXT_PUBLIC_FIREBASE_PROJECT_ID.');
     }
