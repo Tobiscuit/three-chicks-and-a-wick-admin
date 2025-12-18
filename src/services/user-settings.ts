@@ -14,6 +14,9 @@ export interface UserSettings {
   appearance: {
     theme: 'light' | 'dark' | 'storefront' | 'system';
   };
+  strategySettings: {
+    lastReadAt: number | null; // Timestamp when user last viewed strategy
+  };
 }
 
 const defaultSettings: UserSettings = {
@@ -28,6 +31,9 @@ const defaultSettings: UserSettings = {
   },
   appearance: {
     theme: 'system',
+  },
+  strategySettings: {
+    lastReadAt: null,
   },
 };
 
@@ -50,6 +56,9 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
         },
         appearance: {
           theme: data.appearance?.theme ?? defaultSettings.appearance.theme,
+        },
+        strategySettings: {
+          lastReadAt: data.strategySettings?.lastReadAt ?? defaultSettings.strategySettings.lastReadAt,
         },
       };
       return result;
@@ -132,3 +141,38 @@ export async function updateAppearanceSetting(userId: string, theme: UserSetting
   }
 }
 
+/**
+ * Mark strategy as read for a user (stores current timestamp)
+ */
+export async function markStrategyAsRead(userId: string): Promise<void> {
+  try {
+    const settingsRef = doc(db, 'userSettings', userId);
+    const data = {
+      strategySettings: {
+        lastReadAt: Date.now(),
+      },
+    };
+    await setDoc(settingsRef, data, { merge: true });
+  } catch (error) {
+    console.error('[UserSettings] Error marking strategy as read:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the timestamp when user last read the strategy
+ */
+export async function getLastReadStrategyAt(userId: string): Promise<number | null> {
+  try {
+    const settingsRef = doc(db, 'userSettings', userId);
+    const settingsSnap = await getDoc(settingsRef);
+    
+    if (settingsSnap.exists()) {
+      return settingsSnap.data().strategySettings?.lastReadAt ?? null;
+    }
+    return null;
+  } catch (error) {
+    console.error('[UserSettings] Error getting last read strategy:', error);
+    return null;
+  }
+}
