@@ -788,26 +788,8 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
 }) {
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL;
   
-  // Tap vs scroll detection for mobile dropdown
+  // Controlled dropdown - only open on completed click, not on scroll-through
   const [menuOpen, setMenuOpen] = useState(false);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
-  
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
-    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
-    // Only open if finger moved < 10px (it was a tap, not a scroll)
-    if (dx < 10 && dy < 10) {
-      e.stopPropagation();
-      setMenuOpen(true);
-    }
-    touchStartRef.current = null;
-  };
   
   return (
     <SecureDeleteDialog product={product} onDelete={onDelete}>
@@ -829,12 +811,15 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
                         variant="secondary" 
                         size="icon" 
                         className="h-8 w-8" 
-                        onClick={(e) => e.stopPropagation()}
-                        onTouchStart={handleTouchStart}
-                        onTouchEnd={handleTouchEnd}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Toggle menu on complete click (not pointerdown)
+                          setMenuOpen(prev => !prev);
+                        }}
                         onPointerDown={(e) => {
-                          // Prevent Radix's default pointerdown behavior on touch
-                          if (e.pointerType === 'touch') e.preventDefault();
+                          // Prevent Radix's default pointerdown - we use onClick instead
+                          e.preventDefault();
+                          e.stopPropagation();
                         }}
                       >
                           <MoreVertical className="h-4 w-4" />
