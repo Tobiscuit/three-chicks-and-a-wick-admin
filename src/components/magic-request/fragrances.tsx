@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import { Sparkles, Plus, Pencil, Trash2, Package, DollarSign, Loader2 } from 'lucide-react';
 import type { Fragrance, FragranceInput } from '@/lib/storefront-appsync';
 import {
@@ -236,11 +237,14 @@ export function MagicRequestFragrances() {
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
                 Fragrance Inventory
               </CardTitle>
@@ -257,49 +261,61 @@ export function MagicRequestFragrances() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Fragrances</CardTitle>
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Fragrances</CardTitle>
+            <Sparkles className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{fragrances.length}</div>
-            <p className="text-xs text-muted-foreground">In inventory</p>
+            <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight">{fragrances.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">In inventory</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">In Stock</CardTitle>
+            <Package className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight">
               {fragrances.filter((f) => f.status === 'IN_STOCK').length}
             </div>
-            <p className="text-xs text-muted-foreground">Available for use</p>
+            <p className="text-xs text-muted-foreground mt-1">Available for use</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-200",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock</CardTitle>
+            <DollarSign className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight">
               {fragrances.filter((f) => f.status === 'LOW').length}
             </div>
-            <p className="text-xs text-muted-foreground">Need reorder</p>
+            <p className="text-xs text-muted-foreground mt-1">Need reorder</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Fragrances Table */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-300",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle>All Fragrances</CardTitle>
+          <CardTitle className="font-semibold tracking-tight">All Fragrances</CardTitle>
           <CardDescription>
             View and manage your fragrance inventory. The AI will intelligently use in-stock fragrances when
             generating custom candles.
@@ -333,13 +349,13 @@ export function MagicRequestFragrances() {
                 </TableHeader>
                 <TableBody>
                   {fragrances.map((fragrance) => (
-                    <TableRow key={fragrance.id}>
+                    <TableRow key={fragrance.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="font-medium">{fragrance.name}</TableCell>
                       <TableCell className="max-w-xs truncate">
                         {fragrance.description || <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="text-right">{fragrance.quantityOz.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right font-mono tabular-nums">{fragrance.quantityOz.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
                         {fragrance.costPerOz ? `$${fragrance.costPerOz.toFixed(2)}` : <span className="text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell>
@@ -348,7 +364,7 @@ export function MagicRequestFragrances() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"

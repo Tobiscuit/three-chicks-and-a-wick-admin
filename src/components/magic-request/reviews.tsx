@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -124,9 +125,12 @@ export function MagicRequestReviews() {
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
             <Clock className="h-5 w-5" />
             Manual Review Queue
           </CardTitle>
@@ -137,7 +141,7 @@ export function MagicRequestReviews() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">{sharedCandles.length}</Badge>
+              <Badge variant="outline">{sharedCandles.length}</Badge>
               <span className="text-sm text-muted-foreground">pending review</span>
             </div>
             <Button variant="outline" size="sm" onClick={loadSharedCandles}>
@@ -149,7 +153,10 @@ export function MagicRequestReviews() {
 
       {/* Shared Candles List */}
       {sharedCandles.length === 0 ? (
-        <Card>
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardContent className="pt-6">
             <div className="text-center py-12">
               <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
@@ -163,22 +170,28 @@ export function MagicRequestReviews() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {sharedCandles.map((candle) => (
-            <Card key={candle.jobId}>
+          {sharedCandles.map((candle, index) => (
+            <Card key={candle.jobId} className={cn(
+              "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+              "hover:shadow-md hover:border-primary/20 transition-all",
+              index === 0 && "delay-75",
+              index === 1 && "delay-150",
+              index >= 2 && "delay-200"
+            )}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-primary" />
                       {candle.candleName || 'Untitled Candle'}
                     </CardTitle>
                     <CardDescription className="mt-2">
-                      Job ID: {candle.jobId}
+                      <span className="font-mono text-xs">Job: {candle.jobId}</span>
                       <br />
                       Created: {formatDate(candle.createdAt)}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary">Pending</Badge>
+                  <Badge variant="outline" className="animate-pulse">Pending</Badge>
                 </div>
               </CardHeader>
               <CardContent>
