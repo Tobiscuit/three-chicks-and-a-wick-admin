@@ -158,6 +158,84 @@ function SecureDeleteDialog({
   );
 }
 
+// Secure Bulk Delete Dialog Component - requires typing count to confirm
+function SecureBulkDeleteDialog({ 
+  count,
+  onConfirm,
+  children 
+}: { 
+  count: number;
+  onConfirm: () => Promise<void>;
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const expectedValue = count.toString();
+  const isConfirmationValid = confirmationText === expectedValue;
+  
+  const handleDelete = async () => {
+    if (!isConfirmationValid) return;
+    
+    setIsDeleting(true);
+    await onConfirm();
+    setIsDeleting(false);
+    setIsOpen(false);
+    setConfirmationText("");
+  };
+  
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setConfirmationText("");
+    }
+    setIsOpen(open);
+  };
+  
+  return (
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+      <AlertDialogTrigger asChild onClick={() => setIsOpen(true)}>
+        {children}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-destructive">⚠️ Delete {count} Products</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action <strong>cannot be undone</strong>. This will permanently delete {count} product{count > 1 ? 's' : ''} from your Shopify store.
+            <br /><br />
+            <strong>Security Check:</strong> Type <span className="font-mono bg-muted px-1 rounded">{count}</span> to confirm deletion.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4">
+          <Input
+            placeholder={`Type: ${count}`}
+            value={confirmationText}
+            onChange={(e) => setConfirmationText(e.target.value)}
+            className="w-full font-mono text-center text-lg"
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleDelete}
+            disabled={!isConfirmationValid || isDeleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              `Delete ${count} Products`
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -352,44 +430,28 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Bulk Delete with Confirmation */}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="h-7">
-                    <Trash className="h-3 w-3 mr-1" />
-                    Delete {selectedIds.size}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete {selectedIds.size} products?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete {selectedIds.size} product{selectedIds.size > 1 ? 's' : ''} from your store.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      onClick={async () => {
-                        const ids = Array.from(selectedIds);
-                        for (const id of ids) {
-                          setDeletedProductIds(prev => new Set([...prev, id]));
-                          try {
-                            await deleteProductAction(id);
-                          } catch (e) {
-                            console.error('Bulk delete error:', e);
-                          }
-                        }
-                        clearSelection();
-                        toast({ title: `${ids.length} products deleted` });
-                      }}
-                    >
-                      Delete {selectedIds.size} products
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {/* Bulk Delete with Type-to-Confirm */}
+              <SecureBulkDeleteDialog 
+                count={selectedIds.size}
+                onConfirm={async () => {
+                  const ids = Array.from(selectedIds);
+                  for (const id of ids) {
+                    setDeletedProductIds(prev => new Set([...prev, id]));
+                    try {
+                      await deleteProductAction(id);
+                    } catch (e) {
+                      console.error('Bulk delete error:', e);
+                    }
+                  }
+                  clearSelection();
+                  toast({ title: `${ids.length} products deleted` });
+                }}
+              >
+                <Button variant="destructive" size="sm" className="h-7">
+                  <Trash className="h-3 w-3 mr-1" />
+                  Delete {selectedIds.size}
+                </Button>
+              </SecureBulkDeleteDialog>
             </div>
           </div>
         )}
@@ -507,8 +569,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       <SecureDeleteDialog product={product} onDelete={handleDelete}>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
-                                  <MoreVertical className="h-3 w-3" />
+                              <Button variant="outline" size="icon" className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20" onClick={(e) => e.stopPropagation()}>
+                                  <MoreVertical className="h-4 w-4 text-primary" />
                                   <span className="sr-only">More options</span>
                               </Button>
                           </DropdownMenuTrigger>
