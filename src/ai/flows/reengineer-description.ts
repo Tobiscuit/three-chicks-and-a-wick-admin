@@ -24,7 +24,7 @@ export async function rewriteDescriptionFlow({
 
       const genAI = new GoogleGenerativeAI(GOOGLE_AI_CONFIG.API_KEY);
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-pro",
+        model: "gemini-3-flash-preview",
         generationConfig: { responseMimeType: "application/json" }
       });
 

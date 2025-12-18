@@ -49,7 +49,7 @@ Focus on specific, actionable advice based on the data. Be concise and practical
         try {
           llmResponse = await ai.generate({
             prompt: prompt,
-            model: 'googleai/gemini-2.5-pro',
+            model: 'googleai/gemini-3-flash-preview',
             config: {
               temperature: 0.7,
               maxOutputTokens: 2000,
@@ -58,10 +58,10 @@ Focus on specific, actionable advice based on the data. Be concise and practical
         } catch (error: any) {
           // If Pro model is overloaded (503), try Flash model
           if (error.message?.includes('503') || error.message?.includes('overloaded')) {
-            console.log('Gemini Pro overloaded, falling back to Flash model');
+            console.log('Gemini 3 Flash overloaded, retrying with same model');
             llmResponse = await ai.generate({
               prompt: prompt,
-              model: 'googleai/gemini-2.5-flash',
+              model: 'googleai/gemini-3-flash-preview',
               config: {
                 temperature: 0.7,
                 maxOutputTokens: 2000,

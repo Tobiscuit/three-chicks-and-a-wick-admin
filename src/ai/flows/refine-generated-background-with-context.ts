@@ -32,7 +32,7 @@ export const refineGeneratedBackgroundWithContextFlow = ai.defineFlow(
 
     const refinedImage = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-2.5-pro',
+      model: 'googleai/gemini-3-flash-preview',
       context: [background],
     });
 

@@ -51,7 +51,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     };
 
     try {
-      const modelName = 'googleai/gemini-2.5-flash-image-preview';
+      const modelName = 'googleai/gemini-2.5-flash-image';
       console.log(`[Flow] Using image model: ${modelName}`);
 
       console.log('[Flow] Step 1: Generating background...');
