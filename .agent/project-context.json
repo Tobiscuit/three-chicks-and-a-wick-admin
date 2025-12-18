@@ -1,42 +1,66 @@
 {
   "name": "three-chicks-and-a-wick-admin",
-  "displayName": "Three Chicks & a Wick Admin Panel",
+  "description": "Admin panel for Three Chicks & A Wick candle business - manages products, orders, custom candle requests, and AI-powered business strategy",
   "framework": "next",
   "frameworkVersion": "16.0.10",
   "language": "typescript",
   "styling": {
-    "css": "tailwindcss@4.x",
+    "css": "tailwindcss@4.0.0",
     "components": "shadcn-ui",
-    "primitives": "radix-ui"
+    "postCSS": true
   },
   "animations": [
     "tailwindcss-motion@1.1.1",
     "tw-animate-css@1.4.0"
   ],
-  "fonts": ["Inter"],
-  "features": {
+  "fonts": [
+    "Inter"
+  ],
+  "ui": {
+    "library": "radix-ui",
+    "components": [
+      "accordion", "alert-dialog", "avatar", "badge", "button", "calendar",
+      "card", "carousel", "chart", "checkbox", "collapsible", "command",
+      "dialog", "drawer", "dropdown-menu", "form", "input", "label",
+      "menubar", "popover", "progress", "radio-group", "scroll-area",
+      "segmented-control", "select", "separator", "sheet", "sidebar",
+      "skeleton", "slider", "switch", "table", "tabs", "textarea",
+      "toast", "tooltip"
+    ],
+    "icons": "lucide-react@0.555.0",
+    "richText": "tiptap",
+    "charts": "recharts",
     "tables": "@tanstack/react-table",
-    "forms": "react-hook-form + zod",
-    "ai": "genkit + google-genai",
-    "auth": "firebase",
-    "database": "firebase",
-    "deployment": "vercel",
-    "drawer": "vaul"
+    "dragDrop": "@dnd-kit"
+  },
+  "database": {
+    "primary": "firebase@12.6.0",
+    "admin": "firebase-admin@13.6.0",
+    "realtime": "aws-amplify (AppSync)"
+  },
+  "ai": {
+    "framework": "genkit@1.24.0",
+    "provider": "@genkit-ai/google-genai",
+    "features": ["business-strategy", "custom-candle-processing", "image-generation"]
+  },
+  "forms": {
+    "library": "react-hook-form@7.67.0",
+    "validation": "zod@4.1.13"
   },
   "testing": {
-    "framework": "vitest",
-    "libraries": ["@testing-library/react", "happy-dom"]
+    "framework": "vitest@4.0.0",
+    "dom": "happy-dom",
+    "utilities": ["@testing-library/react", "@testing-library/jest-dom"]
   },
-  "patterns": {
-    "stateManagement": "react-context",
-    "dataFetching": "server-actions + client-fetch",
-    "theming": "next-themes (dark mode)"
+  "deployment": "vercel",
+  "bleedingEdgePatterns": {
+    "cards": "motion-safe:animate-in fade-in slide-in-from-bottom-4 + hover:shadow-md hover:border-primary/20",
+    "titles": "font-semibold tracking-tight flex items-center gap-2",
+    "stats": "text-3xl font-bold tabular-nums slashed-zero tracking-tight",
+    "tables": "font-mono tabular-nums + hover:bg-muted/50 transition-colors",
+    "icons": "h-5 w-5",
+    "staggerDelays": ["delay-0", "delay-75", "delay-150", "delay-200", "delay-300"]
   },
-  "notes": {
-    "tailwindVersion": "4.x (bleeding edge, uses @import instead of @tailwind)",
-    "reactVersion": "19.x (with React Compiler)",
-    "nodeVersion": ">=24.0.0"
-  },
-  "detectedAt": "2025-12-16T22:38:00Z",
-  "lastUpdated": "2025-12-16T22:38:00Z"
+  "detectedAt": "2025-12-18T00:45:33-06:00",
+  "lastUpdated": "2025-12-18T00:45:33-06:00"
 }

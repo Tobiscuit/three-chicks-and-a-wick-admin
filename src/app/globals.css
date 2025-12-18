@@ -50,43 +50,41 @@
   --color-sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
-/* Dark mode overrides */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: hsl(232 38% 14%);
-    --color-foreground: hsl(210 29% 97%);
-    --color-card: hsl(215 23% 23%);
-    --color-card-foreground: hsl(210 29% 97%);
-    --color-popover: hsl(215 23% 23%);
-    --color-popover-foreground: hsl(210 29% 97%);
-    --color-primary: hsl(45 65% 52%);
-    --color-primary-foreground: hsl(232 38% 14%);
-    --color-secondary: hsl(214 15% 35%);
-    --color-secondary-foreground: hsl(210 29% 97%);
-    --color-muted: hsl(214 15% 35%);
-    --color-muted-foreground: hsl(210 20% 75%);
-    --color-accent: hsl(214 15% 35%);
-    --color-accent-foreground: hsl(210 29% 97%);
-    --color-destructive: hsl(0 62.8% 30.6%);
-    --color-destructive-foreground: hsl(210 40% 98%);
-    --color-border: hsl(214 15% 35%);
-    --color-input: hsl(214 15% 28%);
-    --color-ring: hsl(45 65% 52%);
-    --color-chart-1: hsl(220 70% 50%);
-    --color-chart-2: hsl(160 60% 45%);
-    --color-chart-3: hsl(30 80% 55%);
-    --color-chart-4: hsl(280 65% 60%);
-    --color-chart-5: hsl(340 75% 55%);
+/* Dark mode - activated by class="dark" on html element (next-themes) */
+.dark {
+  --color-background: hsl(232 38% 14%);
+  --color-foreground: hsl(210 29% 97%);
+  --color-card: hsl(215 23% 23%);
+  --color-card-foreground: hsl(210 29% 97%);
+  --color-popover: hsl(215 23% 23%);
+  --color-popover-foreground: hsl(210 29% 97%);
+  --color-primary: hsl(45 65% 52%);
+  --color-primary-foreground: hsl(232 38% 14%);
+  --color-secondary: hsl(214 15% 35%);
+  --color-secondary-foreground: hsl(210 29% 97%);
+  --color-muted: hsl(214 15% 35%);
+  --color-muted-foreground: hsl(210 20% 75%);
+  --color-accent: hsl(214 15% 35%);
+  --color-accent-foreground: hsl(210 29% 97%);
+  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(214 15% 35%);
+  --color-input: hsl(214 15% 28%);
+  --color-ring: hsl(45 65% 52%);
+  --color-chart-1: hsl(220 70% 50%);
+  --color-chart-2: hsl(160 60% 45%);
+  --color-chart-3: hsl(30 80% 55%);
+  --color-chart-4: hsl(280 65% 60%);
+  --color-chart-5: hsl(340 75% 55%);
 
-    --color-sidebar-background: hsl(232 38% 14%);
-    --color-sidebar-foreground: hsl(210 29% 97%);
-    --color-sidebar-primary: hsl(45 65% 52%);
-    --color-sidebar-primary-foreground: hsl(232 38% 14%);
-    --color-sidebar-accent: hsl(215 23% 23%);
-    --color-sidebar-accent-foreground: hsl(210 29% 97%);
-    --color-sidebar-border: hsl(214 15% 35%);
-    --color-sidebar-ring: hsl(45 65% 52%);
-  }
+  --color-sidebar-background: hsl(232 38% 14%);
+  --color-sidebar-foreground: hsl(210 29% 97%);
+  --color-sidebar-primary: hsl(45 65% 52%);
+  --color-sidebar-primary-foreground: hsl(232 38% 14%);
+  --color-sidebar-accent: hsl(215 23% 23%);
+  --color-sidebar-accent-foreground: hsl(210 29% 97%);
+  --color-sidebar-border: hsl(214 15% 35%);
+  --color-sidebar-ring: hsl(45 65% 52%);
 }
 
 /* Storefront theme - matches the customer storefront colors */
