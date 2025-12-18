@@ -77,7 +77,8 @@ firebase-debug.log*
 # Firebase Hosting artifacts (downloaded builds)
 /hosting
 /candlecraft-studio-yz6sc/hosting
-/public
+# Note: /public is NOT ignored - we need it for PWA (sw.js, icons, manifest)
+# If Firebase hosting downloads conflict, remove those specific files
 apphosting.yaml
 
 # Test scripts
