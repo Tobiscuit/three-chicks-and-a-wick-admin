@@ -2,7 +2,6 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { useVirtualizer } from "@tanstack/react-virtual"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 // Removed env-config import for client-side component
@@ -649,7 +648,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </Table>
             </div>
           ) : (
-            <div className="@container">
+            <div className="@container overflow-y-auto max-h-[calc(100vh-280px)]">
               <div className="grid grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4 @xl:grid-cols-5 gap-3 sm:gap-4">
                 {displayProducts.map((product, index) => (
                   <ProductGridItem 
