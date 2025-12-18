@@ -311,22 +311,85 @@ export function ProductsTable({ products }: ProductsTableProps) {
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="destructive" size="sm" className="h-7" onClick={async () => {
-                const ids = Array.from(selectedIds);
-                for (const id of ids) {
-                  setDeletedProductIds(prev => new Set([...prev, id]));
-                  try {
-                    await deleteProductAction(id);
-                  } catch (e) {
-                    console.error('Bulk delete error:', e);
-                  }
-                }
-                clearSelection();
-                toast({ title: `${ids.length} products deleted` });
-              }}>
-                <Trash className="h-3 w-3 mr-1" />
-                Delete {selectedIds.size}
-              </Button>
+              {/* Bulk Change Status Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7">
+                    📦 Change Status
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={async () => {
+                    const ids = Array.from(selectedIds);
+                    for (const id of ids) {
+                      await changeProductStatusAction(id, 'ACTIVE');
+                    }
+                    clearSelection();
+                    toast({ title: `${ids.length} products set to Active` });
+                  }}>
+                    ✅ Set all to Active
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    const ids = Array.from(selectedIds);
+                    for (const id of ids) {
+                      await changeProductStatusAction(id, 'DRAFT');
+                    }
+                    clearSelection();
+                    toast({ title: `${ids.length} products set to Draft` });
+                  }}>
+                    📝 Set all to Draft
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    const ids = Array.from(selectedIds);
+                    for (const id of ids) {
+                      await changeProductStatusAction(id, 'ARCHIVED');
+                    }
+                    clearSelection();
+                    toast({ title: `${ids.length} products archived` });
+                  }}>
+                    📦 Archive all
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Bulk Delete with Confirmation */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="h-7">
+                    <Trash className="h-3 w-3 mr-1" />
+                    Delete {selectedIds.size}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selectedIds.size} products?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete {selectedIds.size} product{selectedIds.size > 1 ? 's' : ''} from your store.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        const ids = Array.from(selectedIds);
+                        for (const id of ids) {
+                          setDeletedProductIds(prev => new Set([...prev, id]));
+                          try {
+                            await deleteProductAction(id);
+                          } catch (e) {
+                            console.error('Bulk delete error:', e);
+                          }
+                        }
+                        clearSelection();
+                        toast({ title: `${ids.length} products deleted` });
+                      }}
+                    >
+                      Delete {selectedIds.size} products
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         )}
