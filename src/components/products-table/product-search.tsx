@@ -63,6 +63,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
       .map(p => ({
         type: "product" as const,
         id: p.id,
+        handle: p.handle,
         label: p.title,
         imageUrl: p.featuredImage?.url
       }))
@@ -129,8 +130,8 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
     setInputValue("")
   }
 
-  const handleProductClick = (productId: string) => {
-    router.push(`/products/${encodeURIComponent(productId)}`)
+  const handleProductClick = (handle: string) => {
+    router.push(`/products/${handle}`)
     setOpen(false)
   }
 
@@ -196,7 +197,7 @@ export function ProductSearch({ products, onFilterChange }: ProductSearchProps) 
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => handleProductClick(item.id)}
+                    onClick={() => handleProductClick(item.handle)}
                     className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer text-left"
                   >
                     {item.imageUrl && (

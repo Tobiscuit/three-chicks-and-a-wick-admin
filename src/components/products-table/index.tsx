@@ -304,8 +304,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
     setPage(0); // Reset to first page
   }, [deletedProductIds]);
 
-  const handleRowClick = (productId: string) => {
-    router.push(`/products/${encodeURIComponent(productId)}`);
+  const handleRowClick = (handle: string) => {
+    router.push(`/products/${handle}`);
   };
 
   const handleDelete = async (e: React.MouseEvent, productId: string, title: string) => {
@@ -499,7 +499,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   <TableRow 
                     key={product.id} 
                     className={`group cursor-pointer transition-all duration-150 hover:bg-muted/50 motion-safe:hover:scale-[1.002] ${selectedIds.has(product.id) ? 'bg-primary/10 hover:bg-primary/15' : ''} ${isDraft(product) ? 'opacity-60' : ''}`}
-                    onClick={() => enableBulkSelection ? toggleSelect(product.id) : handleRowClick(product.id)}
+                    onClick={() => enableBulkSelection ? toggleSelect(product.id) : handleRowClick(product.handle)}
                   >
                     {enableBulkSelection && (
                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
@@ -579,7 +579,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Quick Edit Inventory
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/products/${encodeURIComponent(product.id)}`) }}>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/products/${product.handle}`) }}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                               </DropdownMenuItem>
@@ -763,7 +763,7 @@ export function ProductsTableSkeleton() {
 
 function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0 }: { 
   product: ShopifyProduct; 
-  onRowClick: (id: string) => void; 
+  onRowClick: (handle: string) => void; 
   onDelete: (e: React.MouseEvent, id: string, title: string) => void; 
   onQuickEdit: () => void;
   index?: number;
@@ -774,7 +774,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
       <Card 
         className="overflow-hidden cursor-pointer group motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 hover:shadow-lg transition-shadow" 
         style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
-        onClick={() => onRowClick(product.id)}
+        onClick={() => onRowClick(product.handle)}
       >
         <div className="relative aspect-square">
           <ProductImageCell 
