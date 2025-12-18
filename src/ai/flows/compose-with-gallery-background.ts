@@ -52,7 +52,7 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
     };
 
     try {
-      const modelName = 'googleai/gemini-2.5-flash-image-preview';
+      const modelName = 'googleai/gemini-2.5-flash-image';
       console.log(`[Compose Flow] Using image model: ${modelName}`);
 
       console.log('[Compose Flow] Starting composition with gallery background...');
