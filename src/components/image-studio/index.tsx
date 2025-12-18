@@ -42,6 +42,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import CurrencyInput from "../ui/currency-input";
 import { useRouter } from "next/navigation";
 import { ImageDetailsModal } from "./image-details-modal";
+import { compressImageForStorage } from "@/lib/image-compression";
 
 const formSchema = z.object({
   primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
@@ -751,17 +752,17 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
   const onSubmit = async (values: AddProductModalValues) => {
     setIsGenerating(true);
     try {
-      // Step 1: Upload source images in PARALLEL for speed
+      // Step 1: Compress and upload source images in PARALLEL for speed
       const uploadPromises: Promise<string | null>[] = [];
       
       if (primaryImageFile instanceof File) {
         uploadPromises.push(
-          fileToDataUrl(primaryImageFile).then(dataUrl => uploadImageAction(dataUrl))
+          compressImageForStorage(primaryImageFile).then(dataUrl => uploadImageAction(dataUrl))
         );
       }
       if (secondaryImageFile instanceof File) {
         uploadPromises.push(
-          fileToDataUrl(secondaryImageFile).then(dataUrl => uploadImageAction(dataUrl))
+          compressImageForStorage(secondaryImageFile).then(dataUrl => uploadImageAction(dataUrl))
         );
       }
 
