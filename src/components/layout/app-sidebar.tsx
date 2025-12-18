@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -42,13 +41,15 @@ import { useEffect, useState } from "react"
 import { getOrders } from "@/services/shopify"
 import { auth } from "@/lib/firebase"
 import { useTheme } from "next-themes"
+import { getLastReadStrategyAt } from "@/services/user-settings"
+import { getCachedStrategy } from "@/lib/background-strategy"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingCart, showBadge: true },
   { href: "/products", label: "Products", icon: Package },
   { href: "/magic-request", label: "Magic Request", icon: Wand2 },
-  { href: "/strategy", label: "Strategy", icon: BrainCircuit },
+  { href: "/strategy", label: "Strategy", icon: BrainCircuit, showStrategyBadge: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
@@ -58,6 +59,7 @@ export function AppSidebar() {
   const { user } = useAuth()
   const { theme, setTheme } = useTheme()
   const [unfulfilledCount, setUnfulfilledCount] = useState<number | null>(null)
+  const [hasUnreadStrategy, setHasUnreadStrategy] = useState(false)
 
   // Fetch unfulfilled order count for badge
   useEffect(() => {
@@ -75,6 +77,38 @@ export function AppSidebar() {
     }
     fetchUnfulfilledCount()
   }, [])
+
+  // Check if strategy is unread
+  useEffect(() => {
+    async function checkUnreadStrategy() {
+      if (!user?.uid) return
+      
+      try {
+        // Get user's last read timestamp
+        const lastReadAt = await getLastReadStrategyAt(user.uid)
+        
+        // Get cached strategy's generated timestamp
+        const cached = await getCachedStrategy(user.uid)
+        
+        if (cached && cached.generatedAt) {
+          // Strategy is unread if it was generated after last read (or never read)
+          const isUnread = !lastReadAt || cached.generatedAt > lastReadAt
+          setHasUnreadStrategy(isUnread)
+        }
+      } catch (error) {
+        console.error("Failed to check unread strategy:", error)
+      }
+    }
+    
+    checkUnreadStrategy()
+    
+    // Re-check when pathname changes (user might have viewed /strategy)
+    if (pathname === '/strategy') {
+      // Small delay to let the markAsRead complete
+      const timeout = setTimeout(() => setHasUnreadStrategy(false), 500)
+      return () => clearTimeout(timeout)
+    }
+  }, [user?.uid, pathname])
 
   // Determine user role based on email
   let userRole = "Admin"; // Default role
@@ -134,6 +168,12 @@ export function AppSidebar() {
                 {item.showBadge && unfulfilledCount && (
                   <SidebarMenuBadge className="bg-destructive text-destructive-foreground animate-in fade-in duration-300">
                     {unfulfilledCount > 99 ? '99+' : unfulfilledCount}
+                  </SidebarMenuBadge>
+                )}
+                {/* Unread strategy indicator - subtle dot */}
+                {item.showStrategyBadge && hasUnreadStrategy && (
+                  <SidebarMenuBadge className="bg-primary text-primary-foreground h-2 w-2 p-0 rounded-full animate-pulse">
+                    <span className="sr-only">New strategy available</span>
                   </SidebarMenuBadge>
                 )}
               </SidebarMenuItem>

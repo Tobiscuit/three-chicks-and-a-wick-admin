@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2, BrainCircuit } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getBusinessSnapshot } from '@/services/shopify';
 import { generateBusinessStrategy } from '@/ai/flows/generate-business-strategy';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCachedStrategy, isStrategyCacheFresh } from '@/lib/background-strategy';
 import { useAuth } from '@/components/auth/auth-provider';
+import { markStrategyAsRead } from '@/services/user-settings';
 
 type Strategy = {
     pricing_recommendations: string[];
@@ -137,6 +138,9 @@ export default function StrategyPage() {
         }
     };
 
+    // Ref to track if we've already marked as read this session
+    const hasMarkedRead = useRef(false);
+
     useEffect(() => {
         // Load cached strategy immediately if available
         const loadCachedStrategy = async () => {
@@ -145,6 +149,16 @@ export default function StrategyPage() {
                 setStrategy(cached.strategy);
                 setLastUpdated(cached.lastUpdated);
                 setLoading(false);
+                
+                // Mark strategy as read when loaded (only once per session)
+                if (user?.uid && !hasMarkedRead.current) {
+                    hasMarkedRead.current = true;
+                    try {
+                        await markStrategyAsRead(user.uid);
+                    } catch (e) {
+                        console.error('Failed to mark strategy as read:', e);
+                    }
+                }
             } else {
                 // No cache available - fetch strategy
                 fetchStrategy();
@@ -152,7 +166,7 @@ export default function StrategyPage() {
         };
         
         loadCachedStrategy();
-    }, []);
+    }, [user?.uid]);
 
     const renderStrategyContent = () => {
         if (loading) {

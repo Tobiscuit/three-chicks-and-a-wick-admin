@@ -17,6 +17,9 @@ const defaultSettings: UserSettings = {
   appearance: {
     theme: 'system',
   },
+  strategySettings: {
+    lastReadAt: null,
+  },
 }
 
 export function useUserSettings() {
@@ -53,5 +56,6 @@ export function useUserSettings() {
     error,
     enableBulkSelection: settings.productsSettings.enableBulkSelection,
     theme: settings.appearance.theme,
+    lastReadStrategyAt: settings.strategySettings.lastReadAt,
   }
 }
