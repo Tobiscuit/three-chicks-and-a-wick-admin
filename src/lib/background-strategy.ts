@@ -4,7 +4,11 @@
  * This service handles generating AI business strategies in the background
  * when users log in, ensuring fresh insights are available when needed.
  * Uses AppSync + DynamoDB for cross-device caching.
+ * 
+ * Debug: Enable logs with localStorage.setItem('debug', 'strategy')
  */
+
+import { debugStrategy } from './debug';
 
 const CACHE_DURATION = 16 * 60 * 60 * 1000; // 16 hours in milliseconds
 
@@ -27,7 +31,7 @@ export async function getCachedStrategy(userId?: string): Promise<StrategyCache 
                 const parsed = JSON.parse(localCached);
                 const cacheAge = Date.now() - parsed.generatedAt;
                 if (cacheAge < CACHE_DURATION) {
-                    console.log('✅ [Strategy Debug] Returning fresh local cache');
+                    debugStrategy.log('✅ Returning fresh local cache');
                     return {
                         strategy: parsed.strategy,
                         lastUpdated: parsed.lastUpdated,
@@ -36,7 +40,7 @@ export async function getCachedStrategy(userId?: string): Promise<StrategyCache 
                     };
                 }
             } catch (e) {
-                console.error('Error parsing local cache:', e);
+                debugStrategy.error('Error parsing local cache:', e);
             }
         }
     }
@@ -99,23 +103,23 @@ export async function isStrategyCacheFresh(userId?: string): Promise<boolean> {
             const isFresh = cacheAge < CACHE_DURATION;
             
             if (isFresh) {
-                console.log('✅ [Strategy Debug] Local cache is fresh (' + Math.round(cacheAge / 1000 / 60) + ' mins old). Skipping AppSync check.');
+                debugStrategy.log('✅ Local cache is fresh (' + Math.round(cacheAge / 1000 / 60) + ' mins old). Skipping AppSync check.');
                 return true;
             } else {
-                console.log('⚠️ [Strategy Debug] Local cache is stale (' + Math.round(cacheAge / 1000 / 60) + ' mins old). Checking AppSync...');
+                debugStrategy.log('⚠️ Local cache is stale (' + Math.round(cacheAge / 1000 / 60) + ' mins old). Checking AppSync...');
             }
         } catch (error) {
-            console.log('❌ [Strategy Debug] localStorage cache parse error:', error);
+            debugStrategy.error('localStorage cache parse error:', error);
         }
     } else {
-        console.log('ℹ️ [Strategy Debug] No local cache found. Checking AppSync...');
+        debugStrategy.log('ℹ️ No local cache found. Checking AppSync...');
     }
 
     // 2. Check AppSync (Fallback / Cross-device sync)
     // Only reach here if local cache is missing or stale
     const cached = await getCachedStrategy(userId);
     if (cached) {
-        console.log('✅ [Strategy Debug] AppSync cache found and fresh');
+        debugStrategy.log('✅ AppSync cache found and fresh');
         // Update local cache with the fresh AppSync data
         localStorage.setItem('ai-strategy-cache', JSON.stringify({
             strategy: cached.strategy,
@@ -126,7 +130,7 @@ export async function isStrategyCacheFresh(userId?: string): Promise<boolean> {
         return true;
     }
     
-    console.log('❌ [Strategy Debug] No fresh cache found anywhere');
+    debugStrategy.log('❌ No fresh cache found anywhere');
     return false;
 }
 
@@ -179,14 +183,14 @@ export async function startBackgroundStrategyGeneration(userId?: string): Promis
     
     // Only generate if cache is stale or doesn't exist
     const isFresh = await isStrategyCacheFresh(userId);
-    console.log('🔍 [Strategy Debug] Cache fresh?', isFresh);
+    debugStrategy.log('🔍 Cache fresh?', isFresh);
     
     if (isFresh) {
-        console.log('✅ [Strategy Debug] Strategy cache is fresh, skipping background generation');
+        debugStrategy.log('✅ Strategy cache is fresh, skipping background generation');
         return;
     }
     
-    console.log('🚀 [Strategy Debug] Starting background AI strategy generation...');
+    debugStrategy.log('🚀 Starting background AI strategy generation...');
     
     try {
         // Import dynamically to avoid circular dependencies
