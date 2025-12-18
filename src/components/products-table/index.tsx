@@ -491,9 +491,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               <Button 
                                 variant="outline" 
                                 size="icon" 
-                                className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20 touch-none" 
+                                className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20" 
+                                style={{ touchAction: 'manipulation' }}
                                 onClick={(e) => e.stopPropagation()}
-                                onPointerDown={(e) => { if (e.pointerType === 'touch') e.preventDefault(); }}
                               >
                                   <MoreVertical className="h-4 w-4 text-primary" />
                                   <span className="sr-only">More options</span>
@@ -787,6 +787,28 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
   index?: number;
 }) {
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL;
+  
+  // Tap vs scroll detection for mobile dropdown
+  const [menuOpen, setMenuOpen] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+    // Only open if finger moved < 10px (it was a tap, not a scroll)
+    if (dx < 10 && dy < 10) {
+      e.stopPropagation();
+      setMenuOpen(true);
+    }
+    touchStartRef.current = null;
+  };
+  
   return (
     <SecureDeleteDialog product={product} onDelete={onDelete}>
       <Card 
@@ -801,14 +823,19 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
             isCardView={true}
           />
           <div className="absolute top-2 right-2">
-              <DropdownMenu>
+              <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
                   <DropdownMenuTrigger asChild>
                       <Button 
                         variant="secondary" 
                         size="icon" 
-                        className="h-8 w-8 touch-none" 
+                        className="h-8 w-8" 
                         onClick={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => { if (e.pointerType === 'touch') e.preventDefault(); }}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                        onPointerDown={(e) => {
+                          // Prevent Radix's default pointerdown behavior on touch
+                          if (e.pointerType === 'touch') e.preventDefault();
+                        }}
                       >
                           <MoreVertical className="h-4 w-4" />
                           <span className="sr-only">More options</span>
