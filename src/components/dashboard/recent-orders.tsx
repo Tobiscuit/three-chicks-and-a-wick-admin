@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -16,14 +17,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { generateClient } from 'aws-amplify/api';
 import type { GraphQLSubscription } from 'aws-amplify/api';
 import { Hub } from 'aws-amplify/utils';
 import configureAmplify from '@/lib/amplify-client';
-import { useEffect, useState } from "react";
-import { getOrders } from "@/services/shopify"; // Import server action
+import { useEffect } from "react";
+import { getOrders } from "@/services/shopify";
+import { OrderQuickView } from "./order-quick-view";
 
 const client = generateClient();
 
@@ -68,6 +75,8 @@ export function RecentOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Fetch initial orders
   useEffect(() => {
@@ -177,12 +186,37 @@ export function RecentOrders() {
               </TableRow>
             ) : (
               orders.map((order, index) => (
-                <TableRow key={`${order.orderId}-${index}`} className="hover:bg-muted/50 transition-colors">
-                  <TableCell className="font-mono text-sm tabular-nums">{order.orderId}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{order.customer || 'N/A'}</TableCell>
-                  <TableCell className="hidden md:table-cell">{order.type === 'CUSTOM' ? 'Custom' : 'Standard'}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{order.total || 'N/A'}</TableCell>
-                </TableRow>
+                <Sheet 
+                  key={`${order.orderId}-${index}`}
+                  open={sheetOpen && selectedOrder?.orderId === order.orderId}
+                  onOpenChange={(isOpen) => {
+                    setSheetOpen(isOpen)
+                    if (!isOpen) setSelectedOrder(null)
+                  }}
+                >
+                  <SheetTrigger asChild>
+                    <TableRow 
+                      className="hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setSheetOpen(true);
+                      }}
+                    >
+                      <TableCell className="font-mono text-sm tabular-nums">{order.orderId}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{order.customer || 'N/A'}</TableCell>
+                      <TableCell className="hidden md:table-cell">{order.type === 'CUSTOM' ? 'Custom' : 'Standard'}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{order.total || 'N/A'}</TableCell>
+                    </TableRow>
+                  </SheetTrigger>
+                  <SheetContent className="sm:max-w-md">
+                    {selectedOrder && (
+                      <OrderQuickView 
+                        order={selectedOrder} 
+                        onClose={() => setSheetOpen(false)} 
+                      />
+                    )}
+                  </SheetContent>
+                </Sheet>
               ))
             )}
           </TableBody>

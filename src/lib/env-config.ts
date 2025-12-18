@@ -101,6 +101,7 @@ export const SHOPIFY_CONFIG = {
   ADMIN_ACCESS_TOKEN: getRequiredEnvVar('SHOPIFY_ADMIN_ACCESS_TOKEN'),
   API_VERSION: getEnvVar('SHOPIFY_API_VERSION', '2025-07'), // Default to latest if not set
   WEBHOOK_SECRET: getRequiredEnvVar('SHOPIFY_WEBHOOK_SECRET'),
+  LOCATION_ID: getEnvVar('SHOPIFY_LOCATION_ID', 'gid://shopify/Location/83900891193'), // Primary inventory location
 };
 
 // Google AI Configuration
