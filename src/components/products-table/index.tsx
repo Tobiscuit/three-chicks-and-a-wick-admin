@@ -492,8 +492,12 @@ export function ProductsTable({ products }: ProductsTableProps) {
                                 variant="outline" 
                                 size="icon" 
                                 className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20" 
-                                style={{ touchAction: 'manipulation' }}
                                 onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => {
+                                  // Prevent Radix's default pointerdown - let onClick handle it
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
                               >
                                   <MoreVertical className="h-4 w-4 text-primary" />
                                   <span className="sr-only">More options</span>
