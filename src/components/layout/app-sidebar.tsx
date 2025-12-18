@@ -33,6 +33,9 @@ import {
   Moon,
   Sun,
   ChevronUp,
+  Palette,
+  Store,
+  Monitor,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation'
@@ -216,20 +219,28 @@ export function AppSidebar() {
             
             {/* Theme Toggle */}
             <DropdownMenuItem 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme('light')}
               className="cursor-pointer"
             >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="mr-2 h-4 w-4" />
-                  <span>Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="mr-2 h-4 w-4" />
-                  <span>Dark Mode</span>
-                </>
-              )}
+              <Sun className="mr-2 h-4 w-4" />
+              <span>Light Mode</span>
+              {theme === 'light' && <span className="ml-auto text-xs text-primary">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setTheme('dark')}
+              className="cursor-pointer"
+            >
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark Mode</span>
+              {theme === 'dark' && <span className="ml-auto text-xs text-primary">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setTheme('storefront')}
+              className="cursor-pointer"
+            >
+              <Store className="mr-2 h-4 w-4" />
+              <span>Storefront</span>
+              {theme === 'storefront' && <span className="ml-auto text-xs text-primary">✓</span>}
             </DropdownMenuItem>
             
             {/* Settings Link */}
