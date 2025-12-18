@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   ContainerSize,
   IngredientInventory,
@@ -17,6 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { fetchMagicRequestIngredients } from '@/app/magic-request/ingredients-actions';
 import { getAvailableVariantCombosAction, type VariantCombination } from '@/app/magic-request/pricing-actions';
+import { Package, Layers, FlaskConical } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -176,23 +179,46 @@ export default function ContainerSizeManager() {
   return (
     <div className="space-y-6">
       {/* Display Shopify Ingredients */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle>Available Options (from Shopify)</CardTitle>
+          <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
+            <FlaskConical className="h-5 w-5" />
+            Available Options (from Shopify)
+          </CardTitle>
           <CardDescription>
             Current wax types, wick types, and containers configured in your Shopify store.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loadingIngredients ? (
-            <p className="text-sm text-muted-foreground">Loading from Shopify...</p>
+            <div className="space-y-4">
+              <div>
+                <Skeleton className="h-5 w-32 mb-2" />
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-8 w-24" />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Skeleton className="h-5 w-32 mb-2" />
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-8 w-24" />
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : shopifyIngredients ? (
             <div className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2">Choose Your Wax</h4>
                 <div className="flex flex-wrap gap-2">
                   {shopifyIngredients.waxTypes.map((wax) => (
-                    <Badge key={wax} variant="secondary" className="px-3 py-1.5 text-sm">
+                    <Badge key={wax} variant="outline" className="px-3 py-1.5 text-sm">
                       {wax}
                     </Badge>
                   ))}
@@ -206,7 +232,7 @@ export default function ContainerSizeManager() {
                 <h4 className="font-semibold mb-2">Choose Your Wick</h4>
                 <div className="flex flex-wrap gap-2">
                   {shopifyIngredients.wickTypes.map((wick) => (
-                    <Badge key={wick} variant="secondary" className="px-3 py-1.5 text-sm">
+                    <Badge key={wick} variant="outline" className="px-3 py-1.5 text-sm">
                       {wick}
                     </Badge>
                   ))}
@@ -220,7 +246,7 @@ export default function ContainerSizeManager() {
                 <h4 className="font-semibold mb-2">Choose Your Container</h4>
                 <div className="flex flex-wrap gap-2">
                   {shopifyIngredients.containers.map((container) => (
-                    <Badge key={container} variant="secondary" className="px-3 py-1.5 text-sm">
+                    <Badge key={container} variant="outline" className="px-3 py-1.5 text-sm">
                       {container}
                     </Badge>
                   ))}
@@ -236,28 +262,34 @@ export default function ContainerSizeManager() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle>Container-Size Management</CardTitle>
+          <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Container-Size Management
+          </CardTitle>
           <CardDescription>
             Manage ingredient inventory and container-size availability for custom candles.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{totalVariants}</div>
-              <div className="text-sm text-gray-600">Total Variant Combos</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight text-primary">{totalVariants}</div>
+              <div className="text-sm text-muted-foreground mt-1">Total Variant Combos</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-indigo-600">{uniqueContainers.size}</div>
-              <div className="text-sm text-gray-600">Unique Containers</div>
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight text-primary">{uniqueContainers.size}</div>
+              <div className="text-sm text-muted-foreground mt-1">Unique Containers</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight text-primary">
                 {uniqueWaxes.size} × {uniqueWicks.size}
               </div>
-              <div className="text-sm text-gray-600">Wax × Wick Options</div>
+              <div className="text-sm text-muted-foreground mt-1">Wax × Wick Options</div>
             </div>
           </div>
 
@@ -271,9 +303,15 @@ export default function ContainerSizeManager() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle>Update Ingredient Inventory</CardTitle>
+          <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Update Ingredient Inventory
+          </CardTitle>
           <CardDescription>
             Update quantities and costs for individual ingredients.
           </CardDescription>
@@ -369,18 +407,28 @@ export default function ContainerSizeManager() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-200",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle>Available Variants</CardTitle>
+          <CardTitle className="font-semibold tracking-tight">Available Variants</CardTitle>
           <CardDescription>
             Variants that can be made with current inventory.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loadingVariants ? (
-            <p className="text-sm text-muted-foreground">
-              Calculating variant combinations...
-            </p>
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-64" />
+              <div className="rounded-md border">
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : variantError ? (
             <Alert variant="destructive">
               <AlertDescription>{variantError}</AlertDescription>
@@ -411,11 +459,11 @@ export default function ContainerSizeManager() {
                   </TableHeader>
                   <TableBody>
                     {shopifyVariants.map((variant) => (
-                      <TableRow key={variant.id}>
+                      <TableRow key={variant.id} className="hover:bg-muted/50 transition-colors">
                         <TableCell className="font-medium">{variant.container}</TableCell>
                         <TableCell>{variant.wax}</TableCell>
                         <TableCell>{variant.wick}</TableCell>
-                        <TableCell className="text-right">${variant.price}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">${variant.price}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
