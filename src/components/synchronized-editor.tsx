@@ -73,8 +73,20 @@ export function SynchronizedEditor({
   const [userPrompt, setUserPrompt] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [activeTab, setActiveTabState] = useState<'ai' | 'edit'>('ai'); // AI-first default
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
   const { toast } = useToast();
   const isInitialized = useRef(false);
+
+  // Tab switcher with skeleton animation
+  const setActiveTab = (tab: 'ai' | 'edit') => {
+    if (tab === activeTab) return;
+    setIsTabSwitching(true);
+    setTimeout(() => {
+      setActiveTabState(tab);
+      setIsTabSwitching(false);
+    }, 150); // Brief skeleton flash for smooth transition
+  };
 
   // === DEBUGGING LOGS ===
   // Reduced logging - only log on significant changes
@@ -286,206 +298,233 @@ export function SynchronizedEditor({
   }, []);
 
   return (
-    <div className="space-y-2 sm:space-y-6">
-      {/* Rich Text Editor (Top) */}
-      <Card>
-        <CardHeader className="p-2 sm:p-6 pb-2 sm:pb-3">
-          <CardTitle className="text-lg">Manual Editor</CardTitle>
-          <CardDescription>
-            Type and format your product description using the rich text editor below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-2 sm:p-6 pt-0">
-          {pivotReason && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md flex gap-3 items-start">
-              <Sparkles className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="text-sm font-semibold text-blue-700 mb-1">AI Creative Logic</h4>
-                <p className="text-sm text-blue-600 italic">"{pivotReason}"</p>
-              </div>
-            </div>
-          )}
-                   <RichTextEditor
-                     content={content}
-                     onChange={handleContentChange}
-                     placeholder={placeholder}
-                   />
-                   {/* Debug info - hidden on mobile */}
-                   <div className="mt-2 p-2 bg-muted/50 rounded text-xs hidden sm:block">
-                     <strong>Debug:</strong> Content length: {content?.length || 0} chars
-                     {content && <div className="mt-1">Content preview: {content.substring(0, 50)}...</div>}
-                   </div>
-          {hasUnsavedChanges && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>You have unsaved changes</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* AI Rewriter (Bottom) */}
-      <Card>
-        <CardHeader className="p-2 sm:p-6 pb-2 sm:pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                Smart Editor
-              </CardTitle>
-              <CardDescription>
-                Get help improving your product description with smart suggestions.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
+    <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg font-semibold tracking-tight">Description</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              {activeTab === 'ai' 
+                ? 'Get AI-powered improvements for your product description.'
+                : 'Manually edit and format your product description.'}
+            </CardDescription>
+          </div>
+          
+          {/* Tab Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              type="button"
+              variant={activeTab === 'ai' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('ai')}
+              className="h-8 px-3 text-sm"
+            >
+              <Sparkles className="mr-1.5 h-4 w-4" />
+              AI
+            </Button>
+            <Button
+              type="button"
+              variant={activeTab === 'edit' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('edit')}
+              className="h-8 px-3 text-sm"
+            >
+              ✏️ Edit
+            </Button>
+          </div>
+          
+          {/* History & Reset */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-xs sm:text-sm"
+            >
+              <History className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">History</span>
+            </Button>
+            {currentVersionIndex > 0 && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setShowHistory(!showHistory)}
+                onClick={resetToOriginal}
                 className="text-xs sm:text-sm"
               >
-                <History className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">History</span>
-                <span className="sm:hidden">Past</span>
+                <RotateCcw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Reset</span>
               </Button>
-              {currentVersionIndex > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={resetToOriginal}
-                  className="text-xs sm:text-sm"
-                >
-                  <RotateCcw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Reset</span>
-                  <span className="sm:hidden">Undo</span>
-                </Button>
-              )}
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+        {/* AI Creative Logic (when available) */}
+        {pivotReason && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-md flex gap-3 items-start">
+            <Sparkles className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">AI Creative Logic</h4>
+              <p className="text-sm text-blue-600 dark:text-blue-400 italic">"{pivotReason}"</p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-2 sm:p-6 pt-0">
-          {isLoadingHistory ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="text-center space-y-2">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading history...</p>
-              </div>
-            </div>
-          ) : isRewriting ? (
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-5/6" />
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Rewriting description...
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Enhanced Content Display */}
-              {isHtmlContent(content) ? (
-                <AIContentDisplay 
-                  content={content} 
-                  className={getAIContentClassName('details')}
-                />
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{content}</p>
-              )}
-              
-              {descriptionVersions[currentVersionIndex]?.changes.length > 0 && (
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-medium mb-2">Changes Made:</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {descriptionVersions[currentVersionIndex].changes.map((change, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {change}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+        )}
 
-              {/* AI Rewrite Input */}
-              <div className="border-t pt-4 space-y-3">
-                <div>
-                  <label className="text-sm font-medium">How would you like to improve this description?</label>
-                  <textarea
-                    value={userPrompt}
-                    onChange={(e) => setUserPrompt(e.target.value)}
-                    placeholder="e.g., Make it sound more appealing, add details about the scent, focus on benefits..."
-                    className="mt-1 w-full px-3 py-2 border border-input bg-background text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
-                    rows={3}
-                  />
+        {/* Tab Content */}
+        {isTabSwitching ? (
+          // Skeleton loading animation when switching tabs
+          <div className="space-y-3 motion-safe:animate-in motion-safe:fade-in">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : activeTab === 'edit' ? (
+          // Manual Editor Tab
+          <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-2">
+            <RichTextEditor
+              content={content}
+              onChange={handleContentChange}
+              placeholder={placeholder}
+            />
+            {hasUnsavedChanges && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>You have unsaved changes</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          // AI Tab (Default)
+          <div className="space-y-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2">
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="text-center space-y-2">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Loading history...</p>
                 </div>
-                <Button
-                  onClick={handleRewrite}
-                  disabled={isRewriting || !userPrompt.trim()}
-                  className="w-full"
-                >
-                  {isRewriting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Improving...
-                    </>
+              </div>
+            ) : isRewriting ? (
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-5/6" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Rewriting description...
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Current Content Preview */}
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Current Description</h4>
+                  {isHtmlContent(content) ? (
+                    <AIContentDisplay 
+                      content={content} 
+                      className={getAIContentClassName('details')}
+                    />
                   ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Improve Description
-                    </>
+                    <p className="text-sm whitespace-pre-wrap">{content || <span className="italic text-muted-foreground">No description yet</span>}</p>
                   )}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Version History */}
-          {showHistory && (
-            <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium mb-3">Version History</h4>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {descriptionVersions.map((version, index) => (
-                  <div
-                    key={version.id}
-                    onClick={() => switchVersion(index)}
-                    className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                      index === currentVersionIndex
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {index === currentVersionIndex && (
-                          <CheckCircle className="h-4 w-4 text-primary" />
-                        )}
-                        <span className="text-sm font-medium">
-                          Version {descriptionVersions.length - index}
-                        </span>
-                        {index === 0 && hasUnsavedChanges && (
-                          <Badge variant="outline" className="text-xs">
-                            Current
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {version.timestamp.toLocaleDateString()}
-                      </span>
+                </div>
+                
+                {/* Changes Made (if any) */}
+                {descriptionVersions[currentVersionIndex]?.changes.length > 0 && (
+                  <div className="border-t pt-3">
+                    <h4 className="text-sm font-medium mb-2">Changes Made:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {descriptionVersions[currentVersionIndex].changes.map((change, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {change}
+                        </Badge>
+                      ))}
                     </div>
-                    {version.userPrompt && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        "{version.userPrompt}"
-                      </p>
-                    )}
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* AI Rewrite Input */}
+                <div className="border-t pt-4 space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">How would you like to improve this description?</label>
+                    <textarea
+                      value={userPrompt}
+                      onChange={(e) => setUserPrompt(e.target.value)}
+                      placeholder="e.g., Make it sound more appealing, add details about the scent, focus on benefits..."
+                      className="mt-2 w-full px-3 py-2 border border-input bg-background text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleRewrite}
+                    disabled={isRewriting || !userPrompt.trim()}
+                    className="w-full"
+                  >
+                    {isRewriting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Improving...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        Improve Description
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Version History (shared between tabs) */}
+        {showHistory && (
+          <div className="border-t pt-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+            <h4 className="text-sm font-medium mb-3">Version History</h4>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {descriptionVersions.map((version, index) => (
+                <div
+                  key={version.id}
+                  onClick={() => switchVersion(index)}
+                  className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                    index === currentVersionIndex
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {index === currentVersionIndex && (
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="text-sm font-medium">
+                        Version {descriptionVersions.length - index}
+                      </span>
+                      {index === 0 && hasUnsavedChanges && (
+                        <Badge variant="outline" className="text-xs">
+                          Current
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {version.timestamp.toLocaleDateString()}
+                    </span>
+                  </div>
+                  {version.userPrompt && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      "{version.userPrompt}"
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
