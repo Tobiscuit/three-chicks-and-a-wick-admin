@@ -76,13 +76,13 @@ export async function compressImage(
 }
 
 /**
- * Compress image specifically for AI processing (smaller for faster API calls)
+ * Compress image for AI processing and storage - Full HD for customer viewing
  */
 export async function compressImageForAI(file: File): Promise<string> {
   return compressImage(file, {
-    maxWidth: 1024,
-    maxHeight: 1024,
-    quality: 0.8,
+    maxWidth: 1920,
+    maxHeight: 1920,
+    quality: 0.9,
     outputFormat: 'image/webp'
   });
 }

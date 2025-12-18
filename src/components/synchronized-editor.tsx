@@ -364,11 +364,11 @@ export function SynchronizedEditor({
       <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
         {/* AI Creative Logic (when available) */}
         {pivotReason && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-md flex gap-3 items-start">
-            <Sparkles className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+          <div className="p-3 bg-primary/10 dark:bg-primary/15 border border-primary/20 dark:border-primary/30 rounded-md flex gap-3 items-start">
+            <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">AI Creative Logic</h4>
-              <p className="text-sm text-blue-600 dark:text-blue-400 italic">"{pivotReason}"</p>
+              <h4 className="text-sm font-semibold text-primary mb-1">AI Creative Logic</h4>
+              <p className="text-sm text-primary/80 dark:text-primary/90 italic">"{pivotReason}"</p>
             </div>
           </div>
         )}

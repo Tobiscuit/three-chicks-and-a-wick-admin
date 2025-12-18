@@ -42,7 +42,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import CurrencyInput from "../ui/currency-input";
 import { useRouter } from "next/navigation";
 import { ImageDetailsModal } from "./image-details-modal";
-import { compressImageForStorage } from "@/lib/image-compression";
+import { compressImageForStorage, compressImageForAI } from "@/lib/image-compression";
 
 const formSchema = z.object({
   primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
@@ -273,12 +273,22 @@ export function ImageStudio() {
   useEffect(() => {
     if (primaryImageFile instanceof File) {
       setImageProcessing(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPrimaryPreview(reader.result as string);
-        setImageProcessing(false);
-      };
-      reader.readAsDataURL(primaryImageFile);
+      // Compress image immediately for faster AI generation later
+      compressImageForAI(primaryImageFile)
+        .then((compressed) => {
+          setPrimaryPreview(compressed);
+          setImageProcessing(false);
+        })
+        .catch((err) => {
+          console.error('[Image Studio] Compression failed:', err);
+          // Fallback to uncompressed
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPrimaryPreview(reader.result as string);
+            setImageProcessing(false);
+          };
+          reader.readAsDataURL(primaryImageFile);
+        });
     } else {
       setPrimaryPreview(null);
       setImageProcessing(false);
@@ -288,12 +298,22 @@ export function ImageStudio() {
   useEffect(() => {
     if (secondaryImageFile instanceof File) {
       setImageProcessing(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSecondaryPreview(reader.result as string);
-        setImageProcessing(false);
-      };
-      reader.readAsDataURL(secondaryImageFile);
+      // Compress image immediately for faster AI generation later
+      compressImageForAI(secondaryImageFile)
+        .then((compressed) => {
+          setSecondaryPreview(compressed);
+          setImageProcessing(false);
+        })
+        .catch((err) => {
+          console.error('[Image Studio] Compression failed:', err);
+          // Fallback to uncompressed
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setSecondaryPreview(reader.result as string);
+            setImageProcessing(false);
+          };
+          reader.readAsDataURL(secondaryImageFile);
+        });
     } else {
       setSecondaryPreview(null);
       setImageProcessing(false);
