@@ -92,11 +92,10 @@ export function LowStockAlert() {
           <div className="space-y-3">
             {items.slice(0, 5).map((item) => {
               const isCritical = item.inventoryQuantity <= 3;
-              const productIdForUrl = item.productId.split('/').pop();
 
               return (
                 <Link
-                  href={`/products/${productIdForUrl}`}
+                  href={`/products/${item.productHandle}`}
                   key={`${item.productId}-${item.variantTitle}`}
                   className={cn(
                     "flex items-center gap-3 p-2 -mx-2 rounded-lg",

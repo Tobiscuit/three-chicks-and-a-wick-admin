@@ -5,6 +5,7 @@ import { SHOPIFY_CONFIG } from '@/lib/env-config';
 
 export type InventoryItem = {
   productId: string;
+  productHandle: string;
   productTitle: string;
   variantTitle: string;
   sku: string | null;
@@ -31,6 +32,7 @@ export async function getLowStockProducts(threshold: number = 10) {
             product {
               id
               title
+              handle
               featuredImage {
                 url(transform: {maxWidth: 100, maxHeight: 100})
               }
@@ -62,6 +64,7 @@ export async function getLowStockProducts(threshold: number = 10) {
             product: {
               id: string;
               title: string;
+              handle: string;
               featuredImage: { url: string } | null;
             };
             inventoryItem: {
@@ -83,6 +86,7 @@ export async function getLowStockProducts(threshold: number = 10) {
         
         return {
           productId: edge.node.product.id,
+          productHandle: edge.node.product.handle,
           productTitle: edge.node.product.title,
           variantTitle: edge.node.title,
           sku: edge.node.sku,
