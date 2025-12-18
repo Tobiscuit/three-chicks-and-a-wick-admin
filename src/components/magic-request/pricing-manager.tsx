@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Eye, Check, X, RefreshCw, AlertTriangle } from 'lucide-react';
 import {
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   getPricingConfigAction,
   previewPricingChangesAction,
@@ -220,22 +222,37 @@ export function PricingManager() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Loading pricing configuration...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300"
+        )}>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-32" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (!config) {
     return (
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300"
+      )}>
         <CardHeader>
-          <CardTitle>Error</CardTitle>
+          <CardTitle className="font-semibold tracking-tight">Error</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">Failed to load pricing configuration.</p>
@@ -259,9 +276,15 @@ export function PricingManager() {
       <VesselManager />
 
       {/* Current Pricing */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle>Current Pricing</CardTitle>
+          <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Current Pricing
+          </CardTitle>
           <CardDescription>
             Edit prices below. Changes will affect all variants with that ingredient.
           </CardDescription>
@@ -391,9 +414,15 @@ export function PricingManager() {
 
       {/* Preview */}
       {preview && preview.changes.length > 0 && (
-        <Card>
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader>
-            <CardTitle>Price Change Preview</CardTitle>
+            <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Price Change Preview
+            </CardTitle>
             <CardDescription>
               {preview.summary.variantsWithChanges} of {preview.summary.totalVariants} variants will change.
             </CardDescription>
@@ -437,13 +466,13 @@ export function PricingManager() {
                 </TableHeader>
                 <TableBody>
                   {preview.changes.slice(0, 50).map((change, idx) => (
-                    <TableRow key={idx}>
+                    <TableRow key={idx} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="font-medium">{change.container}</TableCell>
                       <TableCell>{change.variantTitle}</TableCell>
                       <TableCell>{change.wax}</TableCell>
                       <TableCell>{change.wick}</TableCell>
-                      <TableCell>${change.currentPrice}</TableCell>
-                      <TableCell className="font-semibold">${change.newPrice}</TableCell>
+                      <TableCell className="font-mono tabular-nums">${change.currentPrice}</TableCell>
+                      <TableCell className="font-semibold font-mono tabular-nums">${change.newPrice}</TableCell>
                       <TableCell>
                         <Badge variant={change.change.startsWith('+') ? 'default' : 'secondary'}>
                           {change.change}
