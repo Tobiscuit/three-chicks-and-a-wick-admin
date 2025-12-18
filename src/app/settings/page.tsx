@@ -128,7 +128,7 @@ export default function SettingsPage() {
 
     // Handle tutorials toggle with inline indicator
     const handleTutorialsToggle = (checked: boolean) => {
-        toggleTutorials();
+        toggleTutorials(checked);
         setSavedTutorials(true);
         setTimeout(() => setSavedTutorials(false), 2000);
     };
@@ -315,14 +315,14 @@ export default function SettingsPage() {
                     )}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
-                                <Store className="h-5 w-5" /> Integrations
+                                <Store className="h-5 w-5" /> Shopify Connection
                             </CardTitle>
-                            <CardDescription>Information about connected services.</CardDescription>
+                            <CardDescription>Your connected Shopify store.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between rounded-lg border p-3">
-                                <p className="text-sm font-medium">Shopify Store URL</p>
-                                <p className="text-sm text-muted-foreground truncate">{shopifyStoreUrl.replace('/api/2025-07/graphql.json', '')}</p>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border p-3">
+                                <p className="text-sm font-medium shrink-0">Store URL</p>
+                                <p className="text-sm text-muted-foreground break-all sm:text-right">{shopifyStoreUrl.replace('/api/2025-07/graphql.json', '')}</p>
                             </div>
                         </CardContent>
                     </Card>
