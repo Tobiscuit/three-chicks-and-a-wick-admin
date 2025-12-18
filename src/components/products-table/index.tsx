@@ -417,7 +417,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 {displayProducts.map((product, index) => (
                   <TableRow 
                     key={product.id} 
-                    className={`group cursor-pointer transition-all duration-150 hover:bg-muted/50 motion-safe:hover:scale-[1.002] ${selectedIds.has(product.id) ? 'bg-primary/10 hover:bg-primary/15' : ''} ${isDraft(product) ? 'opacity-60' : ''}`}
+                    className={`group cursor-pointer transition-colors duration-150 hover:bg-muted/50 ${selectedIds.has(product.id) ? 'bg-primary/10 hover:bg-primary/15' : ''} ${isDraft(product) ? 'opacity-60' : ''}`}
                     onClick={() => enableBulkSelection ? toggleSelect(product.id) : handleRowClick(product.handle)}
                   >
                     {enableBulkSelection && (
