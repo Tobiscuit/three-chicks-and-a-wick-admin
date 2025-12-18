@@ -168,7 +168,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL;
 
   // Handle filter changes from ProductSearch
   const handleFilterChange = useCallback((filtered: ShopifyProduct[]) => {
@@ -638,7 +638,7 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
   onQuickEdit: () => void;
   index?: number;
 }) {
-  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL;
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL;
   return (
     <SecureDeleteDialog product={product} onDelete={onDelete}>
       <Card 
