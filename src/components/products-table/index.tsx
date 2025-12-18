@@ -579,7 +579,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Quick Edit Inventory
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/products/${product.id}`) }}>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/products/${encodeURIComponent(product.id)}`) }}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                               </DropdownMenuItem>
