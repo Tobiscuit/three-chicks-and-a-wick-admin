@@ -186,7 +186,7 @@ export default function SettingsPage() {
                             </CardTitle>
                             <CardDescription>Configure how Image Studio behaves when creating products.</CardDescription>
                         </CardHeader>
-                        <CardContent className="flex items-center justify-between">
+                        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                     <p className="text-sm font-medium">Include source images when saving new products</p>
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                             </CardTitle>
                             <CardDescription>Configure how the products list behaves.</CardDescription>
                         </CardHeader>
-                        <CardContent className="flex items-center justify-between">
+                        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                     <p className="text-sm font-medium">Enable Bulk Selection</p>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
                             </CardTitle>
                             <CardDescription>Customize the look and feel of the application.</CardDescription>
                         </CardHeader>
-                        <CardContent className="flex items-center justify-between">
+                        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <p className="text-sm font-medium">Theme</p>
                             <ThemeToggle />
                         </CardContent>
@@ -270,7 +270,7 @@ export default function SettingsPage() {
                             <CardDescription>Manage in-app tutorials and feature highlights.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                         <p className="text-sm font-medium">Show Feature Tips</p>
@@ -285,7 +285,7 @@ export default function SettingsPage() {
                                     onCheckedChange={handleTutorialsToggle}
                                 />
                             </div>
-                            <div className="flex items-center justify-between border-t pt-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t pt-4">
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium">Reset All Tutorials</p>
                                     <p className="text-xs text-muted-foreground">
