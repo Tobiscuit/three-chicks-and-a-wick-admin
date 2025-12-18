@@ -141,22 +141,26 @@ function SortableImage({
                     draggable={false}
                 />
                 
-                {/* Zoom overlay on hover */}
-                <DialogTrigger asChild>
-                    <button
-                        type="button"
-                        className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md cursor-zoom-in"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsLightboxOpen(true);
-                        }}
-                    >
-                        <ZoomIn className="h-8 w-8 text-white drop-shadow-lg" />
-                    </button>
-                </DialogTrigger>
+                {/* Zoom button - bottom left corner (doesn't block drag) */}
+                <div className="absolute bottom-1 left-1 z-10">
+                    <DialogTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 hover:bg-black/80 border-none"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsLightboxOpen(true);
+                            }}
+                        >
+                            <ZoomIn className="h-4 w-4 text-white" />
+                        </Button>
+                    </DialogTrigger>
+                </div>
 
-                {/* Delete button */}
+                {/* Delete button - top right corner */}
                 <div className="absolute top-1 right-1 z-10">
                     <Button
                         type="button"
