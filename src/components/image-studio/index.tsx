@@ -751,22 +751,27 @@ function AddProductModal({ generatedImage, onClose, primaryImageFile, secondaryI
   const onSubmit = async (values: AddProductModalValues) => {
     setIsGenerating(true);
     try {
-      // Upload source images to Firebase Storage first to avoid 413 errors
-      const sourceImageUrls = [];
-
+      // Step 1: Upload source images in PARALLEL for speed
+      const uploadPromises: Promise<string | null>[] = [];
+      
       if (primaryImageFile instanceof File) {
-        const primaryDataUrl = await fileToDataUrl(primaryImageFile);
-        const primaryUrl = await uploadImageAction(primaryDataUrl);
-        if (primaryUrl) sourceImageUrls.push(primaryUrl);
+        uploadPromises.push(
+          fileToDataUrl(primaryImageFile).then(dataUrl => uploadImageAction(dataUrl))
+        );
       }
       if (secondaryImageFile instanceof File) {
-        const secondaryDataUrl = await fileToDataUrl(secondaryImageFile);
-        const secondaryUrl = await uploadImageAction(secondaryDataUrl);
-        if (secondaryUrl) sourceImageUrls.push(secondaryUrl);
+        uploadPromises.push(
+          fileToDataUrl(secondaryImageFile).then(dataUrl => uploadImageAction(dataUrl))
+        );
       }
+
+      // Wait for all uploads in parallel
+      const uploadResults = await Promise.all(uploadPromises);
+      const sourceImageUrls = uploadResults.filter((url): url is string => url !== null);
 
       console.log('[Image Studio] Source images uploaded:', sourceImageUrls.length, sourceImageUrls);
 
+      // Step 2: Generate product content with AI
       const result = await generateProductFromImageAction({
         imageDataUrl: generatedImage,
         price: values.price,
