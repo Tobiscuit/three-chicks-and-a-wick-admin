@@ -35,6 +35,7 @@ import { uploadImageAction } from "@/app/actions";
 import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code, Sparkles, ZoomIn } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
@@ -160,22 +161,37 @@ function SortableImage({
                     </DialogTrigger>
                 </div>
 
-                {/* Delete button - top right corner */}
-                <div className="absolute top-1 right-1 z-10">
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onRemove(index);
-                        }}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                </div>
+                {/* Delete button with confirmation - top right corner */}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <div className="absolute top-1 right-1 z-10">
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Image?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This image will be removed from the product. You can re-upload it later if needed.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onRemove(index)}>
+                                Remove
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
             
             {/* Lightbox Modal */}
