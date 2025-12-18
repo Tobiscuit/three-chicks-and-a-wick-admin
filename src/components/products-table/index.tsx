@@ -377,22 +377,23 @@ export function ProductsTable({ products }: ProductsTableProps) {
         
         {/* Contextual Bulk Actions Toolbar */}
         {enableBulkSelection && selectedIds.size > 0 && (
-          <div className="flex items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/20">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">
-                {selectedIds.size} selected
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-primary/10 border-b border-primary/20">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
+                {selectedIds.size} <span className="hidden sm:inline">selected</span>
               </span>
-              <Button variant="ghost" size="sm" onClick={clearSelection} className="h-7">
-                <X className="h-3 w-3 mr-1" />
-                Clear
+              <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 sm:h-7 px-2">
+                <X className="h-3 w-3" />
+                <span className="hidden sm:inline ml-1">Clear</span>
               </Button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Bulk Change Status Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7">
-                    📦 Change Status
+                  <Button variant="outline" size="sm" className="h-6 sm:h-7 px-2 sm:px-3 text-xs sm:text-sm">
+                    <span className="hidden sm:inline">📦 Change Status</span>
+                    <span className="sm:hidden">📦 Status</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -446,9 +447,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   toast({ title: `${ids.length} products deleted` });
                 }}
               >
-                <Button variant="destructive" size="sm" className="h-7">
-                  <Trash className="h-3 w-3 mr-1" />
-                  Delete {selectedIds.size}
+                <Button variant="destructive" size="sm" className="h-6 sm:h-7 px-2 sm:px-3 text-xs sm:text-sm">
+                  <Trash className="h-3 w-3" />
+                  <span className="ml-1">{selectedIds.size}</span>
                 </Button>
               </SecureBulkDeleteDialog>
             </div>
