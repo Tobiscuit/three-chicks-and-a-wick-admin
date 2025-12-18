@@ -246,6 +246,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null); // For list view controlled dropdowns
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL;
 
   // Handle filter changes from ProductSearch
@@ -486,15 +487,21 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <SecureDeleteDialog product={product} onDelete={handleDelete}>
-                       <DropdownMenu>
+                       <DropdownMenu 
+                         open={openDropdownId === product.id} 
+                         onOpenChange={(open) => setOpenDropdownId(open ? product.id : null)}
+                       >
                           <DropdownMenuTrigger asChild>
                               <Button 
                                 variant="outline" 
                                 size="icon" 
                                 className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20" 
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdownId(prev => prev === product.id ? null : product.id);
+                                }}
                                 onPointerDown={(e) => {
-                                  // Prevent Radix's default pointerdown - let onClick handle it
+                                  // Prevent Radix's default pointerdown - we use onClick instead
                                   e.preventDefault();
                                   e.stopPropagation();
                                 }}
