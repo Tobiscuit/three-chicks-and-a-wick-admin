@@ -45,7 +45,7 @@ import { getOrders } from "@/services/shopify"
 import { auth } from "@/lib/firebase"
 import { useTheme } from "next-themes"
 import { getLastReadStrategyAt } from "@/services/user-settings"
-import { getCachedStrategy } from "@/lib/background-strategy"
+import { getServerStrategyTimestamp } from "@/lib/background-strategy"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -87,15 +87,16 @@ export function AppSidebar() {
       if (!user?.uid) return
       
       try {
-        // Get user's last read timestamp
+        // Get user's last read timestamp from Firestore
         const lastReadAt = await getLastReadStrategyAt(user.uid)
         
-        // Get cached strategy's generated timestamp
-        const cached = await getCachedStrategy(user.uid)
+        // Get strategy's generated timestamp from SERVER (not local cache)
+        // This ensures cross-device sync works correctly
+        const serverGeneratedAt = await getServerStrategyTimestamp(user.uid)
         
-        if (cached && cached.generatedAt) {
+        if (serverGeneratedAt) {
           // Strategy is unread if it was generated after last read (or never read)
-          const isUnread = !lastReadAt || cached.generatedAt > lastReadAt
+          const isUnread = !lastReadAt || serverGeneratedAt > lastReadAt
           setHasUnreadStrategy(isUnread)
         }
       } catch (error) {
@@ -173,10 +174,10 @@ export function AppSidebar() {
                     {unfulfilledCount > 99 ? '99+' : unfulfilledCount}
                   </SidebarMenuBadge>
                 )}
-                {/* Unread strategy indicator - subtle dot */}
+                {/* Unread strategy indicator - info badge */}
                 {item.showStrategyBadge && hasUnreadStrategy && (
-                  <SidebarMenuBadge className="bg-primary text-primary-foreground h-2 w-2 p-0 rounded-full animate-pulse">
-                    <span className="sr-only">New strategy available</span>
+                  <SidebarMenuBadge className="bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 h-5 min-w-5 rounded-full animate-in fade-in duration-300">
+                    <span className="text-[10px] font-bold">i</span>
                   </SidebarMenuBadge>
                 )}
               </SidebarMenuItem>
