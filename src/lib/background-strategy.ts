@@ -89,6 +89,34 @@ export async function getCachedStrategy(userId?: string): Promise<StrategyCache 
 }
 
 /**
+ * Get strategy timestamp from SERVER only (skips local cache)
+ * Used for cross-device unread badge sync
+ */
+export async function getServerStrategyTimestamp(userId: string): Promise<number | null> {
+    try {
+        const url = `/api/storefront/strategy-cache?userId=${userId}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store' // Always fresh
+        });
+
+        if (!response.ok) return null;
+
+        const result = await response.json();
+        const cacheData = result.getStrategyCache;
+
+        if (cacheData && cacheData.generatedAt) {
+            return cacheData.generatedAt;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching server strategy timestamp:', error);
+        return null;
+    }
+}
+
+/**
  * Check if strategy cache is fresh (less than 16 hours old)
  */
 export async function isStrategyCacheFresh(userId?: string): Promise<boolean> {
