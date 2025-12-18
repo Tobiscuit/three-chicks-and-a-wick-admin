@@ -4,6 +4,7 @@
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Loader2, BrainCircuit } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getBusinessSnapshot } from '@/services/shopify';
@@ -186,22 +187,22 @@ export default function StrategyPage() {
         
         if (strategy) {
             return (
-                 <div className="space-y-8 font-light">
-                    <div id="pricing">
-                        <h3 className="font-semibold text-lg mb-2 text-primary">Pricing Recommendations</h3>
-                        <ul className="list-disc pl-5 space-y-2">
+                 <div className="space-y-8">
+                    <div id="pricing" className="motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <h3 className="font-semibold text-lg mb-3 text-primary">Pricing Recommendations</h3>
+                        <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
                             {strategy.pricing_recommendations.map((item, index) => <li key={`price-${index}`}>{item}</li>)}
                         </ul>
                     </div>
-                    <div id="marketing">
-                        <h3 className="font-semibold text-lg mb-2 text-primary">Marketing Suggestions</h3>
-                        <ul className="list-disc pl-5 space-y-2">
+                    <div id="marketing" className="motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75">
+                        <h3 className="font-semibold text-lg mb-3 text-primary">Marketing Suggestions</h3>
+                        <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
                             {strategy.marketing_suggestions.map((item, index) => <li key={`market-${index}`}>{item}</li>)}
                         </ul>
                     </div>
-                    <div id="inventory">
-                        <h3 className="font-semibold text-lg mb-2 text-primary">Inventory Alerts</h3>
-                        <ul className="list-disc pl-5 space-y-2">
+                    <div id="inventory" className="motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150">
+                        <h3 className="font-semibold text-lg mb-3 text-primary">Inventory Alerts</h3>
+                        <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
                            {strategy.inventory_alerts.length > 0 ? strategy.inventory_alerts.map((item, index) => (
                                 <li key={`inv-${index}`}>{item}</li>
                             )) : (
@@ -218,15 +219,18 @@ export default function StrategyPage() {
 
     return (
         <AuthWrapper>
-            <Card>
+            <Card className={cn(
+                "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+                "hover:shadow-md hover:border-primary/20 transition-all"
+            )}>
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <CardTitle className="text-2xl flex items-center gap-2">
-                                <BrainCircuit className="text-primary"/>
+                            <CardTitle className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+                                <BrainCircuit className="h-6 w-6 text-primary"/>
                                 AI Business Strategy
                             </CardTitle>
-                            <CardDescription>
+                            <CardDescription className="mt-2">
                                 Actionable recommendations based on your latest Shopify data.
                             </CardDescription>
                         </div>
