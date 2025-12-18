@@ -770,8 +770,28 @@ export function ProductForm({ collections, initialData = null }: ProductFormProp
                                                     <CommandItem 
                                                         key={c.id} 
                                                         value={c.title}
-                                                        onSelect={() => {
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault(); // Prevent input from stealing focus
                                                             console.log(`[ProductForm] Selected collection: ${c.title} (${c.id})`);
+                                                            const selected = new Set(field.value || []);
+                                                            const isCurrentlySelected = selected.has(c.id);
+                                                            
+                                                            if (isCurrentlySelected) {
+                                                                selected.delete(c.id);
+                                                            } else {
+                                                                selected.add(c.id);
+                                                            }
+                                                            
+                                                            field.onChange(Array.from(selected));
+                                                            
+                                                            // Special handling for Featured collection
+                                                            if (featuredCollection && c.id === featuredCollection.id) {
+                                                                setValue('featured', !isCurrentlySelected, { shouldDirty: true });
+                                                            }
+                                                        }}
+                                                        onSelect={() => {
+                                                            // Keep onSelect as fallback for keyboard navigation
+                                                            console.log(`[ProductForm] onSelect collection: ${c.title} (${c.id})`);
                                                             const selected = new Set(field.value || []);
                                                             const isCurrentlySelected = selected.has(c.id);
                                                             
