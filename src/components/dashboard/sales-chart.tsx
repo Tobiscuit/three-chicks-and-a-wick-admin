@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { ChartTooltipContent, ChartContainer } from "../ui/chart"
 import { ShoppingCart } from "lucide-react"
 import { useMemo } from "react"
@@ -29,9 +30,13 @@ export function SalesChart({ data }: SalesChartProps) {
   }, [data, isMobile, isTablet]);
 
   return (
-    <Card className="lg:col-span-4">
+    <Card className={cn(
+      "lg:col-span-4",
+      "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-200",
+      "hover:shadow-md hover:border-primary/20 transition-all"
+    )}>
       <CardHeader>
-        <CardTitle>Sales Overview</CardTitle>
+        <CardTitle className="font-semibold tracking-tight">Sales Overview</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
         {displayData.length > 0 ? (
