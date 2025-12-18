@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { getFeatureFlag, setFeatureFlag } from '@/lib/storefront-appsync';
 import { Activity, AlertTriangle, CheckCircle, Clock, Shield } from 'lucide-react';
@@ -77,11 +78,14 @@ export function MagicRequestOverview() {
   return (
     <div className="space-y-6">
       {/* Main Toggle Card */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
                 <Activity className="h-5 w-5" />
                 Magic Request Status
               </CardTitle>
@@ -151,47 +155,56 @@ export function MagicRequestOverview() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-75",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Orders
             </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Coming Soon</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight">Coming Soon</div>
+            <p className="text-xs text-muted-foreground mt-1">
               Total custom candle orders processed
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-150",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Pending Reviews
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Coming Soon</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight">Coming Soon</div>
+            <p className="text-xs text-muted-foreground mt-1">
               Orders waiting for your review
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={cn(
+          "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-200",
+          "hover:shadow-md hover:border-primary/20 transition-all"
+        )}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Security Blocks
             </CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Coming Soon</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold tabular-nums slashed-zero tracking-tight">Coming Soon</div>
+            <p className="text-xs text-muted-foreground mt-1">
               Orders that didn't meet quality standards
             </p>
           </CardContent>
@@ -199,9 +212,12 @@ export function MagicRequestOverview() {
       </div>
 
       {/* Quality Control Pipeline */}
-      <Card>
+      <Card className={cn(
+        "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-300",
+        "hover:shadow-md hover:border-primary/20 transition-all"
+      )}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Quality Control Process
           </CardTitle>

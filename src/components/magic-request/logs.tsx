@@ -1,13 +1,17 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Shield } from 'lucide-react';
 
 export function MagicRequestLogs() {
   return (
-    <Card>
+    <Card className={cn(
+      "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
+      "hover:shadow-md hover:border-primary/20 transition-all"
+    )}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
           <Shield className="h-5 w-5" />
           Security Logs
         </CardTitle>
@@ -38,4 +42,3 @@ export function MagicRequestLogs() {
     </Card>
   );
 }
-
