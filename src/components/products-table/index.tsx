@@ -342,10 +342,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
         
         <CardContent className="p-2 sm:p-2">
           {view === 'list' ? (
-            <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] -mx-2 sm:mx-0">
               <Table className="w-full min-w-[320px]">
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+                  <TableRow className="border-b">
                     {enableBulkSelection && (
                       <TableHead className="w-[40px] text-center">
                         <Checkbox
@@ -355,16 +355,16 @@ export function ProductsTable({ products }: ProductsTableProps) {
                         />
                       </TableHead>
                     )}
-                    <TableHead className="hidden w-[100px] sm:table-cell text-center">
+                    <TableHead className="hidden w-[100px] sm:table-cell text-center font-medium text-xs text-muted-foreground uppercase tracking-wide">
                       Image
                     </TableHead>
-                    <TableHead className="min-w-[100px] sm:min-w-[200px]">Name</TableHead>
-                    <TableHead className="hidden md:table-cell">Price</TableHead>
-                    <TableHead className="w-[35px] hidden sm:table-cell">
-                      #
+                    <TableHead className="min-w-[100px] sm:min-w-[200px] font-medium text-xs text-muted-foreground uppercase tracking-wide">Name</TableHead>
+                    <TableHead className="hidden md:table-cell font-medium text-xs text-muted-foreground uppercase tracking-wide">Price</TableHead>
+                    <TableHead className="w-[35px] hidden sm:table-cell font-medium text-xs text-muted-foreground uppercase tracking-wide text-center">
+                      Qty
                     </TableHead>
                     <TableHead className="text-right w-[35px]">
-                      <MoreVertical className="h-4 w-4 mx-auto" />
+                      <MoreVertical className="h-4 w-4 mx-auto text-muted-foreground" />
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -372,7 +372,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 {displayProducts.map((product, index) => (
                   <TableRow 
                     key={product.id} 
-                    className={`group cursor-pointer table-row-interactive table-zebra transition-colors ${selectedIds.has(product.id) ? 'bg-primary/5' : ''} ${isDraft(product) ? 'opacity-60' : ''}`}
+                    className={`group cursor-pointer transition-all duration-150 hover:bg-muted/50 motion-safe:hover:scale-[1.002] ${selectedIds.has(product.id) ? 'bg-primary/10 hover:bg-primary/15' : ''} ${isDraft(product) ? 'opacity-60' : ''}`}
                     onClick={() => enableBulkSelection ? toggleSelect(product.id) : handleRowClick(product.id)}
                   >
                     {enableBulkSelection && (
@@ -523,24 +523,28 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </Table>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {displayProducts.map((product, index) => (
-                <ProductGridItem 
-                  key={product.id}
-                  product={product}
-                  onRowClick={handleRowClick}
-                  onDelete={handleDelete}
-                  onQuickEdit={() => setQuickEditProduct(product)}
-                  index={index}
-                />
-              ))}
+            <div className="@container">
+              <div className="grid grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4 @xl:grid-cols-5 gap-3 sm:gap-4">
+                {displayProducts.map((product, index) => (
+                  <ProductGridItem 
+                    key={product.id}
+                    product={product}
+                    onRowClick={handleRowClick}
+                    onDelete={handleDelete}
+                    onQuickEdit={() => setQuickEditProduct(product)}
+                    index={index}
+                  />
+                ))}
+              </div>
             </div>
           )}
           {displayProducts.length === 0 && (
-              <div className="text-center py-16 text-muted-foreground">
-                  <p className="text-4xl mb-4">📦</p>
-                  <p className="font-medium">No products found</p>
-                  <p className="text-sm">Try adjusting your search or filters</p>
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300">
+                  <div className="text-6xl mb-4 motion-safe:animate-bounce" style={{ animationDuration: '2s' }}>📦</div>
+                  <p className="text-lg font-semibold text-foreground">No products found</p>
+                  <p className="text-sm mt-1 max-w-[280px] text-center">
+                    Try adjusting your search or filters, or add a new product to get started.
+                  </p>
               </div>
           )}
         </CardContent>
