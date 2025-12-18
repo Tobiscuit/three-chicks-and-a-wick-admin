@@ -1,5 +1,5 @@
 
-import { getProductById, getCollections } from '@/services/shopify';
+import { getProductByHandle, getCollections } from '@/services/shopify';
 import { notFound } from 'next/navigation';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -8,21 +8,19 @@ import { ProductForm } from '@/components/product-form';
 import type { ShopifyCollection, ShopifyProduct } from '@/services/shopify';
 
 
-export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const productId = decodeURIComponent(id);
+export default async function ProductDetailPage({ params }: { params: Promise<{ handle: string }> }) {
+    const { handle } = await params;
     let product: ShopifyProduct | null = null;
     let collections: ShopifyCollection[] = [];
     let error = null;
 
     try {
         [product, collections] = await Promise.all([
-            getProductById(productId),
+            getProductByHandle(handle),
             getCollections()
         ]);
 
-        // --- ADD THIS LOG ---
-        console.log("[SERVER Edit Page] Raw product data fetched from Shopify:", product);
+        console.log("[SERVER Edit Page] Product fetched by handle:", handle, product?.title);
 
     } catch (e: any) {
         error = e.message;

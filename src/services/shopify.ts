@@ -481,6 +481,87 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
   return product;
 }
 
+export async function getProductByHandle(handle: string): Promise<ShopifyProduct | null> {
+  // Query by handle instead of ID
+  const query = `
+    query getProductByHandle($handle: String!) {
+      productByHandle(handle: $handle) {
+        id
+        title
+        handle
+        status
+        productType
+        tags
+        totalInventory
+        onlineStoreUrl
+        description
+        descriptionHtml
+        customDescription: metafield(namespace: "custom", key: "description") {
+          value
+        }
+        featuredImage {
+          url(transform: {maxWidth: 1024, maxHeight: 1024})
+        }
+        images(first: 20) {
+          edges {
+            node {
+              id
+              url(transform: {maxWidth: 1024, maxHeight: 1024})
+              altText
+            }
+          }
+        }
+        priceRange: priceRangeV2 {
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+        }
+        variants(first: 10) {
+          edges {
+            node {
+              id
+              title
+              sku
+              price
+              inventoryItem {
+                id
+              }
+            }
+          }
+        }
+        collections(first: 10) {
+          edges {
+            node {
+              id
+              title
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await fetchShopify<{ productByHandle: any }>(query, { handle });
+  if (!response.productByHandle) return null;
+
+  // Use the same product ID to load shadow description
+  const productId = response.productByHandle.id;
+  const { loadShadowDescription } = await import('@/services/product-shadow');
+  const shadowDescription = await loadShadowDescription(productId);
+
+  const { description, descriptionHtml, customDescription, ...restOfProduct } = response.productByHandle;
+
+  // Prioritization: Shadow > HTML > Custom Metafield > Plain Text
+  const finalDescription = shadowDescription || descriptionHtml || customDescription?.value || description || "";
+
+  let product: ShopifyProduct = {
+    ...restOfProduct,
+    description: finalDescription,
+  };
+
+  return product;
+}
 export async function getPrimaryLocationId(): Promise<string | null> {
   const query = `
   query {
