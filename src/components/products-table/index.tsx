@@ -375,86 +375,94 @@ export function ProductsTable({ products }: ProductsTableProps) {
           </div>
         </CardHeader>
         
-        {/* Contextual Bulk Actions Toolbar */}
-        {enableBulkSelection && selectedIds.size > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-primary/10 border-b border-primary/20">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
-                {selectedIds.size} <span className="hidden sm:inline">selected</span>
-              </span>
-              <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 sm:h-7 px-2">
-                <X className="h-3 w-3" />
-                <span className="hidden sm:inline ml-1">Clear</span>
-              </Button>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Bulk Change Status Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 sm:h-7 px-2 sm:px-3 text-xs sm:text-sm">
-                    <span className="hidden sm:inline">📦 Change Status</span>
-                    <span className="sm:hidden">📦 Status</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={async () => {
-                    const ids = Array.from(selectedIds);
-                    for (const id of ids) {
-                      await changeProductStatusAction(id, 'ACTIVE');
-                    }
-                    clearSelection();
-                    toast({ title: `${ids.length} products set to Active` });
-                  }}>
-                    ✅ Set all to Active
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={async () => {
-                    const ids = Array.from(selectedIds);
-                    for (const id of ids) {
-                      await changeProductStatusAction(id, 'DRAFT');
-                    }
-                    clearSelection();
-                    toast({ title: `${ids.length} products set to Draft` });
-                  }}>
-                    📝 Set all to Draft
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={async () => {
-                    const ids = Array.from(selectedIds);
-                    for (const id of ids) {
-                      await changeProductStatusAction(id, 'ARCHIVED');
-                    }
-                    clearSelection();
-                    toast({ title: `${ids.length} products archived` });
-                  }}>
-                    📦 Archive all
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Bulk Delete with Type-to-Confirm */}
-              <SecureBulkDeleteDialog 
-                count={selectedIds.size}
-                onConfirm={async () => {
-                  const ids = Array.from(selectedIds);
-                  for (const id of ids) {
-                    setDeletedProductIds(prev => new Set([...prev, id]));
-                    try {
-                      await deleteProductAction(id);
-                    } catch (e) {
-                      console.error('Bulk delete error:', e);
-                    }
-                  }
-                  clearSelection();
-                  toast({ title: `${ids.length} products deleted` });
-                }}
-              >
-                <Button variant="destructive" size="sm" className="h-6 sm:h-7 px-2 sm:px-3 text-xs sm:text-sm">
-                  <Trash className="h-3 w-3" />
-                  <span className="ml-1">{selectedIds.size}</span>
+        {/* Contextual Bulk Actions Toolbar - animated expand/collapse */}
+        <div 
+          className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+            enableBulkSelection && selectedIds.size > 0 
+              ? 'grid-rows-[1fr]' 
+              : 'grid-rows-[0fr]'
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-primary/10 border-b border-primary/20">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
+                  {selectedIds.size} <span className="hidden sm:inline">selected</span>
+                </span>
+                <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 sm:h-7 px-2">
+                  <X className="h-3 w-3" />
+                  <span className="hidden sm:inline ml-1">Clear</span>
                 </Button>
-              </SecureBulkDeleteDialog>
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2">
+                {/* Bulk Change Status Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-6 sm:h-7 px-2 sm:px-3 text-xs sm:text-sm">
+                      <span className="hidden sm:inline">📦 Change Status</span>
+                      <span className="sm:hidden">📦 Status</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={async () => {
+                      const ids = Array.from(selectedIds);
+                      for (const id of ids) {
+                        await changeProductStatusAction(id, 'ACTIVE');
+                      }
+                      clearSelection();
+                      toast({ title: `${ids.length} products set to Active` });
+                    }}>
+                      ✅ Set all to Active
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      const ids = Array.from(selectedIds);
+                      for (const id of ids) {
+                        await changeProductStatusAction(id, 'DRAFT');
+                      }
+                      clearSelection();
+                      toast({ title: `${ids.length} products set to Draft` });
+                    }}>
+                      📝 Set all to Draft
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      const ids = Array.from(selectedIds);
+                      for (const id of ids) {
+                        await changeProductStatusAction(id, 'ARCHIVED');
+                      }
+                      clearSelection();
+                      toast({ title: `${ids.length} products archived` });
+                    }}>
+                      📦 Archive all
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Bulk Delete with Type-to-Confirm */}
+                <SecureBulkDeleteDialog 
+                  count={selectedIds.size}
+                  onConfirm={async () => {
+                    const ids = Array.from(selectedIds);
+                    for (const id of ids) {
+                      setDeletedProductIds(prev => new Set([...prev, id]));
+                      try {
+                        await deleteProductAction(id);
+                      } catch (e) {
+                        console.error('Bulk delete error:', e);
+                      }
+                    }
+                    clearSelection();
+                    toast({ title: `${ids.length} products deleted` });
+                  }}
+                >
+                  <Button variant="destructive" size="sm" className="h-6 sm:h-7 px-2 sm:px-3 text-xs sm:text-sm">
+                    <Trash className="h-3 w-3" />
+                    <span className="ml-1">{selectedIds.size}</span>
+                  </Button>
+                </SecureBulkDeleteDialog>
+              </div>
             </div>
           </div>
-        )}
+        </div>
         
         {/* Product Counter with Pagination Info */}
         <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground border-b">
