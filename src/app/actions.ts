@@ -470,6 +470,17 @@ Transform raw data into a partial Shopify product listing, focusing only on the 
         try {
             creativeData = JSON.parse(text);
             console.log("===== PARSED CREATIVE DATA =====", creativeData);
+            
+            // Transform tags to Title Case for better presentation
+            if (creativeData.tags && typeof creativeData.tags === 'string') {
+                creativeData.tags = creativeData.tags
+                    .split(',')
+                    .map((tag: string) => tag.trim().split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' '))
+                    .join(', ');
+                console.log("===== TAGS TRANSFORMED TO TITLE CASE =====", creativeData.tags);
+            }
         } catch (e: any) {
             console.error("===== FAILED TO PARSE AI RESPONSE =====");
             console.error("Raw Text:", text);
