@@ -9,12 +9,36 @@ import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-// Helper function to process order data
+// Helper function to process order data with week-over-week comparison
 function processOrderData(orders: ShopifyOrder[]) {
-    const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.totalPriceSet.shopMoney.amount), 0);
-    const totalOrders = orders.length;
+    // Get date boundaries
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    // Split orders into this week and last week
+    const thisWeekOrders = orders.filter(o => new Date(o.processedAt) >= oneWeekAgo);
+    const lastWeekOrders = orders.filter(o => {
+        const date = new Date(o.processedAt);
+        return date >= twoWeeksAgo && date < oneWeekAgo;
+    });
+
+    // Calculate this week stats
+    const totalRevenue = thisWeekOrders.reduce((sum, order) => sum + parseFloat(order.totalPriceSet.shopMoney.amount), 0);
+    const totalOrders = thisWeekOrders.length;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+    // Calculate last week stats for comparison
+    const lastWeekRevenue = lastWeekOrders.reduce((sum, order) => sum + parseFloat(order.totalPriceSet.shopMoney.amount), 0);
+    const lastWeekOrderCount = lastWeekOrders.length;
+    const lastWeekAOV = lastWeekOrderCount > 0 ? lastWeekRevenue / lastWeekOrderCount : 0;
+
+    // Calculate percentage changes
+    const revenueChange = lastWeekRevenue > 0 ? ((totalRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 : null;
+    const ordersChange = lastWeekOrderCount > 0 ? ((totalOrders - lastWeekOrderCount) / lastWeekOrderCount) * 100 : null;
+    const aovChange = lastWeekAOV > 0 ? ((averageOrderValue - lastWeekAOV) / lastWeekAOV) * 100 : null;
+
+    // Build chart data from all orders (not just this week)
     const salesByDay: { [key: string]: number } = {};
     orders.forEach(order => {
         const date = new Date(order.processedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -28,8 +52,17 @@ function processOrderData(orders: ShopifyOrder[]) {
         .map(([date, total]) => ({ date, total }))
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-
-    return { totalRevenue, totalOrders, averageOrderValue, chartData };
+    return { 
+        totalRevenue, 
+        totalOrders, 
+        averageOrderValue, 
+        chartData,
+        comparisons: {
+            revenue: revenueChange,
+            orders: ordersChange,
+            aov: aovChange
+        }
+    };
 }
 
 // Helper function to get top selling products
@@ -114,7 +147,13 @@ async function DashboardStats() {
     let orders: ShopifyOrder[] = [];
     let products: ShopifyProduct[] = [];
     let error: string | null = null;
-    let stats = { totalRevenue: 0, totalOrders: 0, averageOrderValue: 0, chartData: [] as { date: string, total: number }[] };
+    let stats = { 
+        totalRevenue: 0, 
+        totalOrders: 0, 
+        averageOrderValue: 0, 
+        chartData: [] as { date: string, total: number }[],
+        comparisons: { revenue: null as number | null, orders: null as number | null, aov: null as number | null }
+    };
     let topProducts: (ShopifyProduct & { sales: number })[] = [];
 
     try {

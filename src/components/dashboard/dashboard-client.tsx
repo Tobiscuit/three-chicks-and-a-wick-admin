@@ -1,4 +1,3 @@
-
 "use client";
 
 import { StatsCard } from '@/components/dashboard/stats-card';
@@ -14,6 +13,11 @@ type DashboardClientProps = {
         totalOrders: number;
         averageOrderValue: number;
         chartData: { date: string; total: number }[];
+        comparisons: {
+            revenue: number | null;
+            orders: number | null;
+            aov: number | null;
+        };
     };
     topProducts: (ShopifyProduct & { sales: number })[];
 }
@@ -26,21 +30,24 @@ export function DashboardClient({ stats, topProducts }: DashboardClientProps) {
                     title="Total Revenue"
                     value={`$${stats.totalRevenue.toFixed(2)}`}
                     icon={DollarSign}
-                    description="Total revenue from all orders"
+                    description="This week's revenue"
+                    comparison={stats.comparisons.revenue}
                     delay={0}
                 />
                 <StatsCard
                     title="Total Orders"
                     value={`+${stats.totalOrders}`}
                     icon={ShoppingCart}
-                    description="Total number of orders"
+                    description="This week's orders"
+                    comparison={stats.comparisons.orders}
                     delay={1}
                 />
                 <StatsCard
                     title="Average Order Value"
                     value={`$${stats.averageOrderValue.toFixed(2)}`}
                     icon={Package}
-                    description="Average value per order"
+                    description="This week's AOV"
+                    comparison={stats.comparisons.aov}
                     delay={2}
                 />
             </div>
