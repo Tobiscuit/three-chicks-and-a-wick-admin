@@ -32,8 +32,9 @@ import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast";
 import { addProductAction, updateProductAction } from "@/app/products/actions";
 import { uploadImageAction } from "@/app/actions";
-import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code, Sparkles } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown, X, Info, ArrowLeft, Plus, Code, Sparkles, ZoomIn } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import type { ShopifyCollection, ShopifyProduct } from "@/services/shopify";
 import { cn } from "@/lib/utils";
 import { resolveAiGeneratedProductAction } from "@/app/actions";
@@ -96,7 +97,7 @@ function generateSku(title: string): string {
     return `${titlePart}-${randomPart}`.substring(0, 20).toUpperCase();
 }
 
-// --- SORTABLE IMAGE COMPONENT ---
+// --- SORTABLE IMAGE COMPONENT WITH LIGHTBOX ---
 function SortableImage({ 
     url, 
     index, 
@@ -106,6 +107,7 @@ function SortableImage({
     index: number; 
     onRemove: (index: number) => void;
 }) {
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const {
         attributes,
         listeners,
@@ -118,42 +120,73 @@ function SortableImage({
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        zIndex: isDragging ? 10 : 1, // Ensure dragged item is on top
+        zIndex: isDragging ? 10 : 1,
         opacity: isDragging ? 0.5 : 1,
     };
 
     return (
-        <div 
-            ref={setNodeRef} 
-            style={style} 
-            {...attributes} 
-            {...listeners}
-            className="relative aspect-square group cursor-grab active:cursor-grabbing touch-none" // touch-none is important for touch devices
-        >
-            <Image
-                src={url}
-                alt={`Product image ${index + 1}`}
-                fill
-                className="object-cover rounded-md"
-                draggable={false} // Prevent native drag
-            />
-            <div className="absolute top-1 right-1">
-                <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    // Stop propagation to prevent drag start when clicking delete
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onRemove(index);
-                    }}
-                >
-                    <X className="h-4 w-4" />
-                </Button>
+        <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+            <div 
+                ref={setNodeRef} 
+                style={style} 
+                {...attributes} 
+                {...listeners}
+                className="relative aspect-square group cursor-grab active:cursor-grabbing touch-none"
+            >
+                <Image
+                    src={url}
+                    alt={`Product image ${index + 1}`}
+                    fill
+                    className="object-cover rounded-md transition-transform duration-200 group-hover:scale-[1.02]"
+                    draggable={false}
+                />
+                
+                {/* Zoom overlay on hover */}
+                <DialogTrigger asChild>
+                    <button
+                        type="button"
+                        className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md cursor-zoom-in"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsLightboxOpen(true);
+                        }}
+                    >
+                        <ZoomIn className="h-8 w-8 text-white drop-shadow-lg" />
+                    </button>
+                </DialogTrigger>
+
+                {/* Delete button */}
+                <div className="absolute top-1 right-1 z-10">
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(index);
+                        }}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
-        </div>
+            
+            {/* Lightbox Modal */}
+            <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden bg-black/95 border-none">
+                <div className="relative w-full h-[80vh] flex items-center justify-center">
+                    <Image
+                        src={url}
+                        alt={`Product image ${index + 1} - Full size`}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 1200px) 100vw, 1200px"
+                    />
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 
