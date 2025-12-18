@@ -99,7 +99,7 @@ export const FIREBASE_ADMIN_CONFIG = {
 export const SHOPIFY_CONFIG = {
   STORE_URL: getRequiredEnvVar('SHOPIFY_STORE_URL'),
   ADMIN_ACCESS_TOKEN: getRequiredEnvVar('SHOPIFY_ADMIN_ACCESS_TOKEN'),
-  API_VERSION: getEnvVar('SHOPIFY_API_VERSION', '2025-07'), // Default to latest if not set
+  API_VERSION: getEnvVar('SHOPIFY_API_VERSION', '2025-10'), // Latest stable (Winter 2026 Editions)
   WEBHOOK_SECRET: getRequiredEnvVar('SHOPIFY_WEBHOOK_SECRET'),
   LOCATION_ID: getEnvVar('SHOPIFY_LOCATION_ID', 'gid://shopify/Location/83900891193'), // Primary inventory location
 };
