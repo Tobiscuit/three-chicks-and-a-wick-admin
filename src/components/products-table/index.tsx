@@ -1,7 +1,8 @@
 
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 // Removed env-config import for client-side component
