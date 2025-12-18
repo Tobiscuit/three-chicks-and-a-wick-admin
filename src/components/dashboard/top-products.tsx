@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import type { ShopifyProduct } from "@/services/shopify"
 import { Badge } from "../ui/badge"
 
@@ -18,19 +19,23 @@ type TopProductsProps = {
 
 export function TopProducts({ products }: TopProductsProps) {
   return (
-    <Card className="lg:col-span-3">
+    <Card className={cn(
+      "lg:col-span-3",
+      "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-300",
+      "hover:shadow-md hover:border-primary/20 transition-all"
+    )}>
       <CardHeader>
-        <CardTitle>Top Selling Products</CardTitle>
+        <CardTitle className="font-semibold tracking-tight">Top Selling Products</CardTitle>
         <CardDescription>
           Your most popular products by number of orders.
         </CardDescription>
       </CardHeader>
       <CardContent>
         {products.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {products.map((product) => (
-              <div className="flex items-center gap-4" key={product.id}>
-                <div className="relative h-16 w-16 flex-shrink-0">
+              <div className="flex items-center gap-4 p-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors" key={product.id}>
+                <div className="relative h-12 w-12 flex-shrink-0">
                   <Image
                     src={product.featuredImage?.url || "https://placehold.co/64"}
                     alt={product.title}
@@ -39,12 +44,12 @@ export function TopProducts({ products }: TopProductsProps) {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-none truncate max-w-[150px] sm:max-w-[200px] md:max-w-full">{product.title}</p>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-sm font-medium leading-none truncate">{product.title}</p>
+                  <p className="text-sm text-muted-foreground font-mono tabular-nums">
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: product.priceRange.minVariantPrice.currencyCode }).format(parseFloat(product.priceRange.minVariantPrice.amount))}
                   </p>
                 </div>
-                <Badge variant="secondary" className="ml-auto flex-shrink-0">{product.sales} sales</Badge>
+                <Badge variant="outline" className="ml-auto flex-shrink-0">{product.sales} sales</Badge>
               </div>
             ))}
           </div>

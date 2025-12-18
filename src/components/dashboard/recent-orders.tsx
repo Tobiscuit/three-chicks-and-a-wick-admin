@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import {
   Table,
   TableBody,
@@ -142,10 +143,13 @@ export function RecentOrders() {
   }, []);
 
   return (
-    <Card>
+    <Card className={cn(
+      "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-500",
+      "hover:shadow-md hover:border-primary/20 transition-all"
+    )}>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Recent Orders</CardTitle>
+          <CardTitle className="font-semibold tracking-tight">Recent Orders</CardTitle>
           <CardDescription>A list of the most recent orders.</CardDescription>
         </div>
         <Button asChild>
@@ -173,11 +177,11 @@ export function RecentOrders() {
               </TableRow>
             ) : (
               orders.map((order, index) => (
-                <TableRow key={`${order.orderId}-${index}`}>
-                  <TableCell className="font-medium">{order.orderId}</TableCell>
+                <TableRow key={`${order.orderId}-${index}`} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-mono text-sm tabular-nums">{order.orderId}</TableCell>
                   <TableCell className="hidden sm:table-cell">{order.customer || 'N/A'}</TableCell>
                   <TableCell className="hidden md:table-cell">{order.type === 'CUSTOM' ? 'Custom' : 'Standard'}</TableCell>
-                  <TableCell className="text-right">{order.total || 'N/A'}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{order.total || 'N/A'}</TableCell>
                 </TableRow>
               ))
             )}
