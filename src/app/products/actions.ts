@@ -245,6 +245,24 @@ export async function quickUpdateInventoryAction({
     }
 }
 
+export async function changeProductStatusAction(
+    productId: string,
+    status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
+) {
+    try {
+        console.log(`[SERVER] changeProductStatusAction: Changing product ${productId} to status ${status}`);
+        
+        await updateProduct(productId, { status });
+        
+        revalidatePath('/products');
+        return { success: true };
+    } catch (error) {
+        console.error('Change product status error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return { success: false, error: errorMessage };
+    }
+}
+
 export async function generateSmartTagsAction(productData: {
     name: string;
     description: string;

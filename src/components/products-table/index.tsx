@@ -39,8 +39,8 @@ import { useInventoryStatus } from "@/hooks/use-inventory-status";
 import { useProductImage } from "@/hooks/use-product-image";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
 import { useUserSettings } from "@/hooks/use-user-settings";
-import { deleteProductAction, quickUpdateInventoryAction } from "@/app/products/actions";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { deleteProductAction, quickUpdateInventoryAction, changeProductStatusAction } from "@/app/products/actions";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -457,6 +457,43 @@ export function ProductsTable({ products }: ProductsTableProps) {
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                               </DropdownMenuItem>
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                                  <span className="mr-2">📦</span>
+                                  Change Status
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  <DropdownMenuRadioGroup value={product.status}>
+                                    <DropdownMenuRadioItem 
+                                      value="ACTIVE" 
+                                      onClick={async (e) => { 
+                                        e.stopPropagation(); 
+                                        await changeProductStatusAction(product.id, 'ACTIVE');
+                                      }}
+                                    >
+                                      Active
+                                    </DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem 
+                                      value="DRAFT" 
+                                      onClick={async (e) => { 
+                                        e.stopPropagation(); 
+                                        await changeProductStatusAction(product.id, 'DRAFT');
+                                      }}
+                                    >
+                                      Draft
+                                    </DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem 
+                                      value="ARCHIVED" 
+                                      onClick={async (e) => { 
+                                        e.stopPropagation(); 
+                                        await changeProductStatusAction(product.id, 'ARCHIVED');
+                                      }}
+                                    >
+                                      Archived
+                                    </DropdownMenuRadioItem>
+                                  </DropdownMenuRadioGroup>
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
                               {storefrontUrl && (
                                 <>
                                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${storefrontUrl}/products/${product.handle}`, '_blank'); }}>
@@ -632,6 +669,43 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                       </DropdownMenuItem>
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                          <span className="mr-2">📦</span>
+                          Change Status
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuRadioGroup value={product.status}>
+                            <DropdownMenuRadioItem 
+                              value="ACTIVE" 
+                              onClick={async (e) => { 
+                                e.stopPropagation(); 
+                                await changeProductStatusAction(product.id, 'ACTIVE');
+                              }}
+                            >
+                              Active
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem 
+                              value="DRAFT" 
+                              onClick={async (e) => { 
+                                e.stopPropagation(); 
+                                await changeProductStatusAction(product.id, 'DRAFT');
+                              }}
+                            >
+                              Draft
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem 
+                              value="ARCHIVED" 
+                              onClick={async (e) => { 
+                                e.stopPropagation(); 
+                                await changeProductStatusAction(product.id, 'ARCHIVED');
+                              }}
+                            >
+                              Archived
+                            </DropdownMenuRadioItem>
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
                       {storefrontUrl && (
                           <>
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${storefrontUrl}/products/${product.handle}`, '_blank'); }}>
