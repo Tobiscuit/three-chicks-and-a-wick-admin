@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus } from "lucide-react";
+import { UploadCloud, Download, Sparkles, Wand2, Loader2, Image as ImageIcon, AlertTriangle, PackagePlus, Check } from "lucide-react";
 import {
   generateImageAction,
   getGalleryImagesAction,
@@ -76,14 +76,59 @@ type GalleryImage = {
   url: string;
 };
 
+// Step badge component for visual hierarchy
+const StepBadge = ({ step }: { step: number }) => (
+  <span className="inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary/80 to-primary text-primary-foreground text-xs sm:text-sm font-semibold shadow-sm mr-2 sm:mr-3">
+    {step}
+  </span>
+);
+
 const ImageUploadArea = ({ field, preview, label, isLoading = false, form, onImageClick }: { field: any, preview: string | null, label: string, isLoading?: boolean, form?: any, onImageClick?: (url: string) => void }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp')) {
+      field.onChange(file);
+      if (form) {
+        form.setValue(field.name, file, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  };
+  
   return (
     <FormItem>
-      <FormLabel>{label}</FormLabel>
+      <FormLabel className="text-xs sm:text-sm font-medium">{label}</FormLabel>
       <FormControl>
         <div
-          className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50 transition-colors"
+          className={`
+            relative flex flex-col items-center justify-center p-4 sm:p-6 
+            border-2 border-dashed rounded-xl cursor-pointer aspect-square 
+            transition-all duration-300 ease-out
+            ${isDragOver 
+              ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/20' 
+              : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-accent/30'
+            }
+            ${preview ? 'border-solid border-primary/30' : ''}
+            motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500
+          `}
           onClick={() => {
             if (preview && onImageClick) {
               onImageClick(preview);
@@ -91,27 +136,48 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false, form, onIma
               !isLoading && fileInputRef.current?.click();
             }
           }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
+          {/* Glow effect on drag */}
+          {isDragOver && (
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 animate-pulse" />
+          )}
+          
           {isLoading ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-              <Skeleton className="w-full h-full rounded-md animate-pulse" />
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 relative">
+              <Skeleton className="w-full h-full rounded-lg" />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Processing...</p>
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-primary" />
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Processing...</p>
               </div>
             </div>
           ) : preview ? (
-            <Image
-              src={preview}
-              alt="Product preview"
-              width={200}
-              height={200}
-              className="object-contain w-full h-full rounded-md"
-            />
+            <div className="relative w-full h-full motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-300">
+              <Image
+                src={preview}
+                alt="Product preview"
+                width={200}
+                height={200}
+                className="object-contain w-full h-full rounded-lg"
+              />
+              {/* Success indicator */}
+              <div className="absolute top-2 right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg motion-safe:animate-in motion-safe:zoom-in motion-safe:duration-200">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+            </div>
           ) : (
-            <div className="text-center">
-              <UploadCloud className="w-10 h-10 mx-auto text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">Click to upload</p>
+            <div className="text-center relative z-10">
+              <div className={`mx-auto w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${isDragOver ? 'bg-primary text-primary-foreground scale-110' : 'bg-muted'}`}>
+                <UploadCloud className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <p className="mt-2 sm:mt-3 text-xs sm:text-sm font-medium text-muted-foreground">
+                {isDragOver ? 'Drop to upload' : 'Click or drag to upload'}
+              </p>
+              <p className="mt-1 text-[10px] sm:text-xs text-muted-foreground/70">
+                PNG, JPG, WebP
+              </p>
             </div>
           )}
           <Input
@@ -123,7 +189,6 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false, form, onIma
               const file = e.target.files?.[0];
               if (file) {
                 field.onChange(file);
-                // Trigger form dirty state
                 if (form) {
                   form.setValue(field.name, file, { shouldDirty: true, shouldValidate: true });
                 }
@@ -334,11 +399,14 @@ export function ImageStudio() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-8">
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-5">
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 lg:col-span-2">
-            <Card>
+            <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-500">
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-lg sm:text-xl">1. Upload Product Images</CardTitle>
-                <CardDescription className="text-sm">
-                  Add one or two photos of your product for best results.
+                <CardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                  <StepBadge step={1} />
+                  Upload Your Product
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
+                  Add one or two angles for the best AI-generated result
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-6 pt-0">
@@ -373,10 +441,15 @@ export function ImageStudio() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-500 motion-safe:delay-150">
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-lg sm:text-xl">2. Choose Background</CardTitle>
-                <CardDescription className="text-sm">Pick a ready-made background or create a custom one.</CardDescription>
+                <CardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                  <StepBadge step={2} />
+                  Select Background
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
+                  Choose from our gallery or describe your vision
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0">
                 <FormField
@@ -443,12 +516,21 @@ export function ImageStudio() {
                                           </div>
                                         ))
                                       ) : (
-                                        galleryImages.map((bg) => {
+                                        galleryImages.map((bg, index) => {
                                           const selected = field.value === bg.url;
                                           return (
                                             <div
                                               key={bg.name}
-                                              className="relative cursor-pointer group rounded-md p-1 bg-background"
+                                              className={`
+                                                relative cursor-pointer group rounded-xl overflow-hidden
+                                                transition-all duration-300 ease-out
+                                                motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95
+                                                ${selected 
+                                                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-lg' 
+                                                  : 'hover:scale-[1.03] hover:shadow-md'
+                                                }
+                                              `}
+                                              style={{ animationDelay: `${index * 50}ms` }}
                                               onClick={() => field.onChange(bg.url)}
                                             >
                                               <Image
@@ -457,13 +539,19 @@ export function ImageStudio() {
                                                 width={200}
                                                 height={200}
                                                 unoptimized={true}
-                                                className={`object-cover w-full h-full rounded-md transition-all aspect-square ${selected ? '' : 'group-hover:opacity-90'}`}
+                                                className={`
+                                                  object-cover w-full h-full aspect-square 
+                                                  transition-all duration-300
+                                                  ${selected ? 'brightness-100' : 'group-hover:brightness-105'}
+                                                `}
                                               />
+                                              {/* Selection overlay with checkmark */}
                                               {selected && (
-                                                <>
-                                                  <div className="pointer-events-none absolute inset-1 rounded-md outline outline-2 outline-primary" />
-                                                  <div className="pointer-events-none absolute inset-1 rounded-md bg-primary/20" />
-                                                </>
+                                                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+                                                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg motion-safe:animate-in motion-safe:zoom-in motion-safe:duration-200">
+                                                    <Check className="w-5 h-5 text-primary-foreground" />
+                                                  </div>
+                                                </div>
                                               )}
                                             </div>
                                           );
@@ -486,10 +574,15 @@ export function ImageStudio() {
           </div>
 
           <div className="lg:col-span-3">
-            <Card className="lg:sticky lg:top-20">
+            <Card className="lg:sticky lg:top-20 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-4 motion-safe:duration-500 motion-safe:delay-300">
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-lg sm:text-xl">3. Create Your Image</CardTitle>
-                <CardDescription className="text-sm">Add optional details and generate your product photo.</CardDescription>
+                <CardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                  <StepBadge step={3} />
+                  Generate & Finalize
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
+                  Create your professional product photo
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
                 <FormField
@@ -506,32 +599,54 @@ export function ImageStudio() {
                   )}
                 />
 
-                <div className="space-y-2">
-                  <FormLabel className="text-sm">Your Image</FormLabel>
-                  <div className="aspect-[4/3] w-full rounded-lg border bg-card-foreground/5 flex items-center justify-center overflow-hidden">
+                <div className="space-y-3">
+                  <FormLabel className="text-xs sm:text-sm font-medium">Preview</FormLabel>
+                  <div className="aspect-[4/3] w-full rounded-xl border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
                     {isSubmitting ? (
-                      <div className="flex flex-col items-center gap-4 p-4">
-                        <div className="relative w-full h-[250px] sm:h-[400px]">
-                          <Skeleton className="w-full h-full rounded-lg animate-pulse" />
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                            <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
-                            <p className="text-xs sm:text-sm">Creating your image...</p>
+                      <div className="flex flex-col items-center gap-4 p-4 w-full h-full">
+                        <div className="relative w-full h-full min-h-[200px] sm:min-h-[300px]">
+                          <Skeleton className="w-full h-full rounded-lg" />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                            {/* Multi-step progress indicator */}
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm sm:text-base font-medium text-foreground">Creating your image...</p>
+                              <p className="text-xs text-muted-foreground mt-1">This usually takes 10-20 seconds</p>
+                            </div>
+                            {/* Progress dots */}
+                            <div className="flex gap-1.5 mt-2">
+                              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0ms' }} />
+                              <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: '200ms' }} />
+                              <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse" style={{ animationDelay: '400ms' }} />
+                            </div>
                           </div>
                         </div>
                       </div>
                     ) : generatedImage ? (
-                      <Image
-                        src={generatedImage}
-                        alt="Generated product"
-                        width={800}
-                        height={600}
-                        unoptimized={true}
-                        className="object-contain w-full h-full"
-                      />
+                      <div className="relative w-full h-full motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-500">
+                        <Image
+                          src={generatedImage}
+                          alt="Generated product"
+                          width={800}
+                          height={600}
+                          unoptimized={true}
+                          className="object-contain w-full h-full"
+                        />
+                        {/* Success badge */}
+                        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-green-500/90 backdrop-blur-sm flex items-center gap-1.5 shadow-lg motion-safe:animate-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
+                          <Check className="w-3.5 h-3.5 text-white" />
+                          <span className="text-xs font-medium text-white">Ready</span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="text-center text-muted-foreground p-4">
-                        <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 mx-auto" />
-                        <p className="mt-2 text-xs sm:text-sm">Your image will appear here</p>
+                      <div className="text-center p-6">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+                          <Sparkles className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground/50" />
+                        </div>
+                        <p className="mt-3 text-sm font-medium text-muted-foreground">Your image will appear here</p>
+                        <p className="mt-1 text-xs text-muted-foreground/70">Upload a product and choose a background to get started</p>
                       </div>
                     )}
                   </div>
