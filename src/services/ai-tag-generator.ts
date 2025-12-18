@@ -52,8 +52,6 @@ RESPONSE FORMAT (JSON only, no other text):
 }
 `;
 
-    console.log('[AI Tag Generator] Generating smart tags for:', productData.name);
-    
     const response = await ai.generate({
       model: 'googleai/gemini-2.5-flash',
       prompt: prompt,
@@ -64,7 +62,6 @@ RESPONSE FORMAT (JSON only, no other text):
     });
 
     const content = response.text;
-    console.log('[AI Tag Generator] Raw response:', content);
 
     // Parse the JSON response
     let result: SmartTagResult;
@@ -118,15 +115,8 @@ RESPONSE FORMAT (JSON only, no other text):
     // Save new tags to the pool
     if (result.new_tags && result.new_tags.length > 0) {
       await saveNewTags(result.new_tags, 'auto_generated');
-      console.log('[AI Tag Generator] Saved new tags:', result.new_tags);
     }
 
-    console.log('[AI Tag Generator] Generated result:', result);
-    console.log('[AI Tag Generator] Selected existing:', result.selected_existing);
-    console.log('[AI Tag Generator] New tags:', result.new_tags);
-    console.log('[AI Tag Generator] Final tags count:', result.final_tags.length);
-    console.log('[AI Tag Generator] Final tags:', result.final_tags);
-    console.log('[AI Tag Generator] Reasoning:', result.reasoning);
     return result;
 
   } catch (error) {

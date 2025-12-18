@@ -47,7 +47,6 @@ export async function saveDescriptionHistory(
     };
 
     await docRef.set(historyData);
-    console.log('[Description History] Saved history for product:', productId, 'versions:', versions.length);
   } catch (error) {
     console.error('[Description History] Error saving history:', error);
     throw error;
@@ -61,7 +60,6 @@ export async function loadDescriptionHistory(productId: string): Promise<Descrip
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
-      console.log('[Description History] No history found for product:', productId);
       return [];
     }
 
@@ -71,7 +69,6 @@ export async function loadDescriptionHistory(productId: string): Promise<Descrip
       timestamp: v.timestamp instanceof Date ? v.timestamp : new Date(v.timestamp)
     }));
 
-    console.log('[Description History] Loaded history for product:', productId, 'versions:', versions.length);
     return versions;
   } catch (error) {
     console.error('[Description History] Error loading history:', error);
@@ -109,7 +106,6 @@ export async function addDescriptionVersion(
     };
 
     await docRef.set(historyData);
-    console.log('[Description History] Added version for product:', productId, 'total versions:', updatedVersions.length);
   } catch (error) {
     console.error('[Description History] Error adding version:', error);
     throw error;
@@ -120,7 +116,6 @@ export async function deleteDescriptionHistory(productId: string): Promise<void>
   try {
     const docRef = adminDb.collection(COLLECTION_NAME).doc(productId);
     await docRef.delete();
-    console.log('[Description History] Deleted history for product:', productId);
   } catch (error) {
     console.error('[Description History] Error deleting history:', error);
     throw error;
