@@ -575,6 +575,216 @@ export async function getPrimaryLocationId(): Promise<string | null> {
   }
 }
 
+/**
+ * Get unfulfilled orders for quick fulfill widget
+ */
+export async function getUnfulfilledOrders(first: number = 10) {
+  const query = `
+    query getUnfulfilledOrders($first: Int!) {
+      orders(first: $first, query: "fulfillment_status:unfulfilled", sortKey: CREATED_AT, reverse: true) {
+        edges {
+          node {
+            id
+            name
+            createdAt
+            customer {
+              firstName
+              lastName
+            }
+            totalPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            displayFulfillmentStatus
+            fulfillmentOrders(first: 5) {
+              edges {
+                node {
+                  id
+                  status
+                  assignedLocation {
+                    location {
+                      id
+                    }
+                  }
+                  lineItems(first: 20) {
+                    edges {
+                      node {
+                        id
+                        remainingQuantity
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await fetchShopify<{
+    orders: {
+      edges: Array<{
+        node: {
+          id: string;
+          name: string;
+          createdAt: string;
+          customer: { firstName: string; lastName: string } | null;
+          totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
+          displayFulfillmentStatus: string;
+          fulfillmentOrders: {
+            edges: Array<{
+              node: {
+                id: string;
+                status: string;
+                assignedLocation: { location: { id: string } } | null;
+                lineItems: {
+                  edges: Array<{
+                    node: {
+                      id: string;
+                      remainingQuantity: number;
+                    };
+                  }>;
+                };
+              };
+            }>;
+          };
+        };
+      }>;
+    };
+  }>(query, { first });
+
+  return response.orders.edges.map(edge => edge.node);
+}
+
+/**
+ * Fulfill an order (mark as shipped)
+ * This creates a fulfillment and marks the order as fulfilled.
+ */
+export async function fulfillOrder(orderId: string) {
+  // First, get the fulfillment order ID for this order
+  const getOrderQuery = `
+    query getOrderFulfillmentInfo($id: ID!) {
+      order(id: $id) {
+        id
+        name
+        fulfillmentOrders(first: 5) {
+          edges {
+            node {
+              id
+              status
+              lineItems(first: 50) {
+                edges {
+                  node {
+                    id
+                    remainingQuantity
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const orderResponse = await fetchShopify<{
+    order: {
+      id: string;
+      name: string;
+      fulfillmentOrders: {
+        edges: Array<{
+          node: {
+            id: string;
+            status: string;
+            lineItems: {
+              edges: Array<{
+                node: {
+                  id: string;
+                  remainingQuantity: number;
+                };
+              }>;
+            };
+          };
+        }>;
+      };
+    } | null;
+  }>(getOrderQuery, { id: orderId });
+
+  if (!orderResponse.order) {
+    throw new Error('Order not found');
+  }
+
+  // Find open fulfillment orders
+  const openFulfillmentOrders = orderResponse.order.fulfillmentOrders.edges
+    .filter(edge => edge.node.status === 'OPEN' || edge.node.status === 'IN_PROGRESS')
+    .map(edge => edge.node);
+
+  if (openFulfillmentOrders.length === 0) {
+    throw new Error('No open fulfillment orders found. Order may already be fulfilled.');
+  }
+
+  // Fulfill each open fulfillment order
+  const results = [];
+  for (const fulfillmentOrder of openFulfillmentOrders) {
+    const lineItemsToFulfill = fulfillmentOrder.lineItems.edges
+      .filter(edge => edge.node.remainingQuantity > 0)
+      .map(edge => ({
+        fulfillmentOrderLineItemId: edge.node.id,
+        quantity: edge.node.remainingQuantity,
+      }));
+
+    if (lineItemsToFulfill.length === 0) continue;
+
+    const fulfillMutation = `
+      mutation fulfillmentCreateV2($fulfillment: FulfillmentV2Input!) {
+        fulfillmentCreateV2(fulfillment: $fulfillment) {
+          fulfillment {
+            id
+            status
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const fulfillResponse = await fetchShopify<{
+      fulfillmentCreateV2: {
+        fulfillment: { id: string; status: string } | null;
+        userErrors: Array<{ field: string[]; message: string }>;
+      };
+    }>(fulfillMutation, {
+      fulfillment: {
+        lineItemsByFulfillmentOrder: [
+          {
+            fulfillmentOrderId: fulfillmentOrder.id,
+            fulfillmentOrderLineItems: lineItemsToFulfill,
+          },
+        ],
+        notifyCustomer: true, // Send shipping notification email
+      },
+    });
+
+    if (fulfillResponse.fulfillmentCreateV2.userErrors.length > 0) {
+      throw new Error(fulfillResponse.fulfillmentCreateV2.userErrors.map(e => e.message).join(', '));
+    }
+
+    results.push(fulfillResponse.fulfillmentCreateV2.fulfillment);
+  }
+
+  return {
+    success: true,
+    orderName: orderResponse.order.name,
+    fulfillments: results,
+  };
+}
+
 type ProductData = {
   title: string;
   description: string;

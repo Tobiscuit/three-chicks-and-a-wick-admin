@@ -4,6 +4,8 @@ import { StatsCard } from '@/components/dashboard/stats-card';
 import { SalesChart } from '@/components/dashboard/sales-chart';
 import { TopProducts } from '@/components/dashboard/top-products';
 import { RecentOrders } from '@/components/dashboard/recent-orders';
+import { QuickFulfill } from '@/components/dashboard/quick-fulfill';
+import { LowStockAlert } from '@/components/dashboard/low-stock-alert';
 import { DollarSign, Package, ShoppingCart } from 'lucide-react';
 import type { ShopifyProduct } from '@/services/shopify';
 
@@ -55,7 +57,13 @@ export function DashboardClient({ stats, topProducts }: DashboardClientProps) {
                 <SalesChart data={stats.chartData} />
                 <TopProducts products={topProducts} />
             </div>
+            {/* Recent Orders - full width */}
             <RecentOrders />
+            {/* Quick Fulfill + Low Stock Alert row */}
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+                <QuickFulfill />
+                <LowStockAlert />
+            </div>
         </div>
     );
 }
