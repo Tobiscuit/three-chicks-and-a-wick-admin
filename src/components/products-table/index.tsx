@@ -488,7 +488,13 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       <SecureDeleteDialog product={product} onDelete={handleDelete}>
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20" onClick={(e) => e.stopPropagation()}>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 bg-primary/10 border-primary/30 hover:bg-primary/20 touch-none" 
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => { if (e.pointerType === 'touch') e.preventDefault(); }}
+                              >
                                   <MoreVertical className="h-4 w-4 text-primary" />
                                   <span className="sr-only">More options</span>
                               </Button>
@@ -797,7 +803,13 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
           <div className="absolute top-2 right-2">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="h-8 w-8 touch-none" 
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => { if (e.pointerType === 'touch') e.preventDefault(); }}
+                      >
                           <MoreVertical className="h-4 w-4" />
                           <span className="sr-only">More options</span>
                       </Button>
