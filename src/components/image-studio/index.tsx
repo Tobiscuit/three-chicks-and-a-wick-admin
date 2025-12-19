@@ -429,7 +429,7 @@ export function ImageStudio() {
           </Card>
 
           {/* Background Section */}
-          <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-300 motion-safe:delay-100">
+          <Card className="flex-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-300 motion-safe:delay-100">
             <CardHeader className="p-3 pb-2">
               <CardTitle className="flex items-center text-sm font-semibold">
                 <StepBadge step={2} />
@@ -516,9 +516,9 @@ export function ImageStudio() {
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <Input
+                              <Textarea
                                 placeholder="Describe your background..."
-                                className="text-xs h-8"
+                                className="text-xs min-h-[60px] resize-none"
                                 {...field}
                                 disabled={backgroundType !== 'generate'}
                               />
@@ -548,7 +548,7 @@ export function ImageStudio() {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Input placeholder="Extra details (optional)..." className="text-xs h-8" {...field} />
+                      <Textarea placeholder="Extra details (optional)..." className="text-xs min-h-[80px] resize-none flex-1" {...field} />
                     </FormControl>
                   </FormItem>
                 )}
