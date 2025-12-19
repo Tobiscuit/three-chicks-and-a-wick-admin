@@ -84,45 +84,43 @@ export function MultiImageDropzone({
   const hasImages = previews.length > 0;
 
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* Dropzone */}
+    <div className={cn("space-y-2", className)}>
+      {/* Dropzone - compact when has images */}
       <div
         {...getRootProps()}
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200",
-          "flex flex-col items-center justify-center gap-3 cursor-pointer",
+          "relative border-2 border-dashed rounded-lg transition-all duration-200",
+          "flex items-center justify-center gap-2 cursor-pointer",
           "hover:border-primary/60 hover:bg-muted/30",
-          isDragActive && "border-primary bg-primary/5 scale-[1.02]",
+          isDragActive && "border-primary bg-primary/5 scale-[1.01]",
           disabled && "opacity-50 cursor-not-allowed",
           value.length >= maxFiles && "opacity-50 cursor-not-allowed",
-          hasImages ? "min-h-[120px]" : "min-h-[200px]"
+          hasImages ? "p-3" : "p-6 flex-col"
         )}
       >
         <input {...getInputProps()} />
         
         {processing ? (
           <>
-            <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <p className="text-sm text-muted-foreground">Compressing images...</p>
+            <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="text-xs text-muted-foreground">Compressing...</p>
           </>
         ) : (
           <>
-            <div className={cn(
-              "p-3 rounded-full bg-muted/50 transition-colors",
-              isDragActive && "bg-primary/20"
-            )}>
-              <Upload className={cn(
-                "h-6 w-6 text-muted-foreground transition-colors",
-                isDragActive && "text-primary"
-              )} />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium">
-                {isDragActive ? "Drop images here" : "Drag & drop product images"}
+            <Upload className={cn(
+              "text-muted-foreground transition-colors",
+              hasImages ? "h-4 w-4" : "h-6 w-6",
+              isDragActive && "text-primary"
+            )} />
+            <div className={hasImages ? "" : "text-center"}>
+              <p className={cn("font-medium", hasImages ? "text-xs" : "text-sm")}>
+                {isDragActive ? "Drop here" : hasImages ? `Add more (${value.length}/${maxFiles})` : "Drag & drop product images"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {value.length}/{maxFiles} images • 2 recommended for best AI results
-              </p>
+              {!hasImages && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  2 recommended for best AI results
+                </p>
+              )}
             </div>
           </>
         )}
@@ -130,11 +128,11 @@ export function MultiImageDropzone({
 
       {/* Preview Grid */}
       {hasImages && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        <div className="flex flex-wrap gap-2">
           {previews.map((preview, index) => (
             <div
               key={index}
-              className="relative group aspect-square rounded-lg overflow-hidden border bg-muted/30"
+              className="relative group w-16 h-16 rounded-lg overflow-hidden border bg-muted/30"
             >
               <Image
                 src={preview.preview}
@@ -142,18 +140,12 @@ export function MultiImageDropzone({
                 fill
                 className="object-cover"
               />
-              {/* First image badge */}
-              {index === 0 && (
-                <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
-                  Primary
-                </div>
-              )}
               {/* Remove button */}
               <Button
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-0.5 right-0.5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
                   removeImage(index);
@@ -163,21 +155,6 @@ export function MultiImageDropzone({
               </Button>
             </div>
           ))}
-          
-          {/* Add more button if under limit */}
-          {value.length < maxFiles && (
-            <div
-              {...getRootProps()}
-              className={cn(
-                "aspect-square rounded-lg border-2 border-dashed",
-                "flex items-center justify-center cursor-pointer",
-                "hover:border-primary/60 hover:bg-muted/30 transition-colors",
-                isDragActive && "border-primary bg-primary/5"
-              )}
-            >
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -392,91 +392,68 @@ export function ImageStudio() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-8">
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-5">
-          <div className="space-y-4 sm:space-y-6 lg:space-y-8 lg:col-span-2">
-            <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-500">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center text-base sm:text-lg font-semibold">
-                  <StepBadge step={1} />
-                  Upload Your Product
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
-                  Upload up to {MAX_PRODUCT_IMAGES} images (2 recommended for best AI results)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0">
-                <FormField
-                  control={form.control}
-                  name="productImages"
-                  render={({ field }) => (
-                    <MultiImageDropzone
-                      value={field.value || []}
-                      onChange={field.onChange}
-                      maxFiles={MAX_PRODUCT_IMAGES}
-                      disabled={isSubmitting || imageProcessing}
-                    />
-                  )}
-                />
-                {form.formState.errors.productImages && (
-                  <p className="text-sm text-destructive mt-2">
-                    {form.formState.errors.productImages.message}
-                  </p>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 h-[calc(100vh-8rem)]">
+        {/* Top: Horizontal Input Bar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Upload Section */}
+          <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-300">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="flex items-center text-sm font-semibold">
+                <StepBadge step={1} />
+                Upload Product
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <FormField
+                control={form.control}
+                name="productImages"
+                render={({ field }) => (
+                  <MultiImageDropzone
+                    value={field.value || []}
+                    onChange={field.onChange}
+                    maxFiles={MAX_PRODUCT_IMAGES}
+                    disabled={isSubmitting || imageProcessing}
+                  />
                 )}
-              </CardContent>
-            </Card>
+              />
+              {form.formState.errors.productImages && (
+                <p className="text-xs text-destructive mt-1">
+                  {form.formState.errors.productImages.message}
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
-            <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-500 motion-safe:delay-150">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center text-base sm:text-lg font-semibold">
-                  <StepBadge step={2} />
-                  Select Background
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
-                  Choose from our gallery or describe your vision
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0">
-                <FormField
-                  control={form.control}
-                  name="backgroundType"
-                  render={({ field }) => (
-                    <Tabs
-                      value={field.value}
-                      onValueChange={(value) => field.onChange(value as 'gallery' | 'generate')}
-                      className="w-full"
-                    >
-                      <TabsList className="grid w-full grid-cols-2 h-9 gap-1 p-0">
-                        <TabsTrigger value="gallery" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><ImageIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />Gallery</TabsTrigger>
-                        <TabsTrigger value="generate" className="px-2 sm:px-3 py-1 text-xs sm:text-sm"><Wand2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />Create New</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="generate" className="mt-2">
-                        <FormField
-                          control={form.control}
-                          name="backgroundPrompt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm">Describe Your Background</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="e.g., A cozy rustic wooden table with soft natural lighting..."
-                                  className="text-sm"
-                                  {...field}
-                                  disabled={backgroundType !== 'generate'}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TabsContent>
-                      <TabsContent value="gallery" className="mt-2">
-                        {galleryLoading ? (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                            <Skeleton className="w-full aspect-square rounded-md" />
-                            <Skeleton className="w-full aspect-square rounded-md" />
-                            <Skeleton className="w-full aspect-square rounded-md" />
-                            <Skeleton className="w-full aspect-square rounded-md" />
+          {/* Background Section */}
+          <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-300 motion-safe:delay-100">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="flex items-center text-sm font-semibold">
+                <StepBadge step={2} />
+                Background
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <FormField
+                control={form.control}
+                name="backgroundType"
+                render={({ field }) => (
+                  <Tabs
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value as 'gallery' | 'generate')}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-2 h-8 gap-1 p-0 mb-2">
+                      <TabsTrigger value="gallery" className="px-2 py-1 text-xs"><ImageIcon className="mr-1 h-3 w-3" />Gallery</TabsTrigger>
+                      <TabsTrigger value="generate" className="px-2 py-1 text-xs"><Wand2 className="mr-1 h-3 w-3" />Create</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="gallery" className="mt-0">
+                      {galleryLoading ? (
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {Array.from({ length: 8 }).map((_, index) => (
+                              <div key={index} className="aspect-square">
+                                <Skeleton className="w-full h-full rounded" />
+                              </div>
+                            ))}
                           </div>
                         ) : galleryError ? (
                           <Alert variant="destructive">
@@ -491,57 +468,36 @@ export function ImageStudio() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <ScrollArea className="h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] w-full rounded-md border p-2 sm:p-3">
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                                      {galleryLoading ? (
-                                        // Skeleton loaders while fetching
-                                        Array.from({ length: 6 }).map((_, index) => (
-                                          <div key={index} className="aspect-square">
-                                            <Skeleton className="w-full h-full rounded-md animate-pulse" />
+                                  <ScrollArea className="h-24 w-full rounded-md border p-1.5">
+                                    <div className="grid grid-cols-4 gap-1.5">
+                                      {galleryImages.map((bg, index) => {
+                                        const selected = field.value === bg.url;
+                                        return (
+                                          <div
+                                            key={bg.name}
+                                            className={cn(
+                                              "relative cursor-pointer rounded overflow-hidden transition-all",
+                                              selected ? "ring-2 ring-primary ring-offset-1" : "hover:opacity-80"
+                                            )}
+                                            style={{ animationDelay: `${index * 50}ms` }}
+                                            onClick={() => field.onChange(bg.url)}
+                                          >
+                                            <Image
+                                              src={bg.url}
+                                              alt={bg.name}
+                                              width={80}
+                                              height={80}
+                                              unoptimized={true}
+                                              className="object-cover w-full h-full aspect-square"
+                                            />
+                                            {selected && (
+                                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                <Check className="w-4 h-4 text-primary" />
+                                              </div>
+                                            )}
                                           </div>
-                                        ))
-                                      ) : (
-                                        galleryImages.map((bg, index) => {
-                                          const selected = field.value === bg.url;
-                                          return (
-                                            <div
-                                              key={bg.name}
-                                              className={`
-                                                relative cursor-pointer group rounded-xl overflow-hidden
-                                                transition-all duration-300 ease-out
-                                                motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95
-                                                ${selected 
-                                                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-lg' 
-                                                  : 'hover:scale-[1.03] hover:shadow-md'
-                                                }
-                                              `}
-                                              style={{ animationDelay: `${index * 50}ms` }}
-                                              onClick={() => field.onChange(bg.url)}
-                                            >
-                                              <Image
-                                                src={bg.url}
-                                                alt={bg.name}
-                                                width={200}
-                                                height={200}
-                                                unoptimized={true}
-                                                className={`
-                                                  object-cover w-full h-full aspect-square 
-                                                  transition-all duration-300
-                                                  ${selected ? 'brightness-100' : 'group-hover:brightness-105'}
-                                                `}
-                                              />
-                                              {/* Selection overlay with checkmark */}
-                                              {selected && (
-                                                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
-                                                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg motion-safe:animate-in motion-safe:zoom-in motion-safe:duration-200">
-                                                    <Check className="w-5 h-5 text-primary-foreground" />
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })
-                                      )}
+                                        );
+                                      })}
                                     </div>
                                   </ScrollArea>
                                 </FormControl>
@@ -550,110 +506,116 @@ export function ImageStudio() {
                             )}
                           />
                         )}
-                      </TabsContent>
-                    </Tabs>
-                  )}
-                />
-              </CardContent>
-            </Card>
-          </div>
+                    </TabsContent>
+                    <TabsContent value="generate" className="mt-0">
+                      <FormField
+                        control={form.control}
+                        name="backgroundPrompt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                placeholder="Describe your background..."
+                                className="text-xs h-8"
+                                {...field}
+                                disabled={backgroundType !== 'generate'}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-          <div className="lg:col-span-3">
-            <Card className="lg:sticky lg:top-20 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-4 motion-safe:duration-500 motion-safe:delay-300">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center text-base sm:text-lg font-semibold">
-                  <StepBadge step={3} />
-                  Generate & Finalize
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
-                  Create your professional product photo
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
-                <FormField
-                  control={form.control}
-                  name="contextualDetails"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Extra Details (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., add a subtle pattern of vanilla beans" className="text-sm" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          {/* Details + Actions Section */}
+          <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-4 motion-safe:duration-300 motion-safe:delay-200">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="flex items-center text-sm font-semibold">
+                <StepBadge step={3} />
+                Generate
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              <FormField
+                control={form.control}
+                name="contextualDetails"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Extra details (optional)..." className="text-xs h-8" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full h-8 text-xs">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-1.5 h-3 w-3" />
+                    Generate Image
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
-                <div className="space-y-3">
-                  <FormLabel className="text-xs sm:text-sm font-medium">Preview</FormLabel>
-                  <div className="aspect-[4/3] w-full rounded-xl border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
-                    {isSubmitting ? (
-                      <div className="flex flex-col items-center gap-4 p-4 w-full h-full">
-                        <div className="relative w-full h-full min-h-[200px] sm:min-h-[300px]">
-                          <Skeleton className="w-full h-full rounded-lg" />
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                            {/* Multi-step progress indicator */}
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm sm:text-base font-medium text-foreground">Creating your image...</p>
-                              <p className="text-xs text-muted-foreground mt-1">This usually takes 10-20 seconds</p>
-                            </div>
-                            {/* Progress dots */}
-                            <div className="flex gap-1.5 mt-2">
-                              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0ms' }} />
-                              <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: '200ms' }} />
-                              <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse" style={{ animationDelay: '400ms' }} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : generatedImage ? (
-                      <div className="relative w-full h-full motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-500">
-                        <Image
-                          src={generatedImage}
-                          alt="Generated product"
-                          width={800}
-                          height={600}
-                          unoptimized={true}
-                          className="object-contain w-full h-full"
-                        />
-                        {/* Success badge */}
-                        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-green-500/90 backdrop-blur-sm flex items-center gap-1.5 shadow-lg motion-safe:animate-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
-                          <Check className="w-3.5 h-3.5 text-white" />
-                          <span className="text-xs font-medium text-white">Ready</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center p-6">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-                          <Sparkles className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground/50" />
-                        </div>
-                        <p className="mt-3 text-sm font-medium text-muted-foreground">Your image will appear here</p>
-                        <p className="mt-1 text-xs text-muted-foreground/70">Upload a product and choose a background to get started</p>
-                      </div>
-                    )}
+        {/* Bottom: Preview Area - fills remaining height */}
+        <Card className="flex-1 min-h-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-300">
+          <CardContent className="p-4 h-full flex flex-col">
+            <div className="flex-1 min-h-0 rounded-xl border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
+              {isSubmitting ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Creating your image...</p>
+                    <p className="text-xs text-muted-foreground mt-1">This usually takes 10-20 seconds</p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: '200ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse" style={{ animationDelay: '400ms' }} />
                   </div>
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6">
-                <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:flex-1">
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span className="hidden sm:inline">Generating...</span>
-                      <span className="sm:hidden">Creating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Generate Image</span>
-                      <span className="sm:hidden">Create Image</span>
-                    </>
-                  )}
-                </Button>
-                <Button variant="secondary" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => {
+              ) : generatedImage ? (
+                <div className="relative w-full h-full">
+                  <Image
+                    src={generatedImage}
+                    alt="Generated product"
+                    fill
+                    unoptimized={true}
+                    className="object-contain"
+                  />
+                  <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-green-500/90 backdrop-blur-sm flex items-center gap-1 shadow-lg">
+                    <Check className="w-3 h-3 text-white" />
+                    <span className="text-xs font-medium text-white">Ready</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+                    <Sparkles className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-muted-foreground">Your image will appear here</p>
+                  <p className="mt-1 text-xs text-muted-foreground/70">Upload a product and choose a background</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Action buttons */}
+            {generatedImage && (
+              <div className="flex gap-2 mt-3 pt-3 border-t">
+                <Button variant="secondary" type="button" className="flex-1" onClick={() => {
                   if (!generatedImage) return;
                   const link = document.createElement('a');
                   link.href = generatedImage;
@@ -664,15 +626,13 @@ export function ImageStudio() {
                 }}>
                   <Download className="mr-2 h-4 w-4" /> Download
                 </Button>
-                <Button variant="default" type="button" disabled={!generatedImage || isSubmitting} className="w-full sm:flex-1" onClick={() => setShowAddProductModal(true)}>
-                  <PackagePlus className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Add as Product</span>
-                  <span className="sm:hidden">Add Product</span>
+                <Button variant="default" type="button" className="flex-1" onClick={() => setShowAddProductModal(true)}>
+                  <PackagePlus className="mr-2 h-4 w-4" /> Add as Product
                 </Button>
-              </CardFooter>
-            </Card>
-          </div>
-        </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </form>
       {showAddProductModal && generatedImage && (
         <AddProductModal
