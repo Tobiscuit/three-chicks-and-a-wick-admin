@@ -43,10 +43,12 @@ import CurrencyInput from "../ui/currency-input";
 import { useRouter } from "next/navigation";
 import { ImageDetailsModal } from "./image-details-modal";
 import { compressImageForStorage, compressImageForAI } from "@/lib/image-compression";
+import { MultiImageDropzone } from "./multi-image-dropzone";
+
+const MAX_PRODUCT_IMAGES = 6;
 
 const formSchema = z.object({
-  primaryProductImage: z.any().refine(file => file instanceof File, "A primary product image is required."),
-  secondaryProductImage: z.any().optional(),
+  productImages: z.array(z.instanceof(File)).min(1, "At least one product image is required.").max(MAX_PRODUCT_IMAGES, `Maximum ${MAX_PRODUCT_IMAGES} images allowed.`),
   backgroundType: z.enum(["gallery", "generate"]).default("gallery"),
   backgroundPrompt: z.string().optional(),
   selectedBackgroundUrl: z.string().optional(),
@@ -206,33 +208,19 @@ const ImageUploadArea = ({ field, preview, label, isLoading = false, form, onIma
 
 export function ImageStudio() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [primaryPreview, setPrimaryPreview] = useState<string | null>(null);
-  const [secondaryPreview, setSecondaryPreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
   const [galleryError, setGalleryError] = useState<string | null>(null);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<{ url: string, field: 'primaryProductImage' | 'secondaryProductImage' } | null>(null);
   const { toast } = useToast();
-
-  const handleReplace = (file: File) => {
-    if (!selectedImage) return;
-    form.setValue(selectedImage.field, file, { shouldDirty: true, shouldValidate: true });
-  };
-
-  const handleRemove = () => {
-    if (!selectedImage) return;
-    form.setValue(selectedImage.field, undefined, { shouldDirty: true, shouldValidate: true });
-    // Reset preview manually if needed, though useEffect should handle it
-    if (selectedImage.field === 'primaryProductImage') setPrimaryPreview(null);
-    if (selectedImage.field === 'secondaryProductImage') setSecondaryPreview(null);
-  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      productImages: [],
       backgroundType: "gallery",
     },
   });
@@ -267,58 +255,40 @@ export function ImageStudio() {
     fetchGalleryImages();
   }, [form]);
 
-  const primaryImageFile = form.watch('primaryProductImage');
-  const secondaryImageFile = form.watch('secondaryProductImage');
+  const productImages = form.watch('productImages') || [];
 
+  // Compress images when they change
   useEffect(() => {
-    if (primaryImageFile instanceof File) {
-      setImageProcessing(true);
-      // Compress image immediately for faster AI generation later
-      compressImageForAI(primaryImageFile)
-        .then((compressed) => {
-          setPrimaryPreview(compressed);
-          setImageProcessing(false);
-        })
-        .catch((err) => {
-          console.error('[Image Studio] Compression failed:', err);
-          // Fallback to uncompressed
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setPrimaryPreview(reader.result as string);
-            setImageProcessing(false);
-          };
-          reader.readAsDataURL(primaryImageFile);
-        });
-    } else {
-      setPrimaryPreview(null);
-      setImageProcessing(false);
+    if (productImages.length === 0) {
+      setImagePreviews([]);
+      return;
     }
-  }, [primaryImageFile]);
 
-  useEffect(() => {
-    if (secondaryImageFile instanceof File) {
-      setImageProcessing(true);
-      // Compress image immediately for faster AI generation later
-      compressImageForAI(secondaryImageFile)
-        .then((compressed) => {
-          setSecondaryPreview(compressed);
-          setImageProcessing(false);
-        })
-        .catch((err) => {
-          console.error('[Image Studio] Compression failed:', err);
-          // Fallback to uncompressed
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setSecondaryPreview(reader.result as string);
-            setImageProcessing(false);
-          };
-          reader.readAsDataURL(secondaryImageFile);
-        });
-    } else {
-      setSecondaryPreview(null);
-      setImageProcessing(false);
-    }
-  }, [secondaryImageFile]);
+    setImageProcessing(true);
+    const compressAll = async () => {
+      try {
+        const previews = await Promise.all(
+          productImages.map(async (file: File) => {
+            try {
+              return await compressImageForAI(file);
+            } catch (err) {
+              console.error('[Image Studio] Compression failed:', err);
+              // Fallback to uncompressed
+              return await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+              });
+            }
+          })
+        );
+        setImagePreviews(previews);
+      } finally {
+        setImageProcessing(false);
+      }
+    };
+    compressAll();
+  }, [productImages]);
 
   const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -374,8 +344,13 @@ export function ImageStudio() {
     try {
       let result: { imageDataUri?: string; error?: string };
 
-      const angle1 = await resizeAndToDataUrl(values.primaryProductImage);
-      const angle2 = values.secondaryProductImage ? await resizeAndToDataUrl(values.secondaryProductImage) : undefined;
+      // Use first two images from the array (if available)
+      const angle1 = values.productImages[0] ? await resizeAndToDataUrl(values.productImages[0]) : undefined;
+      const angle2 = values.productImages[1] ? await resizeAndToDataUrl(values.productImages[1]) : undefined;
+
+      if (!angle1) {
+        throw new Error("At least one product image is required.");
+      }
 
       if (values.backgroundType === 'generate') {
         result = await generateImageAction({
@@ -427,38 +402,27 @@ export function ImageStudio() {
                   Upload Your Product
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm ml-8 sm:ml-10">
-                  Add one or two angles for the best AI-generated result
+                  Upload up to {MAX_PRODUCT_IMAGES} images (2 recommended for best AI results)
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-6 pt-0">
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <FormField
                   control={form.control}
-                  name="primaryProductImage"
+                  name="productImages"
                   render={({ field }) => (
-                    <ImageUploadArea
-                      field={field}
-                      preview={primaryPreview}
-                      label="Primary Image (Required)"
-                      isLoading={imageProcessing}
-                      form={form}
-                      onImageClick={(url) => setSelectedImage({ url, field: 'primaryProductImage' })}
+                    <MultiImageDropzone
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      maxFiles={MAX_PRODUCT_IMAGES}
+                      disabled={isSubmitting || imageProcessing}
                     />
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="secondaryProductImage"
-                  render={({ field }) => (
-                    <ImageUploadArea
-                      field={field}
-                      preview={secondaryPreview}
-                      label="Additional Angle (Optional)"
-                      isLoading={imageProcessing}
-                      form={form}
-                      onImageClick={(url) => setSelectedImage({ url, field: 'secondaryProductImage' })}
-                    />
-                  )}
-                />
+                {form.formState.errors.productImages && (
+                  <p className="text-sm text-destructive mt-2">
+                    {form.formState.errors.productImages.message}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -714,18 +678,8 @@ export function ImageStudio() {
         <AddProductModal
           generatedImage={generatedImage}
           onClose={() => setShowAddProductModal(false)}
-          primaryImageFile={form.watch('primaryProductImage')}
-          secondaryImageFile={form.watch('secondaryProductImage')}
-        />
-      )}
-      {selectedImage && (
-        <ImageDetailsModal
-          isOpen={!!selectedImage}
-          onClose={() => setSelectedImage(null)}
-          imageUrl={selectedImage.url}
-          onReplace={handleReplace}
-          onRemove={handleRemove}
-          title={selectedImage.field === 'primaryProductImage' ? "Primary Image" : "Secondary Image"}
+          primaryImageFile={productImages[0]}
+          secondaryImageFile={productImages[1]}
         />
       )}
     </Form>
