@@ -393,7 +393,7 @@ export function ImageStudio() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 h-[calc(100vh-8rem)]">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Top: Horizontal Input Bar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Upload Section */}
@@ -469,8 +469,7 @@ export function ImageStudio() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <ScrollArea className="h-24 w-full rounded-md border p-1.5">
-                                    <div className="grid grid-cols-4 gap-1.5">
+                                  <div className="grid grid-cols-4 gap-1.5">
                                       {galleryImages.map((bg, index) => {
                                         const selected = field.value === bg.url;
                                         return (
@@ -499,8 +498,7 @@ export function ImageStudio() {
                                           </div>
                                         );
                                       })}
-                                    </div>
-                                  </ScrollArea>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -569,10 +567,10 @@ export function ImageStudio() {
           </Card>
         </div>
 
-        {/* Bottom: Preview Area - fills remaining height */}
-        <Card className="flex-1 min-h-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-300">
+        {/* Preview Area - constrained size */}
+        <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-300">
           <CardContent className="p-4 h-full flex flex-col">
-            <div className="flex-1 min-h-0 rounded-xl border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
+            <div className="aspect-square max-h-[50vh] mx-auto rounded-xl border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
               {isSubmitting ? (
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
