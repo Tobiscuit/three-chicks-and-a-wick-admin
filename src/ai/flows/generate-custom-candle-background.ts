@@ -51,7 +51,7 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
     };
 
     try {
-      const modelName = 'googleai/gemini-2.5-flash-image';
+      const modelName = 'googleai/gemini-3-pro-image-preview';
       console.log(`[Flow] Using image model: ${modelName}`);
 
       console.log('[Flow] Step 1: Generating background...');
@@ -159,10 +159,14 @@ export const generateCustomCandleBackgroundFlow = ai.defineFlow(
       const finalImageResponse = await ai.generate({
         model: modelName,
         prompt: prompt,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          imageConfig: {
+            aspectRatio: '1:1',
+            imageSize: '2K',
+          },
+        },
+      });
 
       // Extract media from the nested response structure
       // The media might be at content[0] or content[1], so we need to find it
