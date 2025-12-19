@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
 import { Part } from 'genkit';
+import { postProcessGeneratedImage } from '@/ai/image-processing';
 
 // Helper to convert a Data URL string into a Genkit Part object
 function dataUrlToPart(dataUrl: string): Part {
@@ -149,9 +150,15 @@ export const composeWithGalleryBackgroundFlow = ai.defineFlow(
         throw new Error('Could not compose final image. AI response did not contain media.');
       }
 
-      console.log('[Compose Flow] SUCCESS: Final image composed.');
+      console.log('[Compose Flow] SUCCESS: Final image composed. Now post-processing...');
 
-      return finalImagePart;
+      // Post-process: resize to Full HD (1920px) and convert to WebP (90% quality)
+      const processedUrl = await postProcessGeneratedImage(finalImagePart.url);
+      
+      return {
+        url: processedUrl,
+        contentType: 'image/webp',
+      };
     } catch (error: any) {
       console.error("[Compose Flow Error]", error);
       throw new Error(`AI Composition Flow Failed: ${error.message}`);
