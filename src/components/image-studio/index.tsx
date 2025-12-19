@@ -393,9 +393,12 @@ export function ImageStudio() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Top: Horizontal Input Bar */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="h-[calc(100vh-10rem)]">
+        {/* 2-Column Layout: Controls Left, Preview Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-full">
+          
+          {/* LEFT COLUMN: Stacked Controls */}
+          <div className="lg:col-span-2 flex flex-col gap-3 overflow-auto">
           {/* Upload Section */}
           <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-300">
             <CardHeader className="p-3 pb-2">
@@ -443,7 +446,7 @@ export function ImageStudio() {
                     onValueChange={(value) => field.onChange(value as 'gallery' | 'generate')}
                     className="w-full"
                   >
-                    <TabsList className="grid w-full grid-cols-2 h-8 gap-1 p-0 mb-2">
+                      <TabsList className="grid w-full grid-cols-2 h-8 mb-2 p-1">
                       <TabsTrigger value="gallery" className="px-2 py-1 text-xs"><ImageIcon className="mr-1 h-3 w-3" />Gallery</TabsTrigger>
                       <TabsTrigger value="generate" className="px-2 py-1 text-xs"><Wand2 className="mr-1 h-3 w-3" />Create</TabsTrigger>
                     </TabsList>
@@ -565,12 +568,32 @@ export function ImageStudio() {
               </Button>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Preview Area - constrained size */}
-        <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-300">
-          <CardContent className="p-4 h-full flex flex-col">
-            <div className="aspect-square max-h-[50vh] mx-auto rounded-xl border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
+            {/* Action Buttons */}
+            {generatedImage && (
+              <div className="flex gap-2">
+                <Button variant="secondary" type="button" className="flex-1" onClick={() => {
+                  if (!generatedImage) return;
+                  const link = document.createElement('a');
+                  link.href = generatedImage;
+                  link.download = `three-chicks-and-a-wick-image.webp`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}>
+                  <Download className="mr-2 h-4 w-4" /> Download
+                </Button>
+                <Button variant="default" type="button" className="flex-1" onClick={() => setShowAddProductModal(true)}>
+                  <PackagePlus className="mr-2 h-4 w-4" /> Add as Product
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: Preview - fills remaining space */}
+          <Card className="lg:col-span-3 h-full motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-300">
+            <CardContent className="p-3 h-full">
+              <div className="w-full h-full rounded-lg border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center overflow-hidden">
               {isSubmitting ? (
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -610,28 +633,9 @@ export function ImageStudio() {
                 </div>
               )}
             </div>
-            
-            {/* Action buttons */}
-            {generatedImage && (
-              <div className="flex gap-2 mt-3 pt-3 border-t">
-                <Button variant="secondary" type="button" className="flex-1" onClick={() => {
-                  if (!generatedImage) return;
-                  const link = document.createElement('a');
-                  link.href = generatedImage;
-                  link.download = `three-chicks-and-a-wick-image.webp`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}>
-                  <Download className="mr-2 h-4 w-4" /> Download
-                </Button>
-                <Button variant="default" type="button" className="flex-1" onClick={() => setShowAddProductModal(true)}>
-                  <PackagePlus className="mr-2 h-4 w-4" /> Add as Product
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
+        </div>
       </form>
       {showAddProductModal && generatedImage && (
         <AddProductModal
