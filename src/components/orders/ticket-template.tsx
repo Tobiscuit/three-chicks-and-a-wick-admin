@@ -67,23 +67,46 @@ export function TicketTemplate({ order }: { order: any }) {
                         <>
                           {/* Recipe Grid */}
                           {recipe && (
-                            <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-6">
-                              <div className="border-b-2 border-black pb-2">
-                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wax</span>
-                                <span className="text-xl font-bold">{recipe.wax}</span>
+                            <div className="space-y-4 mb-6">
+                              <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+                                <div className="border-b-2 border-black pb-2">
+                                  <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wax</span>
+                                  <span className="text-xl font-bold">{recipe.wax}</span>
+                                </div>
+                                <div className="border-b-2 border-black pb-2">
+                                  <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wick</span>
+                                  <span className="text-xl font-bold">{recipe.wick}</span>
+                                </div>
+                                <div className="border-b-2 border-black pb-2">
+                                  <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Color</span>
+                                  <span className="text-xl font-bold">{recipe.color || 'Natural'}</span>
+                                </div>
                               </div>
-                              <div className="border-b-2 border-black pb-2">
-                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Wick</span>
-                                <span className="text-xl font-bold">{recipe.wick}</span>
-                              </div>
-                              <div className="border-b-2 border-black pb-2">
-                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Fragrance</span>
-                                <span className="text-xl font-bold">{recipe.fragrance}</span>
-                              </div>
-                              <div className="border-b-2 border-black pb-2">
-                                <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Color</span>
-                                <span className="text-xl font-bold">{recipe.color}</span>
-                              </div>
+                              
+                              {/* Fragrance Recipe - THE KEY PRODUCTION DATA */}
+                              {recipe.fragrances && recipe.fragrances.length > 0 && (
+                                <div className="border-2 border-black p-4 bg-amber-50">
+                                  <span className="font-bold uppercase text-xs text-gray-600 block mb-3">🧪 Fragrance Blend</span>
+                                  <div className="space-y-2">
+                                    {recipe.fragrances.map((frag: any, idx: number) => (
+                                      <div key={idx} className="flex justify-between items-center border-b border-gray-300 pb-1">
+                                        <span className="font-bold text-lg">{frag.name}</span>
+                                        <span className="text-2xl font-bold bg-black text-white px-3 py-1 rounded">
+                                          {frag.percentage}%
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Legacy single fragrance field fallback */}
+                              {recipe.fragrance && !recipe.fragrances?.length && (
+                                <div className="border-b-2 border-black pb-2">
+                                  <span className="font-bold uppercase text-xs text-gray-500 block mb-1">Fragrance</span>
+                                  <span className="text-xl font-bold">{recipe.fragrance}</span>
+                                </div>
+                              )}
                             </div>
                           )}
 
