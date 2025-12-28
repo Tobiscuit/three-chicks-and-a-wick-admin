@@ -78,15 +78,31 @@ export interface FragranceList {
   count: number;
 }
 
+export interface CommunityFragrance {
+  name: string;
+  category?: string;
+  percentage?: number;
+  notes?: string;
+}
+
 export interface CommunityItem {
   jobId: string;
   candleName?: string;
+  description?: string;
   html: string;
   createdAt: number;
   reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   reviewedBy?: string;
   reviewedAt?: number;
   rejectionReason?: string;
+  // Production recipe data
+  fragrances?: CommunityFragrance[];
+  wax?: string;
+  wick?: string;
+  container?: string;
+  mood?: string;
+  burnTime?: string;
+  scentThrow?: string;
 }
 
 export interface CommunityCreationsPage {

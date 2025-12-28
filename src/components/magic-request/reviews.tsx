@@ -244,7 +244,7 @@ export function MagicRequestReviews() {
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Job ID:</span>
-                  <span className="text-sm text-muted-foreground">{previewCandle.jobId}</span>
+                  <span className="text-sm text-muted-foreground font-mono">{previewCandle.jobId}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Created:</span>
@@ -254,13 +254,86 @@ export function MagicRequestReviews() {
                 </div>
               </div>
 
-              {/* HTML Preview */}
-              <div className="rounded-lg border p-6">
-                <div
-                  className="prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: previewCandle.html }}
-                />
+              {/* Description */}
+              {previewCandle.description && (
+                <div className="rounded-lg border p-4">
+                  <h4 className="text-sm font-semibold mb-2">Description</h4>
+                  <p className="text-sm text-muted-foreground">{previewCandle.description}</p>
+                </div>
+              )}
+
+              {/* Production Details */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  🏭 Production Details
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <span className="font-medium">Wax:</span>
+                    <span className="text-muted-foreground">{previewCandle.wax || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <span className="font-medium">Wick:</span>
+                    <span className="text-muted-foreground">{previewCandle.wick || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <span className="font-medium">Container:</span>
+                    <span className="text-muted-foreground">{previewCandle.container || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <span className="font-medium">Burn Time:</span>
+                    <span className="text-muted-foreground">{previewCandle.burnTime || 'Not specified'}</span>
+                  </div>
+                </div>
               </div>
+
+              {/* Fragrance Recipe - THE KEY PRODUCTION DATA */}
+              {previewCandle.fragrances && previewCandle.fragrances.length > 0 && (
+                <div className="rounded-lg border p-4 space-y-3 bg-amber-50/50 dark:bg-amber-950/20">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    🧪 Fragrance Recipe
+                  </h4>
+                  <div className="space-y-2">
+                    {previewCandle.fragrances.map((frag, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded border">
+                        <div className="flex-1">
+                          <span className="font-medium">{frag.name}</span>
+                          {frag.category && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-muted-foreground">
+                              {frag.category}
+                            </span>
+                          )}
+                          {frag.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">{frag.notes}</p>
+                          )}
+                        </div>
+                        <span className="font-bold text-lg text-amber-600 dark:text-amber-400">
+                          {frag.percentage ? `${frag.percentage}%` : '—'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mood/Vibe */}
+              {previewCandle.mood && (
+                <div className="rounded-lg border p-4 bg-purple-50/50 dark:bg-purple-950/20">
+                  <h4 className="text-sm font-semibold mb-2">✨ Vibe</h4>
+                  <p className="text-sm italic text-muted-foreground">{previewCandle.mood}</p>
+                </div>
+              )}
+
+              {/* Legacy HTML Preview (if no structured data) */}
+              {!previewCandle.fragrances?.length && previewCandle.html && (
+                <div className="rounded-lg border p-6">
+                  <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Legacy HTML Preview</h4>
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: previewCandle.html }}
+                  />
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-4">
