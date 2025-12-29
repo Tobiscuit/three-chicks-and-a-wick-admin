@@ -331,11 +331,39 @@ function OrderContent({ order, isUpdating, onStatusUpdate }: {
                           <div className="mt-3 pt-3 border-t border-border/50 space-y-2.5">
                             {/* Recipe specs in compact horizontal layout */}
                             {recipe && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                                <span><span className="text-muted-foreground">Wax:</span> <span className="font-medium">{recipe.wax}</span></span>
-                                <span><span className="text-muted-foreground">Wick:</span> <span className="font-medium">{recipe.wick}</span></span>
-                                <span><span className="text-muted-foreground">Scent:</span> <span className="font-medium">{recipe.fragrance}</span></span>
-                                <span><span className="text-muted-foreground">Color:</span> <span className="font-medium">{recipe.color}</span></span>
+                              <div className="space-y-2">
+                                {/* Wax, Wick, Color row */}
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                  <span><span className="text-muted-foreground">Wax:</span> <span className="font-medium">{recipe.wax}</span></span>
+                                  <span><span className="text-muted-foreground">Wick:</span> <span className="font-medium">{recipe.wick}</span></span>
+                                  <span><span className="text-muted-foreground">Color:</span> <span className="font-medium">{recipe.color || 'Natural'}</span></span>
+                                </div>
+                                
+                                {/* Fragrances - the key production data */}
+                                {recipe.fragrances && recipe.fragrances.length > 0 && (
+                                  <div className="bg-amber-50 dark:bg-amber-950/30 rounded-md p-2">
+                                    <div className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold mb-1.5">
+                                      🧪 Fragrance Blend
+                                    </div>
+                                    <div className="space-y-1">
+                                      {recipe.fragrances.map((frag: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-center text-xs">
+                                          <span className="font-medium text-foreground">{frag.name}</span>
+                                          <span className="font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded text-[11px]">
+                                            {frag.percentage}%
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Legacy single fragrance fallback */}
+                                {recipe.fragrance && !recipe.fragrances?.length && (
+                                  <div className="text-xs">
+                                    <span className="text-muted-foreground">Scent:</span> <span className="font-medium">{recipe.fragrance}</span>
+                                  </div>
+                                )}
                               </div>
                             )}
                             
