@@ -47,6 +47,7 @@ export function MagicRequestReviews() {
   };
 
   const handlePreview = (candle: CommunityItem) => {
+    console.log('Opening preview for:', candle.jobId);
     setPreviewCandle(candle);
     setIsPreviewOpen(true);
   };
@@ -202,7 +203,7 @@ export function MagicRequestReviews() {
                     onClick={() => handlePreview(candle)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Preview
+                    View Details
                   </Button>
                   <Button
                     variant="default"
@@ -232,108 +233,109 @@ export function MagicRequestReviews() {
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{previewCandle?.candleName || 'Candle Preview'}</DialogTitle>
+            <DialogTitle>Review Creation: {previewCandle?.candleName || 'Untitled'}</DialogTitle>
             <DialogDescription>
-              Review the candle details before approving or rejecting
+              Review the auto-generated recipe and story before approving.
             </DialogDescription>
           </DialogHeader>
 
           {previewCandle && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Metadata */}
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Job ID:</span>
-                  <span className="text-sm text-muted-foreground font-mono">{previewCandle.jobId}</span>
+              <div className="grid grid-cols-2 gap-4 text-sm border p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                <div>
+                    <span className="text-muted-foreground block mb-1">Job ID</span>
+                    <span className="font-mono">{previewCandle.jobId}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Created:</span>
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(previewCandle.createdAt)}
-                  </span>
+                <div>
+                    <span className="text-muted-foreground block mb-1">Created At</span>
+                    <span>{formatDate(previewCandle.createdAt)}</span>
                 </div>
               </div>
 
-              {/* Description */}
+              {/* Description / Story */}
               {previewCandle.description && (
                 <div className="rounded-lg border p-4">
-                  <h4 className="text-sm font-semibold mb-2">Description</h4>
-                  <p className="text-sm text-muted-foreground">{previewCandle.description}</p>
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    AI Generation (Story)
+                  </h4>
+                  <p className="text-sm text-foreground/90 leading-relaxed italic">
+                    "{previewCandle.description}"
+                  </p>
                 </div>
               )}
 
-              {/* Production Details */}
-              <div className="rounded-lg border p-4 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  🏭 Production Details
-                </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                    <span className="font-medium">Wax:</span>
-                    <span className="text-muted-foreground">{previewCandle.wax || 'Not specified'}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                    <span className="font-medium">Wick:</span>
-                    <span className="text-muted-foreground">{previewCandle.wick || 'Not specified'}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                    <span className="font-medium">Container:</span>
-                    <span className="text-muted-foreground">{previewCandle.container || 'Not specified'}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                    <span className="font-medium">Burn Time:</span>
-                    <span className="text-muted-foreground">{previewCandle.burnTime || 'Not specified'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Fragrance Recipe - THE KEY PRODUCTION DATA */}
-              {previewCandle.fragrances && previewCandle.fragrances.length > 0 && (
+              {/* Fragrance Recipe - MOST IMPORTANT */}
+              {previewCandle.fragrances && previewCandle.fragrances.length > 0 ? (
                 <div className="rounded-lg border p-4 space-y-3 bg-amber-50/50 dark:bg-amber-950/20">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
                     🧪 Fragrance Recipe
                   </h4>
                   <div className="space-y-2">
                     {previewCandle.fragrances.map((frag, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded border">
+                      <div key={i} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded border shadow-sm">
                         <div className="flex-1">
-                          <span className="font-medium">{frag.name}</span>
-                          {frag.category && (
-                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-muted-foreground">
-                              {frag.category}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-base">{frag.name}</span>
+                            {frag.category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {frag.category}
+                              </Badge>
+                            )}
+                          </div>
                           {frag.notes && (
                             <p className="text-xs text-muted-foreground mt-1">{frag.notes}</p>
                           )}
                         </div>
-                        <span className="font-bold text-lg text-amber-600 dark:text-amber-400">
-                          {frag.percentage ? `${frag.percentage}%` : '—'}
-                        </span>
+                        <div className="flex flex-col items-end">
+                            <span className="font-bold text-xl text-amber-600 dark:text-amber-400">
+                            {frag.percentage ? `${frag.percentage}%` : '—'}
+                            </span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              ) : (
+                <div className="p-4 border border-dashed rounded-lg text-center text-muted-foreground">
+                    No structured fragrance recipe available.
+                </div>
               )}
+
+              {/* Technical Details */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  🏭 Technical Specs
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Wax</span>
+                    <p className="font-medium">{previewCandle.wax || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Wick</span>
+                    <p className="font-medium">{previewCandle.wick || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Container</span>
+                    <p className="font-medium">{previewCandle.container || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Burn Time</span>
+                    <p className="font-medium">{previewCandle.burnTime || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
 
               {/* Mood/Vibe */}
               {previewCandle.mood && (
                 <div className="rounded-lg border p-4 bg-purple-50/50 dark:bg-purple-950/20">
-                  <h4 className="text-sm font-semibold mb-2">✨ Vibe</h4>
-                  <p className="text-sm italic text-muted-foreground">{previewCandle.mood}</p>
+                  <h4 className="text-sm font-semibold mb-2">✨ Vibe Check</h4>
+                  <p className="text-sm text-foreground">{previewCandle.mood}</p>
                 </div>
               )}
 
-              {/* Legacy HTML Preview (if no structured data) */}
-              {!previewCandle.fragrances?.length && previewCandle.html && (
-                <div className="rounded-lg border p-6">
-                  <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Legacy HTML Preview</h4>
-                  <div
-                    className="prose prose-sm dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: previewCandle.html }}
-                  />
-                </div>
-              )}
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-4">
