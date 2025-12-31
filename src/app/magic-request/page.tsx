@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,8 +19,9 @@ import { MagicRequestLogs } from '@/components/magic-request/logs';
 import { PricingManager } from '@/components/magic-request/pricing-manager';
 import ContainerSizeManager from '@/components/container-size/container-size-manager';
 import { getCommunityCreations } from '@/lib/storefront-appsync';
+import { Loader2 } from 'lucide-react';
 
-export default function MagicRequestPage() {
+function MagicRequestContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -56,67 +57,79 @@ export default function MagicRequestPage() {
   ];
 
   return (
-    <AuthWrapper>
-      <div className="space-y-6">
-        <div>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage your custom candle ordering system with smart validation and review.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <p className="text-muted-foreground text-sm sm:text-base">
+          Manage your custom candle ordering system with smart validation and review.
+        </p>
+      </div>
 
-        <div className="space-y-6">
-          {/* Desktop tabs */}
-          <div className="hidden sm:block">
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-6">
-                {tabs.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value} className="relative">
+      <div className="space-y-6">
+        {/* Desktop tabs */}
+        <div className="hidden sm:block">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList className="grid w-full grid-cols-6">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="relative">
+                  {tab.label}
+                  {tab.badge && (
+                    <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                      {tab.badge}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        
+        {/* Mobile dropdown navigation - using Shadcn Select */}
+        <div className="sm:hidden">
+          <Select value={activeTab} onValueChange={handleTabChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {tabs.map((tab) => (
+                <SelectItem key={tab.value} value={tab.value}>
+                  <div className="flex items-center justify-between w-full">
                     {tab.label}
                     {tab.badge && (
                       <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
                         {tab.badge}
                       </Badge>
                     )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
-          
-          {/* Mobile dropdown navigation - using Shadcn Select */}
-          <div className="sm:hidden">
-            <Select value={activeTab} onValueChange={handleTabChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {tabs.map((tab) => (
-                  <SelectItem key={tab.value} value={tab.value}>
-                    <div className="flex items-center justify-between w-full">
-                      {tab.label}
-                      {tab.badge && (
-                        <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
-                          {tab.badge}
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          {/* Tab content with fade animation */}
-          <div className="motion-safe:animate-in fade-in duration-200">
-            {activeTab === 'overview' && <MagicRequestOverview />}
-            {activeTab === 'fragrances' && <MagicRequestFragrances />}
-            {activeTab === 'ingredients' && <ContainerSizeManager />}
-            {activeTab === 'pricing' && <PricingManager />}
-            {activeTab === 'reviews' && <MagicRequestReviews />}
-            {activeTab === 'logs' && <MagicRequestLogs />}
-          </div>
+        {/* Tab content with fade animation */}
+        <div className="motion-safe:animate-in fade-in duration-200">
+          {activeTab === 'overview' && <MagicRequestOverview />}
+          {activeTab === 'fragrances' && <MagicRequestFragrances />}
+          {activeTab === 'ingredients' && <ContainerSizeManager />}
+          {activeTab === 'pricing' && <PricingManager />}
+          {activeTab === 'reviews' && <MagicRequestReviews />}
+          {activeTab === 'logs' && <MagicRequestLogs />}
         </div>
       </div>
+    </div>
+  );
+}
+
+export default function MagicRequestPage() {
+  return (
+    <AuthWrapper>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }>
+        <MagicRequestContent />
+      </Suspense>
     </AuthWrapper>
   );
 }
