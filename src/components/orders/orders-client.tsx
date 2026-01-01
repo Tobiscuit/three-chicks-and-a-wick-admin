@@ -138,6 +138,11 @@ export default function OrdersClient() {
     setExportData(null);
   };
 
+  const handleOrderUpdated = (updatedOrder: ShopifyOrder) => {
+    setSelectedOrder(updatedOrder);
+    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+  };
+
   return (
     <>
       <Tabs defaultValue="all" value={filter} onValueChange={setFilter}>
@@ -230,6 +235,7 @@ export default function OrdersClient() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         order={selectedOrder}
+        onOrderUpdated={handleOrderUpdated}
       />
 
       {exportData && (

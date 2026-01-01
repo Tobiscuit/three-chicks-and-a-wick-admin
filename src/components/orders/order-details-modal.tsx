@@ -32,6 +32,7 @@ type OrderDetailsModalProps = {
   isOpen: boolean;
   onClose: () => void;
   order: ShopifyOrder | null;
+  onOrderUpdated?: (order: ShopifyOrder) => void;
 }
 
 type ProductionStep = {
@@ -458,7 +459,7 @@ function OrderContent({ order, isUpdating, onStatusUpdate }: {
   );
 }
 
-export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalProps) {
+export function OrderDetailsModal({ isOpen, onClose, order, onOrderUpdated }: OrderDetailsModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -470,6 +471,13 @@ export function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalP
       const step = PRODUCTION_STEPS.find(s => s.id === stepId);
       if (step) {
         await addTagsToOrder(order.id, [step.tag]);
+        
+        // Refresh the order to get updated tags immediately
+        const { getOrder } = await import('@/services/shopify');
+        const updatedOrder = await getOrder(order.id);
+        if (updatedOrder && onOrderUpdated) {
+          onOrderUpdated(updatedOrder);
+        }
       }
     } catch (error) {
       console.error("Failed to update status:", error);
