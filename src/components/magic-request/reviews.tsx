@@ -187,8 +187,6 @@ export function MagicRequestReviews() {
                       {candle.candleName || 'Untitled Candle'}
                     </CardTitle>
                     <CardDescription className="mt-2">
-                      <span className="font-mono text-xs">Job: {candle.jobId}</span>
-                      <br />
                       Created: {formatDate(candle.createdAt)}
                     </CardDescription>
                   </div>
