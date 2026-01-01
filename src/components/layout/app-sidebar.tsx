@@ -51,7 +51,7 @@ const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingCart, showBadge: true },
   { href: "/products", label: "Products", icon: Package },
-  { href: "/magic-request", label: "Magic Request", icon: Wand2 },
+  { href: "/magic-request", label: "Magic Request", icon: Wand2, showMagicBadge: true },
   { href: "/strategy", label: "Strategy", icon: BrainCircuit, showStrategyBadge: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
@@ -62,11 +62,13 @@ export function AppSidebar() {
   const { user } = useAuth()
   const { theme, setTheme } = useTheme()
   const [unfulfilledCount, setUnfulfilledCount] = useState<number | null>(null)
+  const [magicPendingCount, setMagicPendingCount] = useState<number | null>(null)
   const [hasUnreadStrategy, setHasUnreadStrategy] = useState(false)
 
-  // Fetch unfulfilled order count for badge
+  // Fetch badges (Orders & Magic Requests)
   useEffect(() => {
-    async function fetchUnfulfilledCount() {
+    async function fetchBadges() {
+      // 1. Unfulfilled Orders
       try {
         const orders = await getOrders(50)
         const unfulfilled = orders.filter(order => {
@@ -77,8 +79,19 @@ export function AppSidebar() {
       } catch (error) {
         console.error("Failed to fetch unfulfilled count:", error)
       }
+
+      // 2. Pending Magic Requests
+      try {
+        // Dynamic import to avoid circular dependencies if any
+        const { getCommunityCreations } = await import('@/lib/storefront-appsync');
+        const result = await getCommunityCreations(50, undefined, 'PENDING');
+        const count = result.items?.length || 0;
+        setMagicPendingCount(count > 0 ? count : null);
+      } catch (error) {
+        console.error("Failed to fetch magic pending count:", error);
+      }
     }
-    fetchUnfulfilledCount()
+    fetchBadges()
   }, [])
 
   // Check if strategy is unread
@@ -173,6 +186,13 @@ export function AppSidebar() {
                   <SidebarMenuBadge className="bg-destructive text-destructive-foreground animate-in fade-in duration-300">
                     {unfulfilledCount > 99 ? '99+' : unfulfilledCount}
                   </SidebarMenuBadge>
+                )}
+                {/* Badge for Magic Requests */}
+                {/* @ts-ignore - existing type def might assume showMagicBadge isn't there but it's JS at runtime or I can extend type if needed */}
+                {item.showMagicBadge && magicPendingCount && (
+                   <SidebarMenuBadge className="bg-destructive text-destructive-foreground animate-in fade-in duration-300">
+                     {magicPendingCount > 99 ? '99+' : magicPendingCount}
+                   </SidebarMenuBadge>
                 )}
                 {/* Unread strategy indicator - info badge */}
                 {item.showStrategyBadge && hasUnreadStrategy && (
