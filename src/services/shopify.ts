@@ -14,6 +14,7 @@ export type ShopifyOrder = {
   name: string;
   createdAt: string;
   processedAt: string;
+  tags: string[]; // Added for Production Status tracking
   totalPriceSet: {
     shopMoney: {
       amount: string;
@@ -292,6 +293,7 @@ export const getOrders = cache(async (first: number = 50, after?: string): Promi
             name
             createdAt
             processedAt
+            tags
             totalPriceSet {
               shopMoney {
                 amount
@@ -1421,6 +1423,7 @@ export async function getOrder(id: string) {
         name
         createdAt
         processedAt
+        tags
         displayFulfillmentStatus
         note
         customer {
