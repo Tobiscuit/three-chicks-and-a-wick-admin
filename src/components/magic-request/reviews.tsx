@@ -189,37 +189,64 @@ export function MagicRequestReviews() {
                     <CardDescription className="mt-2">
                       Created: {formatDate(candle.createdAt)}
                     </CardDescription>
+
+                    {/* Story Snippet */}
+                    {candle.description && (
+                      <p className="text-sm text-muted-foreground mt-3 line-clamp-2 italic border-l-2 pl-3 border-amber-500/30">
+                        "{candle.description}"
+                      </p>
+                    )}
+
+                    {/* Fragrance Preview */}
+                    {candle.fragrances && candle.fragrances.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {candle.fragrances.slice(0, 3).map((frag, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+                            {frag.name} {frag.percentage ? `(${frag.percentage}%)` : ''}
+                          </Badge>
+                        ))}
+                        {candle.fragrances.length > 3 && (
+                          <span className="text-xs text-muted-foreground self-center">
+                            +{candle.fragrances.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <Badge variant="outline" className="animate-pulse">Pending</Badge>
+                  <Badge variant="outline" className="animate-pulse shrink-0">Pending</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-between gap-4 pt-2">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => handlePreview(candle)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    View Details
+                    Full Details
                   </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleApprove(candle)}
-                    className="bg-green-700 hover:bg-green-800"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleReject(candle)}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Reject
-                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleReject(candle)}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleApprove(candle)}
+                      className="bg-green-700 hover:bg-green-800"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
