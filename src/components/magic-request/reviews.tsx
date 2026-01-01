@@ -242,15 +242,9 @@ export function MagicRequestReviews() {
           {previewCandle && (
             <div className="space-y-6">
               {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4 text-sm border p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                <div>
-                    <span className="text-muted-foreground block mb-1">Job ID</span>
-                    <span className="font-mono">{previewCandle.jobId}</span>
-                </div>
-                <div>
-                    <span className="text-muted-foreground block mb-1">Created At</span>
-                    <span>{formatDate(previewCandle.createdAt)}</span>
-                </div>
+              <div className="rounded-lg border p-4 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-muted-foreground block text-xs uppercase tracking-wider mb-1">Created At</span>
+                <span className="font-medium">{formatDate(previewCandle.createdAt)}</span>
               </div>
 
               {/* Description / Story */}
