@@ -84,14 +84,42 @@ export async function POST(request: NextRequest) {
       try {
         const { createProduct } = await import('@/services/shopify');
         
-        console.log(`Creating Shopify product for job ${jobId}: ${candleData.candleName}`);
+        // 1. Resolve Dynamic Price
+        let price = "35.00"; // Fallback default
+        try {
+            // Use env var or default to production Vercel URL
+            const sfUrl = process.env.STOREFRONT_BASE_URL || 'https://three-chicks-and-a-wick.vercel.app';
+            const priceRes = await fetch(`${sfUrl}/api/magic/resolve-variant`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    vesselHandle: candleData.container, // Maps to vesselHandle
+                    wax: candleData.wax,
+                    wick: candleData.wick
+                })
+            });
+            
+            if (priceRes.ok) {
+                const priceData = await priceRes.json();
+                if (priceData.price) {
+                    price = String(priceData.price);
+                    console.log(`💲 Resolved dynamic price: $${price}`);
+                }
+            } else {
+                console.warn(`⚠️ Failed to resolve price (Status: ${priceRes.status}). Using fallback $35.00.`);
+            }
+        } catch (priceErr) {
+            console.error("⚠️ Error fetching dynamic price:", priceErr);
+        }
+
+        console.log(`Creating Shopify product for job ${jobId}: ${candleData.candleName} @ $${price}`);
 
         const result = await createProduct({
           title: candleData.candleName || "Community Creation",
           description: candleData.description || "A custom creation from our community.",
           tags: "community-creation, magic-request-verified, status:approved", 
           status: 'ACTIVE',
-          price: "35.00", // Default base price for custom candles
+          price: price, // Use resolved price
           sku: `COMMUNITY-${jobId.substring(0, 8).toUpperCase()}`,
           inventory: 100, // Make it purchasable immediately
           imageUrls: [], // No images yet, or we could use a default placeholder
