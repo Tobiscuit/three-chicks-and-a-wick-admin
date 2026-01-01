@@ -797,6 +797,7 @@ type ProductData = {
   inventory: number; // Ensure this is part of the type
   imageUrls: string[];
   collections?: string[]; // Add collections support
+  metafields?: { namespace: string, key: string, value: string, type: string }[];
 };
 
 // REPLACEMENT for getOnlineStorePublicationId
@@ -889,7 +890,8 @@ export async function createProduct(productData: ProductData) {
     title: productData.title,
     tags: productData.tags,
     status: productData.status,
-    descriptionHtml: productData.description
+    descriptionHtml: productData.description,
+    metafields: productData.metafields
   };
   const createProductResult = await fetchShopify<any>(createProductMutation, { input: productInput });
   const productId = createProductResult.productCreate.product?.id;

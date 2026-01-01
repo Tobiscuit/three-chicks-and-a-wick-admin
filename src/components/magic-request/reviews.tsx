@@ -54,7 +54,7 @@ export function MagicRequestReviews() {
 
   const handleApprove = async (candle: CommunityItem) => {
     try {
-      await approveSharedCandle(candle.jobId);
+      await approveSharedCandle(candle.jobId, candle);
       
       toast({
         title: 'Candle Approved',
