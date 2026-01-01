@@ -18,12 +18,24 @@ const GET_COMMUNITY_CREATIONS = `
       items {
         jobId
         candleName
+        description
         html
         createdAt
         reviewStatus
         reviewedBy
         reviewedAt
         rejectionReason
+        fragrances {
+          name
+          category
+          percentage
+          notes
+        }
+        wax
+        wick
+        container
+        burnTime
+        mood
       }
       nextToken
     }
