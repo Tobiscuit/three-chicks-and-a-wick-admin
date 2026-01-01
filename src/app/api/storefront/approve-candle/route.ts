@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobId } = body;
+    const { jobId, candleData } = body;
 
     if (!jobId) {
       return NextResponse.json(
@@ -74,6 +74,56 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // --- NEW: Create Real Shopify Product ---
+    // If candleData is provided, we create a product. 
+    // If getting approved from a legacy UI without candleData, we skip this (backward compatibility).
+    let createdProductId: string | undefined;
+
+    if (candleData) {
+      try {
+        const { createProduct } = await import('@/services/shopify');
+        
+        console.log(`Creating Shopify product for job ${jobId}: ${candleData.candleName}`);
+
+        const result = await createProduct({
+          title: candleData.candleName || "Community Creation",
+          description: candleData.description || "A custom creation from our community.",
+          tags: "community-creation, magic-request-verified, status:approved", 
+          status: 'ACTIVE',
+          price: "35.00", // Default base price for custom candles
+          sku: `COMMUNITY-${jobId.substring(0, 8).toUpperCase()}`,
+          inventory: 100, // Make it purchasable immediately
+          imageUrls: [], // No images yet, or we could use a default placeholder
+          collections: [], // Could add to a specific 'Community' collection ID here if known
+          metafields: [
+            { namespace: "custom", key: "wax", value: candleData.wax || "Soy", type: "single_line_text_field" },
+            { namespace: "custom", key: "wick", value: candleData.wick || "Cotton", type: "single_line_text_field" },
+            { namespace: "custom", key: "container", value: candleData.container || "Standard", type: "single_line_text_field" },
+            { namespace: "custom", key: "fragrances_json", value: JSON.stringify(candleData.fragrances || []), type: "json" },
+            { namespace: "custom", key: "job_id", value: jobId, type: "single_line_text_field" },
+            { namespace: "custom", key: "source", value: "community", type: "single_line_text_field" }
+          ]
+        });
+
+        createdProductId = result.product.id;
+        console.log(`✅ Created Product: ${createdProductId}`);
+
+      } catch (productError) {
+        console.error("Failed to create Shopify product:", productError);
+        // We decide here: Fail the whole approval? Or proceed with warning?
+        // Let's fail hard so we don't have desync.
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: productError instanceof Error ? productError.message : 'Failed to create product' 
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    // --- END NEW LOGIC ---
 
     // Call AppSync with admin secret
     const response = await fetch(APPSYNC_URL, {
@@ -104,6 +154,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result.data.approveSharedCandle,
+      productId: createdProductId // Return this for debug/UI usage
     });
   } catch (error) {
     console.error('Error in POST /api/storefront/approve-candle:', error);

@@ -467,7 +467,7 @@ export async function getCommunityCreations(
  * These call the Admin Panel's API routes, which then proxy to AppSync
  */
 
-export async function approveSharedCandle(jobId: string): Promise<CommunityItem> {
+export async function approveSharedCandle(jobId: string, candleData?: CommunityItem): Promise<CommunityItem> {
   const idToken = await getIdToken();
   if (!idToken) {
     throw new Error('No ID token available - user may not be authenticated');
@@ -479,7 +479,7 @@ export async function approveSharedCandle(jobId: string): Promise<CommunityItem>
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ jobId }),
+    body: JSON.stringify({ jobId, candleData }),
   });
 
   if (!response.ok) {
