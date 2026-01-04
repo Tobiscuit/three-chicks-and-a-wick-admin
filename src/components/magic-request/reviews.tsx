@@ -23,6 +23,8 @@ export function MagicRequestReviews() {
   const [loading, setLoading] = useState(true);
   const [previewCandle, setPreviewCandle] = useState<CommunityItem | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  // Track which candle is being approved/rejected to prevent double-clicks
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
   useEffect(() => {
     loadSharedCandles();
@@ -53,6 +55,9 @@ export function MagicRequestReviews() {
   };
 
   const handleApprove = async (candle: CommunityItem) => {
+    if (actionInProgress) return; // Prevent double-clicks
+    setActionInProgress(candle.jobId);
+    
     try {
       await approveSharedCandle(candle.jobId, candle);
       
@@ -70,12 +75,18 @@ export function MagicRequestReviews() {
         title: 'Approval Failed',
         description: error instanceof Error ? error.message : 'Failed to approve candle. Please try again.',
       });
+    } finally {
+      setActionInProgress(null);
     }
   };
 
   const handleReject = async (candle: CommunityItem) => {
+    if (actionInProgress) return; // Prevent double-clicks
+    
     const reason = prompt('Reason for rejection (optional):');
     if (reason === null) return; // User cancelled
+    
+    setActionInProgress(candle.jobId);
 
     try {
       await rejectSharedCandle(candle.jobId, reason || undefined);
@@ -94,6 +105,8 @@ export function MagicRequestReviews() {
         title: 'Rejection Failed',
         description: error instanceof Error ? error.message : 'Failed to reject candle. Please try again.',
       });
+    } finally {
+      setActionInProgress(null);
     }
   };
 
@@ -233,17 +246,27 @@ export function MagicRequestReviews() {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleReject(candle)}
+                      disabled={actionInProgress === candle.jobId}
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
+                      {actionInProgress === candle.jobId ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <XCircle className="h-4 w-4 mr-2" />
+                      )}
                       Reject
                     </Button>
                     <Button
                       variant="default"
                       size="sm"
                       onClick={() => handleApprove(candle)}
+                      disabled={actionInProgress === candle.jobId}
                       className="bg-green-700 hover:bg-green-800"
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {actionInProgress === candle.jobId ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
                       Approve
                     </Button>
                   </div>
@@ -364,9 +387,14 @@ export function MagicRequestReviews() {
                     handleApprove(previewCandle);
                     setIsPreviewOpen(false);
                   }}
+                  disabled={actionInProgress === previewCandle.jobId}
                   className="bg-green-700 hover:bg-green-800"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {actionInProgress === previewCandle.jobId ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
                   Approve
                 </Button>
                 <Button
@@ -375,8 +403,13 @@ export function MagicRequestReviews() {
                     handleReject(previewCandle);
                     setIsPreviewOpen(false);
                   }}
+                  disabled={actionInProgress === previewCandle.jobId}
                 >
-                  <XCircle className="h-4 w-4 mr-2" />
+                  {actionInProgress === previewCandle.jobId ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <XCircle className="h-4 w-4 mr-2" />
+                  )}
                   Reject
                 </Button>
               </div>

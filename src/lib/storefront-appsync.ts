@@ -100,6 +100,7 @@ export interface CommunityItem {
   wax?: string;
   wick?: string;
   container?: string;
+  calculatedPrice?: string;
   mood?: string;
   burnTime?: string;
   scentThrow?: string;

@@ -84,32 +84,44 @@ export async function POST(request: NextRequest) {
       try {
         const { createProduct } = await import('@/services/shopify');
         
-        // 1. Resolve Dynamic Price
-        let price = "35.00"; // Fallback default
-        try {
-            // Use env var or default to production Vercel URL
-            const sfUrl = process.env.STOREFRONT_BASE_URL || 'https://three-chicks-and-a-wick.vercel.app';
-            const priceRes = await fetch(`${sfUrl}/api/magic/resolve-variant`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    vesselHandle: candleData.container, // Maps to vesselHandle
-                    wax: candleData.wax,
-                    wick: candleData.wick
-                })
-            });
-            
-            if (priceRes.ok) {
-                const priceData = await priceRes.json();
-                if (priceData.price) {
-                    price = String(priceData.price);
-                    console.log(`💲 Resolved dynamic price: $${price}`);
+        // 1. Use stored price from submission (preferred) or fallback to API call for legacy items
+        let price = candleData.calculatedPrice || null;
+        
+        if (!price) {
+            // Legacy fallback: re-query pricing API if no stored price (backwards compatibility)
+            console.log('⚠️ No stored price found, falling back to pricing API...');
+            try {
+                const sfUrl = process.env.STOREFRONT_BASE_URL || 'https://threechicksandawick.com';
+                const priceRes = await fetch(`${sfUrl}/api/magic/resolve-variant`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vesselHandle: candleData.container,
+                        wax: candleData.wax,
+                        wick: candleData.wick
+                    })
+                });
+                
+                if (priceRes.ok) {
+                    const priceData = await priceRes.json();
+                    if (priceData.price) {
+                        price = String(priceData.price);
+                        console.log(`💲 Resolved dynamic price via API: $${price}`);
+                    }
+                } else {
+                    console.warn(`⚠️ Pricing API failed (Status: ${priceRes.status}). Using fallback.`);
                 }
-            } else {
-                console.warn(`⚠️ Failed to resolve price (Status: ${priceRes.status}). Using fallback $35.00.`);
+            } catch (priceErr) {
+                console.error("⚠️ Error fetching dynamic price:", priceErr);
             }
-        } catch (priceErr) {
-            console.error("⚠️ Error fetching dynamic price:", priceErr);
+        } else {
+            console.log(`💲 Using stored price from submission: $${price}`);
+        }
+        
+        // Final fallback
+        if (!price) {
+            price = "35.00";
+            console.warn('⚠️ Using hardcoded fallback price: $35.00');
         }
 
         console.log(`Creating Shopify product for job ${jobId}: ${candleData.candleName} @ $${price}`);
