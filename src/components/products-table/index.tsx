@@ -77,7 +77,7 @@ type ProductsTableProps = {
   products: ShopifyProduct[];
 };
 
-// Secure Delete Dialog Component
+// Secure Delete Dialog Component - with copy button for better UX
 function SecureDeleteDialog({ 
   product, 
   onDelete, 
@@ -90,10 +90,17 @@ function SecureDeleteDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [confirmationText, setConfirmationText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
   
-  // Get first two words of product title
-  const firstTwoWords = product.title.split(' ').slice(0, 2).join(' ').toLowerCase();
-  const isConfirmationValid = confirmationText.toLowerCase() === firstTwoWords;
+  // Require full product name for confirmation
+  const expectedValue = product.title;
+  const isConfirmationValid = confirmationText === expectedValue;
+  
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(product.title);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   
   const handleDelete = async (e: React.MouseEvent) => {
     if (!isConfirmationValid) return;
@@ -108,6 +115,7 @@ function SecureDeleteDialog({
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setConfirmationText("");
+      setCopied(false);
     }
     setIsOpen(open);
   };
@@ -118,18 +126,45 @@ function SecureDeleteDialog({
       <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Product</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the product "{product.title}".
-            <br /><br />
-            <strong>Security Check:</strong> Type the first two words of the product name to confirm deletion.
+          <AlertDialogDescription asChild>
+            <div className="space-y-3">
+              <p>This action cannot be undone. This will permanently delete this product.</p>
+              
+              <p className="font-medium text-foreground">
+                To confirm, copy and paste the product name below:
+              </p>
+              
+              {/* Product name display with copy button */}
+              <div className="flex items-center gap-2 p-3 bg-muted/50 border border-dashed border-border rounded-md">
+                <code className="flex-1 text-sm font-mono text-foreground break-all">
+                  {product.title}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 h-8 px-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopy();
+                  }}
+                >
+                  {copied ? (
+                    <>✓ Copied</>
+                  ) : (
+                    <><ClipboardCopy className="h-4 w-4 mr-1" /> Copy</>
+                  )}
+                </Button>
+              </div>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="py-4">
+        <div className="py-2">
           <Input
-            placeholder={`Type: "${firstTwoWords}"`}
+            placeholder="Paste product name here..."
             value={confirmationText}
             onChange={(e) => setConfirmationText(e.target.value)}
-            className="w-full"
+            className="w-full font-mono"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
