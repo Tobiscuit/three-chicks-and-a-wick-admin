@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ExternalLink, TrendingUp, Edit, Package } from 'lucide-react';
-import type { ShopifyProduct } from '@/services/shopify';
+import type { ShopifyProduct } from '@/types/shopify';
 import { cn } from '@/lib/utils';
 
 type ProductQuickViewProps = {

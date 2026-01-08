@@ -5,7 +5,7 @@
  * for the custom candle business model.
  */
 
-import { fetchShopify } from './shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 
 // Container-Size Types
 export interface ContainerSize {

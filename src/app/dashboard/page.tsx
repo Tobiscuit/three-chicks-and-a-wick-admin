@@ -1,8 +1,8 @@
 
-import { getOrders, getProducts } from '@/services/shopify';
+import { getOrders, getProducts, type ShopifyOrder } from '@/lib/shopify-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import type { ShopifyOrder, ShopifyProduct } from '@/services/shopify';
+import type { ShopifyProduct } from '@/types/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Suspense } from 'react';

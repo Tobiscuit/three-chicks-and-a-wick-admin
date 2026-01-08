@@ -7,7 +7,7 @@ import { RecentOrders } from '@/components/dashboard/recent-orders';
 import { QuickFulfill } from '@/components/dashboard/quick-fulfill';
 import { LowStockAlert } from '@/components/dashboard/low-stock-alert';
 import { DollarSign, Package, ShoppingCart } from 'lucide-react';
-import type { ShopifyProduct } from '@/services/shopify';
+import type { ShopifyProduct } from '@/types/shopify';
 
 type DashboardClientProps = {
     stats: {

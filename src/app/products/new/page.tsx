@@ -1,6 +1,5 @@
 
-import { getCollections } from '@/services/shopify';
-import type { ShopifyCollection } from '@/services/shopify';
+import { getCollections, type ShopifyCollection } from '@/lib/shopify-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';

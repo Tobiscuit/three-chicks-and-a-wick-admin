@@ -1,4 +1,12 @@
-'use server';
+/**
+ * Shopify Service - LEGACY FILE
+ * 
+ * This file is being migrated to:
+ * - @/lib/shopify-client.ts (data fetching)
+ * - @/actions/shopify.ts (mutations)
+ * 
+ * The 'use server' directive has been removed for Turbopack compatibility.
+ */
 
 import { cache } from 'react';
 
@@ -7,7 +15,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { encodeShopifyId } from '@/lib/utils';
 
-export type { ShopifyProduct };
+// Note: ShopifyProduct type should be imported directly from '@/types/shopify' by consumers
 
 export type ShopifyOrder = {
   id: string;

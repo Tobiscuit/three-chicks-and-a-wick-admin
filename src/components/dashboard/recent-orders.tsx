@@ -29,7 +29,7 @@ import type { GraphQLSubscription } from 'aws-amplify/api';
 import { Hub } from 'aws-amplify/utils';
 import configureAmplify from '@/lib/amplify-client';
 import { useEffect } from "react";
-import { getOrders } from "@/services/shopify";
+import { getOrders } from "@/lib/shopify-client";
 import { OrderQuickView } from "./order-quick-view";
 
 const client = generateClient();

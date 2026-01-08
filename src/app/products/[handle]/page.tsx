@@ -1,11 +1,12 @@
 
-import { getProductByHandle, getCollections } from '@/services/shopify';
+import { getProductByHandle } from '@/services/shopify';
+import { getCollections, type ShopifyCollection } from '@/lib/shopify-client';
 import { notFound } from 'next/navigation';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { ProductForm } from '@/components/product-form';
-import type { ShopifyCollection, ShopifyProduct } from '@/services/shopify';
+import type { ShopifyProduct } from '@/types/shopify';
 
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ handle: string }> }) {

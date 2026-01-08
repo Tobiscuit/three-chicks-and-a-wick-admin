@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2, BrainCircuit } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
-import { getBusinessSnapshot } from '@/services/shopify';
+import { getBusinessSnapshotAction } from '@/actions/strategy';
 import { generateBusinessStrategy } from '@/ai/flows/generate-business-strategy';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -45,7 +45,7 @@ export default function StrategyPage() {
             }
             
             // 1. Get business snapshot from Shopify
-            const snapshot = await getBusinessSnapshot();
+            const snapshot = await getBusinessSnapshotAction();
             
             if (snapshot.orders.length === 0 && snapshot.products.length === 0) {
                  setError("No sales or product data found. Please add products and make some sales to generate a strategy.");

@@ -24,7 +24,8 @@ import {
   MapPin, Calendar, Mail, Sparkles, Loader2
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { addTagsToOrder, ShopifyOrder } from "@/services/shopify"
+import { addTagsToOrderAction } from "@/actions/shopify"
+import type { ShopifyOrder } from "@/types/shopify"
 import { format } from "date-fns"
 import { useMediaQuery } from "@/hooks/use-media-query"
 
@@ -470,10 +471,10 @@ export function OrderDetailsModal({ isOpen, onClose, order, onOrderUpdated }: Or
     try {
       const step = PRODUCTION_STEPS.find(s => s.id === stepId);
       if (step) {
-        await addTagsToOrder(order.id, [step.tag]);
+        await addTagsToOrderAction(order.id, [step.tag]);
         
         // Refresh the order to get updated tags immediately
-        const { getOrder } = await import('@/services/shopify');
+        const { getOrder } = await import('@/lib/shopify-client');
         const updatedOrder = await getOrder(order.id);
         if (updatedOrder && onOrderUpdated) {
           onOrderUpdated(updatedOrder);

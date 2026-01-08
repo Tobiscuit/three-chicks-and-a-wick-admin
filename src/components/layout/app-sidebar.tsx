@@ -41,7 +41,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from "../auth/auth-provider"
 import { useEffect, useState } from "react"
-import { getOrders } from "@/services/shopify"
+import { getOrders } from "@/lib/shopify-client"
 import { auth } from "@/lib/firebase"
 import { useTheme } from "next-themes"
 import { getLastReadStrategyAt } from "@/services/user-settings"

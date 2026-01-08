@@ -5,7 +5,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { getOrders } from "@/services/shopify"
+import { getOrders } from "@/lib/shopify-client"
 
 // Route to title mapping with count support
 const routeTitles: Record<string, { title: string; showCount?: 'orders' | 'products' }> = {

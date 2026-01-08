@@ -1,6 +1,6 @@
 'use server';
 
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 
 /**
  * Fetch Shopify locations

@@ -1,6 +1,6 @@
 'use server';
 
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 import { SHOPIFY_CONFIG } from '@/lib/env-config';
 
 export type InventoryItem = {

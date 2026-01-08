@@ -1,10 +1,10 @@
 
 import { Suspense } from 'react';
 import { ProductsTable, ProductsTableSkeleton } from '@/components/products-table';
-import { getProducts } from '@/services/shopify';
+import { getProducts } from '@/lib/shopify-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import type { ShopifyProduct } from '@/services/shopify';
+import type { ShopifyProduct } from '@/types/shopify';
 import { AuthWrapper } from '@/components/auth/auth-wrapper';
 
 

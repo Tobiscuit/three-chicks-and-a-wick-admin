@@ -221,12 +221,12 @@ export async function startBackgroundStrategyGeneration(userId?: string): Promis
     debugStrategy.log('🚀 Starting background AI strategy generation...');
     
     try {
-        // Import dynamically to avoid circular dependencies
-        const { getBusinessSnapshot } = await import('@/services/shopify');
+        // Use server action to avoid bundling firebase-admin in client
+        const { getBusinessSnapshotAction } = await import('@/actions/strategy');
         const { generateBusinessStrategy } = await import('@/ai/flows/generate-business-strategy');
         
-        // Get business data
-        const snapshot = await getBusinessSnapshot();
+        // Get business data via server action
+        const snapshot = await getBusinessSnapshotAction();
         
         if (snapshot.orders.length === 0 && snapshot.products.length === 0) {
             console.log('No business data available for strategy generation');

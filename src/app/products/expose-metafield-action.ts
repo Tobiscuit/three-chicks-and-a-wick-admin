@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 
 export async function exposeDescriptionMetafieldToStorefront() {
     console.log('🔧 Creating metafield definition with PUBLIC_READ access...');

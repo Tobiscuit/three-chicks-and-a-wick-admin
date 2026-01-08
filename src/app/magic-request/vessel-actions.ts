@@ -2,7 +2,7 @@
 
 import { deployMagicRequestVessel, type PricingConfig, type VesselConfig, type WaxConfig, type WickConfig } from '@/services/magic-request-deployment';
 import { getCurrentPricingConfig } from '@/services/magic-request-pricing';
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 
 /**
  * Server actions for vessel management

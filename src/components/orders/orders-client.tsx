@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { File } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getOrders, ShopifyOrder } from '@/services/shopify';
+import { getOrders, type ShopifyOrder } from '@/lib/shopify-client';
 import { generateClient } from 'aws-amplify/api';
 import type { GraphQLSubscription } from 'aws-amplify/api';
 import configureAmplify from '@/lib/amplify-client';

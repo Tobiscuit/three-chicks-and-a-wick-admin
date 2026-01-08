@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { adminDb } from '@/lib/firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { APP_CONFIG, FIREBASE_CONFIG, GOOGLE_AI_CONFIG } from '@/lib/env-config';
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 import { z } from 'zod';
 import { Part } from '@google/generative-ai';
 

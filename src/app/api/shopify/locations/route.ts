@@ -1,4 +1,4 @@
-import { getLocations } from '@/services/shopify-locations';
+import { getLocations } from '@/lib/shopify-client';
 import { NextResponse } from 'next/server';
 
 /**

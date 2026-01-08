@@ -14,7 +14,7 @@
  * This service is used by both the Admin Panel UI and the seeding script.
  */
 
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 import { SHOPIFY_CONFIG } from '@/lib/env-config';
 
 export type VesselConfig = {

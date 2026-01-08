@@ -1,7 +1,7 @@
 'use server';
 
 import 'server-only';
-import { fetchShopify } from '@/services/shopify';
+import { fetchShopify } from '@/lib/shopify-client';
 
 /**
  * Bulk update Magic Request variant pricing
