@@ -3,6 +3,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  reactCompiler: true, // 2026: Auto-memoization (root level in Next.js 16)
   experimental: {
     serverActions: {
       bodySizeLimit: '25mb',

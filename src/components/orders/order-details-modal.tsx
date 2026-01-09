@@ -23,11 +23,13 @@ import {
   CheckCircle2, Clock, Package, Printer,
   MapPin, Calendar, Mail, Sparkles, Loader2
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { addTagsToOrderAction } from "@/actions/shopify"
 import type { ShopifyOrder } from "@/types/shopify"
 import { format } from "date-fns"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { useAnimatedCounter } from "@/hooks/use-animated-counter"
+import { AnimatedCard } from "@/components/ui/animated-card"
 
 type OrderDetailsModalProps = {
   isOpen: boolean;
@@ -48,58 +50,6 @@ const PRODUCTION_STEPS: ProductionStep[] = [
   { id: 'curing', label: 'Curing', tag: 'status:curing', icon: Clock },
   { id: 'ready', label: 'Ready', tag: 'status:ready', icon: CheckCircle2 },
 ];
-
-// Animated counter hook for total display
-function useAnimatedCounter(end: number, duration: number = 1000) {
-  const [count, setCount] = useState(0);
-  
-  useEffect(() => {
-    let startTime: number;
-    let animationFrame: number;
-    
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      
-      // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      setCount(Math.floor(easeOutQuart * end));
-      
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        setCount(end);
-      }
-    };
-    
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [end, duration]);
-  
-  return count;
-}
-
-// Staggered animation wrapper
-function AnimatedCard({ children, index, className = "" }: { 
-  children: React.ReactNode; 
-  index: number;
-  className?: string;
-}) {
-  const delay = Math.min(index * 75, 400); // 75ms stagger, max 400ms
-  
-  return (
-    <div
-      style={{ animationDelay: `${delay}ms` }}
-      className={`
-        motion-safe:motion-preset-fade-lg
-        motion-safe:motion-translate-y-in-[10px]
-        ${className}
-      `}
-    >
-      {children}
-    </div>
-  );
-}
 
 // Shared content component with all bleeding-edge enhancements
 function OrderContent({ order, isUpdating, onStatusUpdate }: {

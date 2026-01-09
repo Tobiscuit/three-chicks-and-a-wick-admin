@@ -1,10 +1,8 @@
 /**
  * Shopify Client - Data Fetching Layer
  * 
- * NO 'use server' directive - these functions run on the server
- * automatically when called from Server Components.
- * 
- * This separation is required for Next.js 16 Turbopack compatibility.
+ * Next.js 16 Pattern: Uses explicit cache: 'force-cache' for data fetching.
+ * Uses next: { tags } for cache invalidation via revalidateTag().
  */
 
 import { cache } from 'react';
@@ -42,6 +40,7 @@ export async function fetchShopify<T = unknown>(
       'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN,
     },
     body: JSON.stringify({ query, variables }),
+    cache: 'force-cache', // 2026: Explicit caching (no longer implicit)
     next: {
       revalidate: 60,
       tags: ['shopify-data'],

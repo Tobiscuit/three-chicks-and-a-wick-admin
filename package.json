@@ -91,6 +91,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10",
+    "babel-plugin-react-compiler": "^1.0.0",
     "genkit-cli": "^1.24.0",
     "happy-dom": "^20.0.0",
     "postcss": "^8",
