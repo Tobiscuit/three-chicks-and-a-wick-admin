@@ -12,7 +12,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Clock, Eye, CheckCircle, XCircle, Loader2, Sparkles } from 'lucide-react';
 import type { CommunityItem } from '@/lib/storefront-appsync';
 import { getCommunityCreations, approveSharedCandle, rejectSharedCandle } from '@/lib/storefront-appsync';
@@ -25,6 +28,10 @@ export function MagicRequestReviews() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   // Track which candle AND action is in progress to show correct spinner
   const [actionInProgress, setActionInProgress] = useState<{jobId: string; action: 'approve' | 'reject'} | null>(null);
+  // Rejection dialog state
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectingCandle, setRejectingCandle] = useState<CommunityItem | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     loadSharedCandles();
@@ -80,23 +87,32 @@ export function MagicRequestReviews() {
     }
   };
 
-  const handleReject = async (candle: CommunityItem) => {
-    if (actionInProgress) return; // Prevent double-clicks
+  // Open the rejection dialog for a specific candle
+  const openRejectDialog = (candle: CommunityItem) => {
+    if (actionInProgress) return;
+    setRejectingCandle(candle);
+    setRejectionReason('');
+    setIsRejectDialogOpen(true);
+  };
+
+  // Handle the actual rejection after dialog confirmation
+  const handleReject = async () => {
+    if (!rejectingCandle || actionInProgress) return;
     
-    const reason = prompt('Reason for rejection (optional):');
-    if (reason === null) return; // User cancelled
-    
-    setActionInProgress({jobId: candle.jobId, action: 'reject'});
+    setActionInProgress({jobId: rejectingCandle.jobId, action: 'reject'});
 
     try {
-      await rejectSharedCandle(candle.jobId, reason || undefined);
+      await rejectSharedCandle(rejectingCandle.jobId, rejectionReason || undefined);
       
       toast({
         title: 'Candle Rejected',
-        description: `${candle.candleName || 'Candle'} has been rejected and hidden from community.`,
+        description: `${rejectingCandle.candleName || 'Candle'} has been rejected and hidden from community.`,
       });
 
-      // Refresh the list (remove rejected candle)
+      // Close dialog and refresh the list
+      setIsRejectDialogOpen(false);
+      setRejectingCandle(null);
+      setRejectionReason('');
       await loadSharedCandles();
     } catch (error) {
       console.error('Error rejecting candle:', error);
@@ -245,7 +261,7 @@ export function MagicRequestReviews() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleReject(candle)}
+                      onClick={() => openRejectDialog(candle)}
                       disabled={actionInProgress?.jobId === candle.jobId}
                     >
                       {actionInProgress?.jobId === candle.jobId && actionInProgress?.action === 'reject' ? (
@@ -400,8 +416,8 @@ export function MagicRequestReviews() {
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    handleReject(previewCandle);
                     setIsPreviewOpen(false);
+                    openRejectDialog(previewCandle);
                   }}
                   disabled={actionInProgress?.jobId === previewCandle.jobId}
                 >
@@ -415,6 +431,71 @@ export function MagicRequestReviews() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Reason Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsRejectDialogOpen(false);
+          setRejectingCandle(null);
+          setRejectionReason('');
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Reject Creation
+            </DialogTitle>
+            <DialogDescription>
+              {rejectingCandle?.candleName 
+                ? `Rejecting "${rejectingCandle.candleName}". This will hide it from the community.`
+                : 'This will hide the creation from the community.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason" className="text-sm font-medium">
+                Reason for rejection <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="e.g., Inappropriate content, recipe doesn't make sense, etc."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="min-h-[100px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                This reason may be shared with the customer if they inquire about their submission.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsRejectDialogOpen(false);
+                setRejectingCandle(null);
+                setRejectionReason('');
+              }}
+              disabled={actionInProgress?.action === 'reject'}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={actionInProgress?.action === 'reject'}
+            >
+              {actionInProgress?.action === 'reject' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <XCircle className="h-4 w-4 mr-2" />
+              )}
+              Reject Creation
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
