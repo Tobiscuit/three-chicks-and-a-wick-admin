@@ -450,8 +450,8 @@ export function MagicRequestReviews() {
             </DialogTitle>
             <DialogDescription>
               {rejectingCandle?.candleName 
-                ? `Rejecting "${rejectingCandle.candleName}". This will hide it from the community.`
-                : 'This will hide the creation from the community.'}
+                ? `Rejecting "${rejectingCandle.candleName}". This submission will not be approved for the community gallery.`
+                : 'This submission will not be approved for the community gallery.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -461,14 +461,12 @@ export function MagicRequestReviews() {
               </Label>
               <Textarea
                 id="rejection-reason"
-                placeholder="e.g., Inappropriate content, recipe doesn't make sense, etc."
+                placeholder="e.g., Duplicate submission, incomplete recipe, needs more detail..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 className="min-h-[100px] resize-none"
               />
-              <p className="text-xs text-muted-foreground">
-                This reason may be shared with the customer if they inquire about their submission.
-              </p>
+
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
