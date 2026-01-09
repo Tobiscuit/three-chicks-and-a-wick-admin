@@ -88,12 +88,19 @@ export const FIREBASE_CONFIG = {
   APP_ID: getPublicEnvVar('FIREBASE_APP_ID'),
 };
 
-// Firebase Admin Configuration
-export const FIREBASE_ADMIN_CONFIG = {
-  PROJECT_ID: getRequiredEnvVar('FIREBASE_PROJECT_ID'),
-  SERVICE_ACCOUNT: getRequiredEnvVar('FIREBASE_SERVICE_ACCOUNT'),
-  STORAGE_BUCKET_ADMIN: getRequiredEnvVar('FIREBASE_STORAGE_BUCKET_ADMIN'),
-};
+// Firebase Admin Configuration (server-only - lazy evaluation)
+// This prevents the config from throwing on client-side module load
+export const FIREBASE_ADMIN_CONFIG = isServer
+  ? {
+      PROJECT_ID: getRequiredEnvVar('FIREBASE_PROJECT_ID'),
+      SERVICE_ACCOUNT: getRequiredEnvVar('FIREBASE_SERVICE_ACCOUNT'),
+      STORAGE_BUCKET_ADMIN: getRequiredEnvVar('FIREBASE_STORAGE_BUCKET_ADMIN'),
+    }
+  : {
+      PROJECT_ID: '',
+      SERVICE_ACCOUNT: '',
+      STORAGE_BUCKET_ADMIN: '',
+    };
 
 // Shopify Configuration
 export const SHOPIFY_CONFIG = {

@@ -3,9 +3,12 @@
  * 
  * Core utility for making authenticated GraphQL requests to Shopify Admin API.
  * Used by all other Shopify service modules.
+ * 
+ * This module imports from env-server.ts which uses `server-only` package
+ * to GUARANTEE this code never runs on the client.
  */
 
-import { SHOPIFY_CONFIG } from '@/lib/env-config';
+import { SHOPIFY_SERVER_CONFIG } from '@/lib/env-server';
 
 // ============================================================================
 // Types
@@ -20,8 +23,8 @@ type ShopifyGraphQLResponse<T> = {
 // Configuration
 // ============================================================================
 
-const SHOPIFY_API_URL = `https://${SHOPIFY_CONFIG.STORE_URL}/admin/api/${SHOPIFY_CONFIG.API_VERSION}/graphql.json`;
-const SHOPIFY_ADMIN_TOKEN = SHOPIFY_CONFIG.ADMIN_ACCESS_TOKEN;
+const SHOPIFY_API_URL = `https://${SHOPIFY_SERVER_CONFIG.STORE_URL}/admin/api/${SHOPIFY_SERVER_CONFIG.API_VERSION}/graphql.json`;
+const SHOPIFY_ADMIN_TOKEN = SHOPIFY_SERVER_CONFIG.ADMIN_ACCESS_TOKEN;
 
 // ============================================================================
 // Core Fetch Utility
