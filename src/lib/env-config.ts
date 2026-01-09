@@ -102,25 +102,39 @@ export const FIREBASE_ADMIN_CONFIG = isServer
       STORAGE_BUCKET_ADMIN: '',
     };
 
-// Shopify Configuration
-export const SHOPIFY_CONFIG = {
-  STORE_URL: getRequiredEnvVar('SHOPIFY_STORE_URL'),
-  ADMIN_ACCESS_TOKEN: getRequiredEnvVar('SHOPIFY_ADMIN_ACCESS_TOKEN'),
-  API_VERSION: getEnvVar('SHOPIFY_API_VERSION', '2025-10'), // Latest stable (Winter 2026 Editions)
-  WEBHOOK_SECRET: getRequiredEnvVar('SHOPIFY_WEBHOOK_SECRET'),
-  LOCATION_ID: getEnvVar('SHOPIFY_LOCATION_ID', 'gid://shopify/Location/83900891193'), // Primary inventory location
-};
+// Shopify Configuration (server-only - lazy evaluation)
+// This prevents the config from throwing on client-side module load
+export const SHOPIFY_CONFIG = isServer
+  ? {
+      STORE_URL: getRequiredEnvVar('SHOPIFY_STORE_URL'),
+      ADMIN_ACCESS_TOKEN: getRequiredEnvVar('SHOPIFY_ADMIN_ACCESS_TOKEN'),
+      API_VERSION: getEnvVar('SHOPIFY_API_VERSION', '2025-10'),
+      WEBHOOK_SECRET: getRequiredEnvVar('SHOPIFY_WEBHOOK_SECRET'),
+      LOCATION_ID: getEnvVar('SHOPIFY_LOCATION_ID', 'gid://shopify/Location/83900891193'),
+    }
+  : {
+      STORE_URL: '',
+      ADMIN_ACCESS_TOKEN: '',
+      API_VERSION: '2025-10',
+      WEBHOOK_SECRET: '',
+      LOCATION_ID: '',
+    };
 
-// Google AI Configuration
-export const GOOGLE_AI_CONFIG = {
-  API_KEY: getRequiredEnvVar('GEMINI_API_KEY'),
-};
+// Google AI Configuration (server-only - lazy evaluation)
+export const GOOGLE_AI_CONFIG = isServer
+  ? {
+      API_KEY: getRequiredEnvVar('GEMINI_API_KEY'),
+    }
+  : {
+      API_KEY: '',
+    };
 
-// App Configuration
+// App Configuration (mixed: some public, some server-only)
 export const APP_CONFIG = {
   ORIGIN: getPublicEnvVar('APP_ORIGIN'),
   STOREFRONT_URL: getPublicEnvVar('STOREFRONT_URL'),
-  AUTHORIZED_EMAILS: getRequiredEnvVar('AUTHORIZED_EMAILS'),
+  // AUTHORIZED_EMAILS is server-only
+  AUTHORIZED_EMAILS: isServer ? getRequiredEnvVar('AUTHORIZED_EMAILS') : '',
 };
 
 // Initialize A_ prefixed variables at runtime
