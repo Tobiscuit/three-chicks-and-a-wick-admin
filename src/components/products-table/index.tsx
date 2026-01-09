@@ -4,7 +4,6 @@
 import { useState, useCallback, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-// Removed env-config import for client-side component
 import {
   Table,
   TableBody,
@@ -35,27 +34,23 @@ import {
 } from "lucide-react";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ProductSearch } from "./product-search";
-import { useInventoryStatus } from "@/hooks/use-inventory-status";
-import { useProductImage } from "@/hooks/use-product-image";
 import { useServerSentEvents } from "@/hooks/use-server-sent-events";
 import { useUserSettings } from "@/hooks/use-user-settings";
-import { deleteProductAction, quickUpdateInventoryAction, changeProductStatusAction } from "@/app/products/actions";
+import { deleteProductAction, changeProductStatusAction } from "@/app/products/actions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton";
-import { AddProductModal } from "@/components/products/add-product-modal";
+
+// Extracted components from @/components/products
+import {
+  SecureDeleteDialog,
+  SecureBulkDeleteDialog,
+  InventoryCell,
+  ProductImageCell,
+  QuickEditModal,
+  AddProductModal,
+} from "@/components/products";
 
 // Subtle draft indicator - returns inline text instead of badge
 function DraftIndicator({ product }: { product: ShopifyProduct }) {
@@ -77,198 +72,6 @@ type ProductsTableProps = {
   products: ShopifyProduct[];
 };
 
-// Secure Delete Dialog Component - with copy button for better UX
-function SecureDeleteDialog({ 
-  product, 
-  onDelete, 
-  children 
-}: { 
-  product: ShopifyProduct; 
-  onDelete: (e: React.MouseEvent, productId: string, title: string) => void;
-  children: React.ReactNode;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [confirmationText, setConfirmationText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [copied, setCopied] = useState(false);
-  
-  // Require full product name for confirmation
-  const expectedValue = product.title;
-  const isConfirmationValid = confirmationText === expectedValue;
-  
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(product.title);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  
-  const handleDelete = async (e: React.MouseEvent) => {
-    if (!isConfirmationValid) return;
-    
-    setIsDeleting(true);
-    await onDelete(e, product.id, product.title);
-    setIsDeleting(false);
-    setIsOpen(false);
-    setConfirmationText("");
-  };
-  
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setConfirmationText("");
-      setCopied(false);
-    }
-    setIsOpen(open);
-  };
-  
-  return (
-    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
-      {children}
-      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Product</AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-3">
-              <p>This action cannot be undone. This will permanently delete this product.</p>
-              
-              <p className="font-medium text-foreground">
-                To confirm, copy and paste the product name below:
-              </p>
-              
-              {/* Product name display with copy button */}
-              <div className="flex items-center gap-2 p-3 bg-muted/50 border border-dashed border-border rounded-md">
-                <code className="flex-1 text-sm font-mono text-foreground break-all">
-                  {product.title}
-                </code>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 h-8 px-3"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCopy();
-                  }}
-                >
-                  {copied ? (
-                    <>✓ Copied</>
-                  ) : (
-                    <><ClipboardCopy className="h-4 w-4 mr-1" /> Copy</>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="py-2">
-          <Input
-            placeholder="Paste product name here..."
-            value={confirmationText}
-            onChange={(e) => setConfirmationText(e.target.value)}
-            className="w-full font-mono"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={handleDelete}
-            disabled={!isConfirmationValid || isDeleting}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              "Delete Product"
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-// Secure Bulk Delete Dialog Component - requires typing count to confirm
-function SecureBulkDeleteDialog({ 
-  count,
-  onConfirm,
-  children 
-}: { 
-  count: number;
-  onConfirm: () => Promise<void>;
-  children: React.ReactNode;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [confirmationText, setConfirmationText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  const expectedValue = count.toString();
-  const isConfirmationValid = confirmationText === expectedValue;
-  
-  const handleDelete = async () => {
-    if (!isConfirmationValid) return;
-    
-    setIsDeleting(true);
-    await onConfirm();
-    setIsDeleting(false);
-    setIsOpen(false);
-    setConfirmationText("");
-  };
-  
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setConfirmationText("");
-    }
-    setIsOpen(open);
-  };
-  
-  return (
-    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
-      <AlertDialogTrigger asChild onClick={() => setIsOpen(true)}>
-        {children}
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-destructive">⚠️ Delete {count} Products</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action <strong>cannot be undone</strong>. This will permanently delete {count} product{count > 1 ? 's' : ''} from your Shopify store.
-            <br /><br />
-            <strong>Security Check:</strong> Type <span className="font-mono bg-muted px-1 rounded">{count}</span> to confirm deletion.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="py-4">
-          <Input
-            placeholder={`Type: ${count}`}
-            value={confirmationText}
-            onChange={(e) => setConfirmationText(e.target.value)}
-            className="w-full font-mono text-center text-lg"
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={handleDelete}
-            disabled={!isConfirmationValid || isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              `Delete ${count} Products`
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
 
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter();
@@ -963,89 +766,3 @@ function ProductGridItem({ product, onRowClick, onDelete, onQuickEdit, index = 0
   )
 }
 
-function QuickEditModal({ product, onClose }: { product: ShopifyProduct; onClose: () => void; }) {
-  const { toast } = useToast();
-  const [quantity, setQuantity] = useState(product.totalInventory ?? 0);
-  const [isSaving, setIsSaving] = useState(false);
-  const inventoryItemId = product.variants?.edges?.[0]?.node?.inventoryItem?.id;
-
-  const handleSave = async () => {
-    if (!inventoryItemId) {
-      toast({ variant: "destructive", title: "Error", description: "Inventory item ID not found." });
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const result = await quickUpdateInventoryAction({ inventoryItemId, quantity });
-      if (result.success) {
-        toast({ title: "Success", description: `Inventory for "${product.title}" updated.` });
-        onClose();
-      } else {
-        throw new Error(result.error || "Failed to update inventory.");
-      }
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Update Failed", description: error.message });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Quick Edit: {product.title}</DialogTitle>
-          <DialogDescription>
-            Update the available inventory count. This will be reflected on your Shopify store.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
-          <Input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
-            className="text-lg"
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving && <MoreVertical className="mr-2 h-4 w-4 animate-spin" />}
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-
-function InventoryCell({ inventoryItemId, fallback }: { inventoryItemId?: string; fallback: number | null }) {
-  const { status, quantity } = useInventoryStatus(inventoryItemId);
-  
-  const displayValue = quantity !== null ? quantity : (fallback ?? 'N/A');
-
-  console.log('[InventoryCell] Rendering for item:', inventoryItemId, 'status:', status, 'firestore_quantity:', quantity, 'shopify_fallback:', fallback, 'displayValue:', displayValue);
-
-  return (
-    <span>
-      {displayValue}
-    </span>
-  );
-}
-
-function ProductImageCell({ productId, fallbackImageUrl, isCardView = false }: { productId: string; fallbackImageUrl?: string; isCardView?: boolean }) {
-  const { imageUrl, status } = useProductImage(productId);
-  
-  const displayImageUrl = imageUrl || fallbackImageUrl || (isCardView ? 'https://placehold.co/300x300' : 'https://placehold.co/64x64');
-  
-  return (
-    <Image
-      alt="Product"
-      className={isCardView ? "aspect-square object-cover w-full transition-transform group-hover:scale-105" : "aspect-square rounded-md object-cover"}
-      height={isCardView ? 300 : 64}
-      src={displayImageUrl}
-      width={isCardView ? 300 : 64}
-    />
-  );
-}
