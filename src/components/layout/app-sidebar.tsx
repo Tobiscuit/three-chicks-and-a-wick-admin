@@ -41,7 +41,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from "../auth/auth-provider"
 import { useEffect, useState } from "react"
-import { getOrders } from "@/lib/shopify-client"
+import { getUnfulfilledCountAction } from "@/app/orders/actions"
 import { auth } from "@/lib/firebase"
 import { useTheme } from "next-themes"
 import { getLastReadStrategyAt } from "@/services/user-settings"
@@ -68,14 +68,10 @@ export function AppSidebar() {
   // Fetch badges (Orders & Custom Candle requests)
   useEffect(() => {
     async function fetchBadges() {
-      // 1. Unfulfilled Orders
+      // 1. Unfulfilled Orders (via server action — keeps Shopify token server-side)
       try {
-        const orders = await getOrders(50)
-        const unfulfilled = orders.filter(order => {
-          const status = (order.displayFulfillmentStatus || 'UNFULFILLED').toUpperCase()
-          return status === 'UNFULFILLED' || status === 'ON_HOLD' || status === 'SCHEDULED'
-        })
-        setUnfulfilledCount(unfulfilled.length > 0 ? unfulfilled.length : null)
+        const count = await getUnfulfilledCountAction()
+        setUnfulfilledCount(count > 0 ? count : null)
       } catch (error) {
         console.error("Failed to fetch unfulfilled count:", error)
       }
