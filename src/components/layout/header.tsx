@@ -14,7 +14,7 @@ const routeTitles: Record<string, { title: string; showCount?: 'orders' | 'produ
   '/orders': { title: 'Orders', showCount: 'orders' },
   '/products': { title: 'Products' },
   '/products/new': { title: 'Add New Product' },
-  '/magic-request': { title: 'Custom Candles' },
+  '/custom-candles': { title: 'Custom Candles' },
   '/strategy': { title: 'AI Business Strategy' },
   '/settings': { title: 'Settings' },
 }

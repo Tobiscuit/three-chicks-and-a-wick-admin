@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Save, RotateCcw, Plus, Trash2, Calculator, RefreshCw } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { bulkUpdateMagicRequestPricing } from '@/app/magic-request/actions';
+import { bulkUpdateMagicRequestPricing } from '@/app/custom-candles/actions';
 
 interface PricingConfig {
   waxPricing: {

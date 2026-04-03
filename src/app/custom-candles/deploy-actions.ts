@@ -8,8 +8,8 @@
  * to only update what's changed.
  */
 
-import { deployMagicRequestProducts, computeDeploymentDiff, type DeploymentProgress } from '@/services/magic-request-deployment';
-import type { PricingConfig } from '@/services/magic-request-deployment';
+import { deployMagicRequestProducts, computeDeploymentDiff, type DeploymentProgress } from '@/services/candle-request-deployment';
+import type { PricingConfig } from '@/services/candle-request-deployment';
 
 // Store progress in memory (in production, use Redis or database)
 const deploymentProgress = new Map<string, DeploymentProgress[]>();

@@ -132,7 +132,7 @@ export function MagicRequestOverview() {
       {/* Stats Cards - Most Important, Show First! */}
       <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
         {/* Pending Reviews - Action Required */}
-        <Link href="/magic-request?tab=reviews">
+        <Link href="/custom-candles?tab=reviews">
           <Card className={cn(
             "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300",
             "hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer",
@@ -217,7 +217,7 @@ export function MagicRequestOverview() {
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* View Reviews */}
-        <Link href="/magic-request?tab=reviews">
+        <Link href="/custom-candles?tab=reviews">
           <Card className={cn(
             "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-200",
             "hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group"
@@ -240,7 +240,7 @@ export function MagicRequestOverview() {
         </Link>
 
         {/* Manage Fragrances */}
-        <Link href="/magic-request?tab=fragrances">
+        <Link href="/custom-candles?tab=fragrances">
           <Card className={cn(
             "motion-safe:animate-in fade-in slide-in-from-bottom-4 duration-300 delay-250",
             "hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group"

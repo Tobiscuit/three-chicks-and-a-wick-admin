@@ -1,7 +1,7 @@
 'use server';
 
-import { deployMagicRequestVessel, type PricingConfig, type VesselConfig, type WaxConfig, type WickConfig } from '@/services/magic-request-deployment';
-import { getCurrentPricingConfig } from '@/services/magic-request-pricing';
+import { deployMagicRequestVessel, type PricingConfig, type VesselConfig, type WaxConfig, type WickConfig } from '@/services/candle-request-deployment';
+import { getCurrentPricingConfig } from '@/services/candle-request-pricing';
 import { fetchShopify } from '@/lib/shopify-client';
 
 /**

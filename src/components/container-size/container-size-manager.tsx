@@ -17,8 +17,8 @@ import {
   updateIngredientInventory,
 } from '@/services/container-size-management';
 import { useToast } from '@/hooks/use-toast';
-import { fetchMagicRequestIngredients } from '@/app/magic-request/ingredients-actions';
-import { getAvailableVariantCombosAction, type VariantCombination } from '@/app/magic-request/pricing-actions';
+import { fetchMagicRequestIngredients } from '@/app/custom-candles/ingredients-actions';
+import { getAvailableVariantCombosAction, type VariantCombination } from '@/app/custom-candles/pricing-actions';
 import { Package, Layers, FlaskConical } from 'lucide-react';
 import {
   Table,

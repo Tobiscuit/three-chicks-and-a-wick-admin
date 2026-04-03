@@ -25,8 +25,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getPricingConfigAction } from '@/app/magic-request/pricing-actions';
-import { addVesselAction, checkVesselExistsAction } from '@/app/magic-request/vessel-actions';
+import { getPricingConfigAction } from '@/app/custom-candles/pricing-actions';
+import { addVesselAction, checkVesselExistsAction } from '@/app/custom-candles/vessel-actions';
 
 type Vessel = {
   name: string; // e.g., "Mason Jar"

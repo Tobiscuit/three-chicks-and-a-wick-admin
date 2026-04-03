@@ -51,7 +51,7 @@ const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingCart, showBadge: true },
   { href: "/products", label: "Products", icon: Package },
-  { href: "/magic-request", label: "Custom Candles", icon: Wand2, showMagicBadge: true },
+  { href: "/custom-candles", label: "Custom Candles", icon: Wand2, showMagicBadge: true },
   { href: "/strategy", label: "Strategy", icon: BrainCircuit, showStrategyBadge: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ]

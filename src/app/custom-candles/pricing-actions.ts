@@ -1,6 +1,6 @@
 'use server';
 
-import { getCurrentPricingConfig, previewPriceChanges, applyPriceChanges } from '@/services/magic-request-pricing';
+import { getCurrentPricingConfig, previewPriceChanges, applyPriceChanges } from '@/services/candle-request-pricing';
 
 function slugify(value: string): string {
   return value

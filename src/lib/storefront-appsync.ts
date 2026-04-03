@@ -227,7 +227,7 @@ export async function getMagicRequestConfig(): Promise<MagicRequestConfig> {
       return getDefaultConfig();
     }
 
-    const response = await fetch('/api/storefront/magic-request-config', {
+    const response = await fetch('/api/storefront/candle-config', {
       headers: {
         'Authorization': `Bearer ${idToken}`,
       },
@@ -252,7 +252,7 @@ export async function updateMagicRequestConfig(config: Omit<MagicRequestConfig, 
     throw new Error('No ID token available - user may not be authenticated');
   }
 
-  const response = await fetch('/api/storefront/magic-request-config', {
+  const response = await fetch('/api/storefront/candle-config', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

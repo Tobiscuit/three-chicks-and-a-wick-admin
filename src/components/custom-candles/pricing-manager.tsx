@@ -31,7 +31,7 @@ import {
   getPricingConfigAction,
   previewPricingChangesAction,
   applyPricingChangesAction,
-} from '@/app/magic-request/pricing-actions';
+} from '@/app/custom-candles/pricing-actions';
 import { VesselManager } from './vessel-manager';
 
 type PricingConfig = {

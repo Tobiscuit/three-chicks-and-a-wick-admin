@@ -12,11 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MagicRequestOverview } from '@/components/magic-request/overview';
-import { MagicRequestFragrances } from '@/components/magic-request/fragrances';
-import { MagicRequestReviews } from '@/components/magic-request/reviews';
-import { MagicRequestLogs } from '@/components/magic-request/logs';
-import { PricingManager } from '@/components/magic-request/pricing-manager';
+import { MagicRequestOverview } from '@/components/custom-candles/overview';
+import { MagicRequestFragrances } from '@/components/custom-candles/fragrances';
+import { MagicRequestReviews } from '@/components/custom-candles/reviews';
+import { MagicRequestLogs } from '@/components/custom-candles/logs';
+import { PricingManager } from '@/components/custom-candles/pricing-manager';
 import ContainerSizeManager from '@/components/container-size/container-size-manager';
 import { getCommunityCreations } from '@/lib/storefront-appsync';
 import { Loader2 } from 'lucide-react';
