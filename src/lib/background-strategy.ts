@@ -120,7 +120,7 @@ export async function getServerStrategyTimestamp(userId: string): Promise<number
  * Check if strategy cache is fresh (less than 16 hours old)
  */
 export async function isStrategyCacheFresh(userId?: string): Promise<boolean> {
-    console.log('🔍 [Strategy Debug] Checking cache freshness...');
+    debugStrategy.log('Checking cache freshness...');
     
     // 1. Check localStorage FIRST (Fastest, saves network calls)
     const localCached = localStorage.getItem('ai-strategy-cache');
@@ -185,7 +185,7 @@ async function cacheStrategyToAppSync(strategyData: any, userId?: string): Promi
             throw new Error(`Failed to cache strategy: ${response.status}`);
         }
 
-        console.log('Strategy cached to AppSync successfully');
+        debugStrategy.log('Strategy cached to AppSync successfully');
     } catch (error) {
         console.error('Failed to cache strategy to AppSync, falling back to localStorage:', error);
         
@@ -198,7 +198,7 @@ async function cacheStrategyToAppSync(strategyData: any, userId?: string): Promi
         };
         
         localStorage.setItem('ai-strategy-cache', JSON.stringify(cacheData));
-        console.log('Strategy cached to localStorage as fallback');
+        debugStrategy.log('Strategy cached to localStorage as fallback');
     }
 }
 
@@ -207,7 +207,7 @@ async function cacheStrategyToAppSync(strategyData: any, userId?: string): Promi
  * This should be called on user login
  */
 export async function startBackgroundStrategyGeneration(userId?: string): Promise<void> {
-    console.log('🔍 [Strategy Debug] Checking cache freshness...');
+    debugStrategy.log('Checking cache freshness...');
     
     // Only generate if cache is stale or doesn't exist
     const isFresh = await isStrategyCacheFresh(userId);
@@ -229,7 +229,7 @@ export async function startBackgroundStrategyGeneration(userId?: string): Promis
         const snapshot = await getBusinessSnapshotAction();
         
         if (snapshot.orders.length === 0 && snapshot.products.length === 0) {
-            console.log('No business data available for strategy generation');
+            debugStrategy.log('No business data available for strategy generation');
             return;
         }
         
@@ -260,7 +260,7 @@ export async function startBackgroundStrategyGeneration(userId?: string): Promis
         
         // Cache the result to AppSync
         await cacheStrategyToAppSync(strategyData, userId);
-        console.log('Background strategy generation completed and cached to AppSync');
+        debugStrategy.log('Background strategy generation completed and cached');
         
     } catch (error) {
         console.error('Background strategy generation failed:', error);

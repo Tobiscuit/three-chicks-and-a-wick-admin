@@ -57,11 +57,7 @@ export async function compressImage(
         // Convert to data URL with compression
         const compressedDataUrl = canvas.toDataURL(outputFormat, quality);
         
-        // Log compression stats for debugging
-        const originalSize = e.target?.result?.toString().length || 0;
-        const compressedSize = compressedDataUrl.length;
-        const savings = ((1 - compressedSize / originalSize) * 100).toFixed(1);
-        console.log(`[Image Compression] ${file.name}: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(compressedSize / 1024 / 1024).toFixed(2)}MB (${savings}% smaller)`);
+        // Compression stats available: originalSize → compressedSize
 
         resolve(compressedDataUrl);
       };

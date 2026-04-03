@@ -215,7 +215,7 @@ export async function setFeatureFlag(key: string, value: boolean): Promise<Featu
 }
 
 /**
- * Magic Request Config Functions
+ * Candle Config Functions
  * These call the Admin Panel's API routes, which then proxy to AppSync
  */
 
@@ -223,7 +223,7 @@ export async function getMagicRequestConfig(): Promise<MagicRequestConfig> {
   try {
     const idToken = await getIdToken();
     if (!idToken) {
-      console.warn('[getMagicRequestConfig] No ID token available, using default config');
+      console.warn('[getCandleConfig] No ID token available, using default config');
       return getDefaultConfig();
     }
 
@@ -234,14 +234,14 @@ export async function getMagicRequestConfig(): Promise<MagicRequestConfig> {
     });
     
     if (!response.ok) {
-      console.warn('Error fetching Magic Request config, using default');
+      console.warn('Error fetching candle config, using default');
       return getDefaultConfig();
     }
 
     const result = await response.json();
     return result.success ? result.data : getDefaultConfig();
   } catch (error) {
-    console.error('Error fetching Magic Request config:', error);
+    console.error('Error fetching candle config:', error);
     return getDefaultConfig();
   }
 }

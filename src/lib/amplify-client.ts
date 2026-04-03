@@ -2,7 +2,7 @@
 import { Amplify } from 'aws-amplify';
 
 const configureAmplify = () => {
-  console.log('Attempting to configure Amplify with URL:', process.env.NEXT_PUBLIC_APPSYNC_GRAPHQL_URL);
+  // Amplify configuration
   if (
     process.env.NEXT_PUBLIC_APPSYNC_GRAPHQL_URL &&
     process.env.NEXT_PUBLIC_APPSYNC_API_KEY
@@ -17,7 +17,7 @@ const configureAmplify = () => {
         },
       },
     });
-    console.log('Amplify configured successfully');
+    // Amplify configured
   } else {
     console.warn('Amplify configuration skipped: Missing environment variables.');
   }

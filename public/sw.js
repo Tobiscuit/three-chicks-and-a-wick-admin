@@ -23,7 +23,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
-      console.log('[SW] Caching static assets');
+      // Cache static assets on install
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -39,7 +39,7 @@ self.addEventListener('activate', (event) => {
         cacheNames
           .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE)
           .map((name) => {
-            console.log('[SW] Deleting old cache:', name);
+            // Clean up old caches
             return caches.delete(name);
           })
       );
@@ -131,9 +131,14 @@ self.addEventListener('fetch', (event) => {
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request).then((networkResponse) => {
         if (networkResponse.ok) {
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, networkResponse.clone());
-          });
+          try {
+            const cloned = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, cloned);
+            });
+          } catch (e) {
+            // Response body already used — skip caching
+          }
         }
         return networkResponse;
       });
