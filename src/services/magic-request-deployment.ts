@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * Magic Request Product Deployment Service
+ * Candle Request Product Deployment Service
  * 
- * Handles the multi-step process of deploying Magic Request products to Shopify:
+ * Handles the multi-step process of deploying Candle Request products to Shopify:
  * 1. Create/upsert vessel products
  * 2. Create/ensure product options (Wax, Wick)
  * 3. Create missing variants (Cartesian product)
@@ -131,7 +131,7 @@ async function getPublicationId(name: string): Promise<string | null> {
 }
 
 /**
- * Deploy or update a Magic Request vessel product in Shopify
+ * Deploy or update a Candle Request vessel product in Shopify
  */
 export async function deployMagicRequestVessel(
   vesselName: string,
@@ -215,10 +215,10 @@ export async function deployMagicRequestVessel(
         input: {
           title,
           handle,
-          productType: 'Magic Request',
-          tags: ['custom-candle', 'magic-request'],
+          productType: 'Candle Request',
+          tags: ['custom-candle', 'candle-request'],
           status: 'DRAFT',
-          descriptionHtml: `<p>Custom ${title} vessel for Magic Request candles.</p>`,
+          descriptionHtml: `<p>Custom ${title} vessel for custom candles.</p>`,
         },
       });
       if (!createResult.productCreate.product) {
@@ -614,10 +614,10 @@ export type DeploymentDiff = {
  * Compute diff between Admin Panel config and current Shopify state
  */
 export async function computeDeploymentDiff(config: PricingConfig): Promise<DeploymentDiff> {
-  // Fetch all Magic Request products from Shopify
+  // Fetch all Candle Request products from Shopify
   const query = `
     query {
-      products(first: 50, query: "product_type:Magic Request") {
+      products(first: 50, query: "product_type:Candle Request") {
         edges {
           node {
             id

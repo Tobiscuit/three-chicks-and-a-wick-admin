@@ -51,7 +51,7 @@ const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingCart, showBadge: true },
   { href: "/products", label: "Products", icon: Package },
-  { href: "/magic-request", label: "Magic Request", icon: Wand2, showMagicBadge: true },
+  { href: "/magic-request", label: "Custom Candles", icon: Wand2, showMagicBadge: true },
   { href: "/strategy", label: "Strategy", icon: BrainCircuit, showStrategyBadge: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
@@ -65,7 +65,7 @@ export function AppSidebar() {
   const [magicPendingCount, setMagicPendingCount] = useState<number | null>(null)
   const [hasUnreadStrategy, setHasUnreadStrategy] = useState(false)
 
-  // Fetch badges (Orders & Magic Requests)
+  // Fetch badges (Orders & Custom Candle requests)
   useEffect(() => {
     async function fetchBadges() {
       // 1. Unfulfilled Orders
@@ -80,7 +80,7 @@ export function AppSidebar() {
         console.error("Failed to fetch unfulfilled count:", error)
       }
 
-      // 2. Pending Magic Requests
+      // 2. Pending Custom Candle Requests
       try {
         // Dynamic import to avoid circular dependencies if any
         const { getCommunityCreations } = await import('@/lib/storefront-appsync');
@@ -187,7 +187,7 @@ export function AppSidebar() {
                     {unfulfilledCount > 99 ? '99+' : unfulfilledCount}
                   </SidebarMenuBadge>
                 )}
-                {/* Badge for Magic Requests */}
+                {/* Badge for Custom Candle requests */}
                 {/* @ts-ignore - existing type def might assume showMagicBadge isn't there but it's JS at runtime or I can extend type if needed */}
                 {item.showMagicBadge && magicPendingCount && (
                    <SidebarMenuBadge className="bg-destructive text-destructive-foreground animate-in fade-in duration-300">

@@ -57,7 +57,7 @@ export function MagicRequestOverview() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to load Magic Request status.',
+        description: 'Failed to load Custom Candles status.',
       });
     } finally {
       setLoading(false);
@@ -94,17 +94,17 @@ export function MagicRequestOverview() {
       setIsEnabled(checked);
       
       toast({
-        title: checked ? 'Magic Request Enabled' : 'Magic Request Disabled',
+        title: checked ? 'Custom Candles Enabled' : 'Custom Candles Disabled',
         description: checked
-          ? 'The storefront will show the Magic Request form after rebuild.'
-          : 'The Magic Request form will be hidden after rebuild.',
+          ? 'The storefront will show the custom candle builder after rebuild.'
+          : 'The custom candle builder will be hidden after rebuild.',
       });
     } catch (error) {
       console.error('Error updating feature flag:', error);
       toast({
         variant: 'destructive',
         title: 'Update Failed',
-        description: 'Failed to update Magic Request status. Please try again.',
+        description: 'Failed to update Custom Candles status. Please try again.',
       });
       setIsEnabled(!checked);
     } finally {
@@ -273,7 +273,7 @@ export function MagicRequestOverview() {
             <div>
               <CardTitle className="font-semibold tracking-tight flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                Magic Request Settings
+                Custom Candles Settings
               </CardTitle>
               <CardDescription className="mt-2">
                 Control availability of the custom candle feature

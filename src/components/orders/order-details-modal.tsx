@@ -58,8 +58,7 @@ function OrderContent({ order, isUpdating, onStatusUpdate }: {
   onStatusUpdate: (stepId: string) => void;
 }) {
   const isCustomOrder = order.lineItems.edges.some((edge: any) =>
-    edge.node.customAttributes.some((attr: any) => attr.key.startsWith('_recipe_')) ||
-    edge.node.product?.title?.toLowerCase().includes('magic request')
+    edge.node.customAttributes.some((attr: any) => attr.key.startsWith('_recipe_'))
   );
 
   // @ts-ignore - tags might not be in the type yet but come from API
@@ -215,7 +214,7 @@ function OrderContent({ order, isUpdating, onStatusUpdate }: {
                 const promptAttr = item.customAttributes.find((attr: any) => attr.key === 'Original Prompt');
                 
                 // Determine if this is a custom item
-                const isCustomItem = recipe || candleNameAttr || item.product?.title?.toLowerCase().includes('magic request');
+                const isCustomItem = recipe || candleNameAttr;
                 
                 // Get display values
                 const candleName = recipe?.name || candleNameAttr?.value;
@@ -451,8 +450,7 @@ export function OrderDetailsModal({ isOpen, onClose, order, onOrderUpdated }: Or
   };
 
   const isCustomOrder = order.lineItems.edges.some((edge: any) =>
-    edge.node.customAttributes.some((attr: any) => attr.key.startsWith('_recipe_')) ||
-    edge.node.product?.title?.toLowerCase().includes('magic request')
+    edge.node.customAttributes.some((attr: any) => attr.key.startsWith('_recipe_'))
   );
 
   // Header content (shared)

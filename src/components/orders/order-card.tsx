@@ -18,10 +18,11 @@ const formatCurrency = (amount: string, currency: string) => {
   }).format(parseFloat(amount));
 };
 
-// Helper to get order type
+// Helper to get order type - checks for custom candle indicators
 const getOrderType = (order: ShopifyOrder): "Custom" | "Standard" => {
   return order.lineItems.edges.some((e) =>
-    e.node.product?.title?.includes("Magic Request")
+    // Check for _recipe_ custom attribute (set during candle builder checkout)
+    e.node.customAttributes?.some((attr: { key: string }) => attr.key === '_recipe_')
   )
     ? "Custom"
     : "Standard";

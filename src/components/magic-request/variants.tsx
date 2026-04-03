@@ -51,7 +51,7 @@ export function MagicRequestVariants() {
       setHasChanges(false);
       toast({
         title: 'Configuration Saved',
-        description: 'Magic Request variants have been updated successfully',
+        description: 'Custom candle variants have been updated successfully',
       });
     } catch (error) {
       console.error('Error saving config:', error);
@@ -213,7 +213,7 @@ export function MagicRequestVariants() {
             <div>
               <p className="font-semibold">You have unsaved changes</p>
               <p className="text-sm text-muted-foreground">
-                Save your changes to update the Magic Request form on the storefront
+                Save your changes to update the custom candle builder on the storefront
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export function MagicRequestVariants() {
             <div className="space-y-1">
               <p className="font-semibold">How Variant Options Work</p>
               <p className="text-sm text-muted-foreground">
-                These options appear in the Magic Request form on the storefront. Customers can select from enabled options to customize their candle. Disabled options are hidden but can be re-enabled at any time. Changes take effect immediately after saving.
+                These options appear in the custom candle builder on the storefront. Customers can select from enabled options to customize their candle. Disabled options are hidden but can be re-enabled at any time. Changes take effect immediately after saving.
               </p>
             </div>
           </div>

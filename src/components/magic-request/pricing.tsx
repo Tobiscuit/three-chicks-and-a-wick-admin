@@ -270,7 +270,7 @@ export function MagicRequestPricing() {
             <div>
               <p className="font-semibold">You have unsaved changes</p>
               <p className="text-sm text-muted-foreground">
-                Save your changes to update Magic Request pricing
+                Save your changes to update custom candle pricing
               </p>
             </div>
             <div className="flex items-center gap-2">

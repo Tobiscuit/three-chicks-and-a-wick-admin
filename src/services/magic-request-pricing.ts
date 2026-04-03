@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * Magic Request Pricing Service
+ * Candle Request Pricing Service
  * 
- * Handles pricing updates for Magic Request products:
+ * Handles pricing updates for Candle Request products:
  * - Fetch current pricing from Shopify metafields
  * - Calculate price changes when wax/wick/container prices change
  * - Preview changes before applying
@@ -73,7 +73,7 @@ export async function getCurrentPricingConfig(): Promise<{
 }> {
   const query = `
     query GetMagicRequestPricing {
-      products(first: 50, query: "product_type:Magic Request") {
+      products(first: 50, query: "product_type:Candle Request") {
         edges {
           node {
             id
@@ -194,7 +194,7 @@ export async function previewPriceChanges(
 ): Promise<PricingPreview> {
   const query = `
     query PreviewPriceChanges {
-      products(first: 50, query: "product_type:Magic Request") {
+      products(first: 50, query: "product_type:Candle Request") {
         edges {
           node {
             id
@@ -426,7 +426,7 @@ export async function applyPriceChanges(
     // Get all products to find which ones match the vessel
     const query = `
       query GetVesselProducts {
-        products(first: 50, query: "product_type:Magic Request") {
+        products(first: 50, query: "product_type:Candle Request") {
           edges {
             node {
               id

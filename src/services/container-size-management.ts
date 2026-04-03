@@ -162,8 +162,8 @@ function calculateWaxNeeded(containerSize: string): number {
 }
 
 /**
- * Get Magic Request ingredients from Shopify metafields
- * Aggregates unique wax types, wick types, and containers from all Magic Request products
+ * Get Candle Request ingredients from Shopify metafields
+ * Aggregates unique wax types, wick types, and containers from all Candle Request products
  */
 export async function getMagicRequestIngredientsFromShopify(): Promise<{
   waxTypes: string[];
@@ -173,7 +173,7 @@ export async function getMagicRequestIngredientsFromShopify(): Promise<{
   try {
     const query = `
       query GetMagicRequestIngredients {
-        products(first: 50, query: "product_type:Magic Request") {
+        products(first: 50, query: "product_type:Candle Request") {
           edges {
             node {
               id
@@ -236,7 +236,7 @@ export async function getMagicRequestIngredientsFromShopify(): Promise<{
       containers: Array.from(containersSet).sort()
     };
   } catch (error) {
-    console.error('Error fetching Magic Request ingredients from Shopify:', error);
+    console.error('Error fetching Candle Request ingredients from Shopify:', error);
     // Fallback to mock data if query fails
     const mock = getMockIngredientInventory();
     return {
