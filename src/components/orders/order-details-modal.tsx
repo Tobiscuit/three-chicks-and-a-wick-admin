@@ -184,7 +184,7 @@ function OrderContent({ order, isUpdating, onStatusUpdate }: {
                 {order.displayFulfillmentStatus !== 'FULFILLED' && (
                   <Loader2 className="w-3 h-3 animate-spin" />
                 )}
-                {order.displayFulfillmentStatus || 'UNFULFILLED'}
+                {(order.displayFulfillmentStatus || 'Unfulfilled').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
               </Badge>
             </div>
           </CardContent>

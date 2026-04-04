@@ -115,7 +115,7 @@ export const orderColumns: ColumnDef<ShopifyOrder>[] = [
       const status = (row.getValue("displayFulfillmentStatus") as string) || "Unfulfilled"
       return (
         <Badge variant={getStatusVariant(status)}>
-          {status}
+          {status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
       )
     },
