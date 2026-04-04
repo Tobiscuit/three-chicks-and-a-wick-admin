@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { File } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getOrders, type ShopifyOrder } from '@/lib/shopify-client';
+import { getOrdersAction, type ShopifyOrder } from '@/app/orders/actions';
 import { generateClient } from 'aws-amplify/api';
 import type { GraphQLSubscription } from 'aws-amplify/api';
 import configureAmplify from '@/lib/amplify-client';
@@ -58,7 +58,7 @@ export default function OrdersClient() {
   useEffect(() => {
     async function fetchInitialOrders() {
       try {
-        const shopifyOrders = await getOrders(50);
+        const shopifyOrders = await getOrdersAction(50);
         setOrders(shopifyOrders);
       } catch (error) {
         console.error("Failed to fetch orders:", error);
@@ -79,7 +79,7 @@ export default function OrdersClient() {
         next: ({ data }) => {
           if (!data?.onNewOrder) return;
 
-          getOrders(1).then(newOrders => {
+          getOrdersAction(1).then(newOrders => {
             if (newOrders.length > 0) {
               setOrders(prev => {
                 const exists = prev.find(o => o.id === newOrders[0].id);
