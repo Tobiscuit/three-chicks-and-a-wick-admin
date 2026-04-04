@@ -1,9 +1,7 @@
 'use server'
 
-import { getOrders, type ShopifyOrder } from '@/lib/shopify-client'
-
-// Re-export the type so client components can import it from here
-export type { ShopifyOrder }
+import { getOrders } from '@/lib/shopify-client'
+import type { ShopifyOrder } from '@/types/shopify'
 
 /**
  * Server action to fetch orders from Shopify.
