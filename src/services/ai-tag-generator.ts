@@ -53,7 +53,7 @@ RESPONSE FORMAT (JSON only, no other text):
 `;
 
     const response = await ai.generate({
-      model: 'googleai/gemini-2.5-flash',
+      model: 'googleai/gemini-3-flash-preview',
       prompt: prompt,
       config: {
         temperature: 0.7,
